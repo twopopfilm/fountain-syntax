@@ -1,0 +1,22 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# OS and editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local-only context and settings (never commit machine details or personal data)
+*.local.md
+*.local
+.claude/settings.local.json
+.env
+.env.*
+
+# Local media, renders and caches
+/outputs/
+/media/
+*.log
