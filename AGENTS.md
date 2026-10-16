@@ -61,3 +61,6 @@ Fill this section in when the crate exists (F2). Rules that already apply:
 - **Every `SPEC.md` decision has a test** that names it.
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo test`, `cargo clippy`, `cargo fmt --check` and `scripts/check-public.sh`.
+- **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
+  steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
+  planned features as planned; never describe something as working before it does.
