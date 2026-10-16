@@ -16,6 +16,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # On a PR, check the branch's own commits, not GitHub's synthetic merge commit, which carries the
+          # account's default web email rather than the noreply address.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Local paths, emails and commit identities
         run: scripts/check-public.sh
       - name: Secrets (gitleaks)
