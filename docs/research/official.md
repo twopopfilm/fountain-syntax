@@ -34,6 +34,7 @@ The spec has no licence, so nothing here is copied from it.
 | The `fountain` organisation on GitHub | One repository (`.github`, last updated April 2023). No spec, draft or syntax repository. |
 | The reference code linked from the Developers page (an Objective-C parser and writer) | Its README defers to fountain.io for the format. No spec file, tag or release. |
 | A GitHub search of the `fountain` organisation | Same single repository. |
+| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for any case here. A pass over it is tracked in #26. |
 
 **Conclusion:** 1.1 (2014) is the current official revision. No newer revision or draft was found. The page's
 sections are the 21 listed below, in the page's order.
@@ -87,12 +88,14 @@ Matching is **case-insensitive**. Uppercase is recommended for readability but n
 
 **Forced form.** A single leading `.` forces any line to be a Scene Heading. The `.` is removed from the formatted
 output. The spec says only a *single* period followed by an *alphanumeric* character forces a heading. That keeps
-lines that start with an ellipsis (`...`) out of the heading rule.
+lines that start with an ellipsis (`...`) out of the heading rule, and by the same literal text a period followed by a
+space, a second period or a symbol does not force a heading either (OFF-7).
 
-**Scene numbers.** A heading may end with a scene number wrapped in `#`. The characters allowed are alphanumerics
-plus dashes and periods. The spec's valid forms (see its section) include digits only, digits and letters in either
-order, mixed case, dash-separated groups, a trailing period, and a number after a long heading with a parenthesised
-note.
+**Scene numbers.** A heading may be "appended" with a scene number wrapped in `#`, which points to the end of the
+line. The characters allowed are alphanumerics plus dashes and periods, so by the literal text a space or an
+underscore inside the number is not allowed. The spec's valid forms (see its section) include digits only, digits and
+letters in either order, mixed case, dash-separated groups, a trailing period, and a number after a long heading with
+a parenthesised note.
 
 **Follows / interactions.**
 
@@ -375,8 +378,10 @@ open italics. The spec shows that two asterisks that each have a space on their 
 them, but that a pair where the first is flush against the following word and the second is flush against the
 preceding word does. It advises escaping one or both marks to avoid accidental italics.
 
-**Line breaks.** As in Markdown, emphasis is not carried across line breaks: an asterisk on one line and another on the
-next stay as asterisks. This is a different rule from Notes and Boneyard (see OFF-14, OFF-15, OFF-16).
+**Line breaks.** The spec says that, as in Markdown, emphasis is not carried across line breaks. Its example for this
+has an *empty* line between the two lines that each hold one asterisk, so it shows the limit for a double line break
+only. It cannot tell a limit at a single line break from the double-line-break limit in Error Handling (OFF-14). This
+is a different rule from Notes and Boneyard (see OFF-14, OFF-15, OFF-16).
 
 **Original example.**
 
@@ -384,11 +389,13 @@ next stay as asterisks. This is a different rule from Notes and Boneyard (see OF
 She types *the code*, then **hits** ENTER, then ***waits***.
 A _long, quiet_ moment. Press \*9\* to continue.
 He counted *4 and then 7, and kept on.
+
 Nothing was italic above. *This line* is.
 ```
 
 Line 1 and the underline in line 2 are emphasis; `\*9\*` shows literal asterisks; the third line has an
-unmatched asterisk that stays literal.
+unmatched asterisk that stays literal. The empty line before the last line keeps the example neutral on whether a
+single line break also stops emphasis (OFF-14).
 
 Open points: OFF-14.
 
@@ -400,7 +407,8 @@ Open points: OFF-14.
 contain spaces but must end with a colon.
 
 **Values.** A value may follow the key on the same line, or sit on the lines below, indented by **three or more spaces
-or a tab**. Indented lines allow several values for one key (several authors, several address lines).
+or a tab**, so by the literal text a one- or two-space indent does not continue a value (OFF-17). Indented lines allow
+several values for one key (several authors, several address lines).
 
 **Keys.**
 
@@ -408,7 +416,9 @@ or a tab**. Indented lines allow several values for one key (several authors, se
 - It recommends Title, Credit, Author/Authors and Source be centered on the page, with Contact and Draft date at the
   lower left.
 - Other keys are allowed. Unsupported ones are ignored for formatting but may be kept as metadata.
-- Every key is optional; a title page of one key is valid.
+- Every key is optional; a title page of one key is valid. The spec's own one-key case is a lone draft date.
+  Together with its statement that unsupported keys are ignored rather than rejected, this leans towards any
+  `Key: value` first line starting a title page, not only a listed key (OFF-17).
 
 **Ending.** A page break is implicit after the title page. The spec's advice is to leave a gap of two lines and start
 the screenplay. It does not define precisely where the title page stops.
@@ -507,9 +517,10 @@ Open points: OFF-1, OFF-2, OFF-23.
 [Spec: Indenting](https://fountain.io/syntax#indenting)
 
 **Rule.** Leading tabs and spaces are **ignored** for every element **except Action**. A writer can indent to make a
-file look like a formatted page. The spec's prose describes tabs, while its example block as served uses spaces
-(see OFF-18). The indent levels are four for Transitions, three for Character cues, two for Parentheticals and one
-for Dialogue.
+file look like a formatted page. The spec's prose describes tabs and gives the levels as four for Transitions, three
+for Character cues, two for Parentheticals and one for Dialogue. Its example block as served uses spaces, not tabs,
+and its indents are 12, 8, 4 and 0 spaces for those four elements: one level short of the prose at four spaces per
+tab (see OFF-18). The original example below follows the prose levels, at four spaces per level.
 
 **Exception.** In Action, leading tabs and spaces are kept (see Action).
 
@@ -518,7 +529,7 @@ for Dialogue.
 **Original example.**
 
 ```fountain
-                    DISSOLVE TO:
+                DISSOLVE TO:
 
 INT. GALLEY - NIGHT
 
@@ -632,7 +643,7 @@ Open points: OFF-8, OFF-19, OFF-20, OFF-21.
 [Spec: Error Handling](https://fountain.io/syntax#error-handling)
 
 - **Fallback:** when in doubt, return the text as Action. It is better to show the writer what they wrote in the wrong
-  format than to drop it.
+  format than to drop it. A principle, not a rule: see [Spec-level tie-breaker](#spec-level-tie-breaker).
 - **Containment:** a closing mark is not searched for **past a double line break**. This keeps a stray `[[` or `*`
   from turning half the script into a note or italics.
 - **Exception:** the Boneyard may span many lines.
@@ -668,20 +679,20 @@ permission (see #15).
 
 | Sigil | Element forced | Added in | Stated caveats |
 |---|---|---|---|
-| `.` | [Scene Heading](https://fountain.io/syntax#scene-headings) | before 1.1 | A **single** period, followed by an **alphanumeric** character. Removed from output. Not triggered by `...`. A leading `.` is also the way to stop a `TO:` line being a Transition. |
+| `.` | [Scene Heading](https://fountain.io/syntax#scene-headings) | before 1.1 | A **single** period, followed by an **alphanumeric** character. Removed from output. Not triggered by `...`, `..` or a period followed by a space or symbol. A leading `.` is also the way to stop a `TO:` line being a Transition. |
 | `!` | [Action](https://fountain.io/syntax#action) | 1.1 | Overrides the heading prefix rule and the Character rule (uppercase Action above another line). The spec does not say the `!` is dropped (OFF-22). |
 | `@` | [Character](https://fountain.io/syntax#character) | 1.1 | For names with lowercase letters and for non-Roman scripts. Removed; the name keeps its case. |
 | `>` | [Transition](https://fountain.io/syntax#transition) | before 1.1 | Any line, any case. The spec does not say the `>` is dropped (OFF-22). Same lead character as centered text, which also needs a closing `<`. |
 | `>` ... `<` | [Centered Text](https://fountain.io/syntax#centered-text) | before 1.1 | An Action element. Spaces between the text and the marks are allowed; leading spaces are not kept. The spec does not say whether the marks are dropped (OFF-10). |
 | `~` | [Lyrics](https://fountain.io/syntax#lyrics) | 1.1 | Always forced; there is no automatic form. On each lyric line. The `~` is dropped. Styling is left to the app. |
 | `^` | [Dual Dialogue](https://fountain.io/syntax#dual-dialogue) | before 1.1 | After the **second** Character cue; must be the last character on the line; spaces before it are ignored. |
-| `#` ... `#` | [Scene number](https://fountain.io/syntax#scene-headings) | before 1.1 | Alphanumerics plus dashes and periods. At the end of a heading. |
+| `#` ... `#` | [Scene number](https://fountain.io/syntax#scene-headings) | before 1.1 | Alphanumerics plus dashes and periods, so no space or underscore inside. "Appended" to a heading, which points to the end of the line (OFF-8). |
 | `#` | [Section](https://fountain.io/syntax#sections-synopses) | before 1.1 | One or more at the start of a line; more means deeper. Not shown in output. |
 | `=` | [Synopsis](https://fountain.io/syntax#sections-synopses) | before 1.1 | Single line. Not shown in output. |
 | `===` | [Page Break](https://fountain.io/syntax#page-breaks) | before 1.1 | Three or more `=` and nothing else on the line. |
 | `[[ ]]` | [Note](https://fountain.io/syntax#notes) | before 1.1 | Inline or on its own line. Empty line inside needs two spaces. |
 | `/* */` | [Boneyard](https://fountain.io/syntax#boneyard) | before 1.1 | May span lines and empty lines; not subject to the double-line-break limit. |
-| `*`, `**`, `***`, `_` | [Emphasis](https://fountain.io/syntax#emphasis) | before 1.1 | Markdown rules, but `_` is underline. A backslash escapes. Not carried across line breaks. |
+| `*`, `**`, `***`, `_` | [Emphasis](https://fountain.io/syntax#emphasis) | before 1.1 | Markdown rules, but `_` is underline. A backslash escapes. Not carried across line breaks, but the spec's example has an empty line between its two lines (OFF-14). |
 
 "Added in" comes from the changelog, which names 1.1 for `@`, `!` and `~`. For the rest the changelog gives no date, so
 "before 1.1" means only that 1.1 did not add them.
@@ -693,7 +704,9 @@ points, if any, are noted in the case they feed.
 
 | Topic | What the spec says | Residual |
 |---|---|---|
-| `.` forcing versus an ellipsis | Only a single period followed by an alphanumeric character forces a heading, so `...` stays Action | What counts as alphanumeric (OFF-7) |
+| `.` forcing versus an ellipsis | Only a single period followed by an alphanumeric character forces a heading, so `...`, `..` and a period followed by a space or symbol do not force one | What counts as alphanumeric (OFF-7) |
+| Spaces or underscores inside a scene number | Only alphanumerics, dashes and periods are allowed in the number, so `#1 A#` and `#1_A#` are not scene numbers | Unicode alphanumerics, text after the number, forced headings (OFF-8) |
+| Indent of a title-page value | Three or more spaces, or a tab, so a one- or two-space indent is not a continuation | What such a line becomes (OFF-17) |
 | A transition not ending in `TO:` | Not automatic. Only `>` forces it | Other uppercase endings and blank-line edges (OFF-9) |
 | Page break with more than three `=` | Three **or more** consecutive equals signs and nothing else | `==`, whitespace around the run (OFF-19) |
 | Heading prefix case | Case-insensitive | Prose false positives (OFF-6) |
@@ -802,7 +815,8 @@ OTTO
 
 **Spec text.** A Character cue has no empty line after it. The spec does not say what the end of the file counts as.
 A cue followed by an empty line is explicitly not a cue (Action instead), per the same rule. What counts as an empty
-line here is OFF-1.
+line here is OFF-1. The Error Handling tie-breaker leans towards Action here (see [Spec-level
+tie-breaker](#spec-level-tie-breaker)).
 
 ### OFF-6: Scene heading versus Action, and the blank-line and prefix edges
 
@@ -844,11 +858,14 @@ end, or prose that happens to start with `int ` or `ext `. What counts as an emp
 
 - **Reading A:** the character after `.` must be ASCII `A-Z`, `a-z` or `0-9`.
 - **Reading B:** it may be any Unicode letter or digit.
-- **Reading C:** anything but another period forces a heading.
+- **Reading C (excluded by the spec's literal text):** anything but another period forces a heading. The spec names
+  an alphanumeric character as the only trigger, so a period followed by a space or a symbol does not qualify.
 
-**Spec text.** A single period followed by an alphanumeric character forces a heading; this keeps ellipses from being
-read as headings. The spec does not define alphanumeric, and is silent on a period followed by a space, on `..`, and on
-a period followed by a non-letter symbol. (The ellipsis rule itself is explicit.)
+**Spec text.** Only a single leading period followed by an alphanumeric character forces a heading; this keeps
+ellipses from being read as headings. By that literal text `. SPACE AFTER`, `..DOUBLE`, `...trailing off` and
+`.>HEADING` (a symbol after the period) are not forced headings, so Reading C is out. What stays open is the meaning
+of "alphanumeric" (Reading A or B: the spec does not define it). The spec also does not spell out what the excluded
+lines become (ordinary detection by the other rules, or Action).
 
 ### OFF-8: Scene-number character set and placement
 
@@ -863,13 +880,18 @@ INT. KITCHEN - DAY #7# trailing words
 
 - **Reading A:** ASCII letters, digits, `-` and `.` only; anything else makes the `#...#` text part of the heading.
 - **Reading B:** Unicode alphanumerics are allowed.
-- **Reading C:** the number must be the last thing on the line; text after it voids it.
+- **Reading C:** the number must be the last thing on the line; text after it voids it. (The spec's word "appended"
+  points this way but does not say it.)
 - **Reading D:** forced headings may carry numbers too (or not).
+- **Reading E (excluded by the spec's literal text):** a space or an underscore may sit inside the number, so `#1 A#`
+  and `#1_A#` are scene numbers. The spec allows only alphanumerics, dashes and periods.
 
-**Spec text.** Scene numbers are alphanumerics, plus dashes and periods, wrapped in `#`; the section lists valid
-forms. The spec does not say whether spaces are allowed, whether it must end the line, what happens with text
-after it, or whether a forced heading may have one. It also does not mention the clash with a Section line: a line like
-`# 12 #` (see OFF-20).
+**Spec text.** Scene numbers are alphanumerics, plus dashes and periods, wrapped in `#`, and are "appended" to
+headings; the section lists valid forms. By the literal text a space or an underscore inside the number is not
+allowed (so `#1 A#` and `#1_A#` are not scene numbers, Reading E), and "appended" points to the end of the line. Still
+open: whether alphanumeric includes Unicode (Readings A and B), what happens with text after the number (Reading C),
+and whether a forced heading may have one (Reading D). The spec also does not mention the clash with a Section line:
+a line like `# 12 #` (see OFF-20).
 
 ### OFF-9: Transitions that do not end in `TO:`, and the blank-line edges
 
@@ -898,7 +920,8 @@ INT. DECK - DAY
 anything. The spec does not name `FADE IN:` or `FADE OUT.` and gives no other ending; it does not say what a
 `TO:` line becomes when it fails only the "followed by empty line" test. It does say that spaces after the colon turn a
 `TO:` line into Action, which means trailing whitespace is significant (see OFF-23). What counts as an empty line in the
-framing rule is OFF-1.
+framing rule is OFF-1. The spec's own Boneyard example has a `CUT TO:` line with no empty line after it, so the
+example does not meet the framing rule; that shows the question without answering it (see OFF-16).
 
 ### OFF-10: Centered text versus forced Transition
 
@@ -952,9 +975,11 @@ Fourth.
 - **Reading C:** zero spaces before the caret (`OTTO^`) counts as "any number of spaces".
 - **Reading D:** a third `^` after a pair starts a new pair or extends the first.
 
-**Spec text.** The caret goes after the second speaker's cue, any number of spaces before it are ignored, and it
-must be the last character on the line. The spec says nothing about a missing first block, about a second `^` block in
-a row, about the caret after an extension, or about the caret together with `@`.
+**Spec text.** The caret goes after the second speaker's cue, any number of spaces before it are acceptable and
+ignored, and it must be the last character on the line. Read literally, "any number" includes zero, so `OTTO^`
+qualifies (Reading C). The spec says nothing about a missing first block, about a second `^` block in a row, about the
+caret after an extension, or about the caret together with `@`. For a caret with no preceding dialogue the Error
+Handling tie-breaker leans towards Action (see [Spec-level tie-breaker](#spec-level-tie-breaker)).
 
 ### OFF-12: Parenthetical shape
 
@@ -972,7 +997,8 @@ paragraph)
 
 **Spec text.** A Parenthetical follows a cue or a Dialogue line and is enclosed in parentheses. There is no
 mention of text outside the parentheses, an unclosed parenthesis, or multiple lines, nor of a `(` line that follows
-neither a cue nor Dialogue.
+neither a cue nor Dialogue. For an unclosed or non-whole-line parenthetical the Error Handling tie-breaker leans
+towards Action (see [Spec-level tie-breaker](#spec-level-tie-breaker)).
 
 ### OFF-13: Lyrics next to cues and Dialogue
 
@@ -1010,16 +1036,19 @@ lines*
 
 - **Reading A:** the emphasis rules are those of one named Markdown implementation (the original one, a dialect such as
   CommonMark, or another); which determines `snake_case_name`, overlap and unmatched cases.
-- **Reading B:** an emphasis span cannot cross a single line break. (This is what the Emphasis section says.)
+- **Reading B:** an emphasis span cannot cross a single line break. (This is the general wording of the Emphasis
+  section; its example does not test it, see the Spec text.)
 - **Reading C:** an emphasis span can cross a single line break but not a blank line. (This is what the Error Handling
-  wording suggests.)
+  wording suggests; the Emphasis example is also consistent with it.)
 - **Reading D:** a backslash escapes only emphasis characters; or any character; or `\\` yields one literal backslash.
 
 **Spec text.** Emphasis follows the rules of Markdown except for underscore, without naming a version. The Emphasis
 section says emphasis is not carried across line breaks, while Error Handling says a closing mark is not searched for
-past a *double* line break, which is a looser limit. The escape rule names only the emphasis characters. Intraword
-underscores, overlapping spans, `***` handling, and emphasis in titles or inside Notes and Boneyard are not covered.
-What counts as a blank line or a double line break is OFF-1.
+past a *double* line break, which is a looser limit. The Emphasis section's own example for this (an asterisk on each
+of two lines) has an empty line between the two lines. It therefore shows only that a double line break stops the span;
+it cannot tell a single-line-break limit (Reading B) from the double-line-break limit (Reading C). The escape rule
+names only the emphasis characters. Intraword underscores, overlapping spans, `***` handling, and emphasis in titles or
+inside Notes and Boneyard are not covered. What counts as a blank line or a double line break is OFF-1.
 
 ### OFF-15: Nested and unclosed Notes
 
@@ -1043,7 +1072,8 @@ Hello ]] stray
 **Spec text.** Notes are double-bracket spans, inline or on their own line, and may include line breaks. The empty
 lines around a standalone Note are removed in parsing. Error Handling says a closing mark is not searched for past a
 double line break. The spec says nothing about nesting, a stray `]]`, a Note in the title page, or one inside a
-Boneyard (and vice versa). What counts as an empty line, which these limits depend on, is OFF-1.
+Boneyard (and vice versa). What counts as an empty line, which these limits depend on, is OFF-1. For an unclosed `[[`
+the Error Handling tie-breaker leans towards Action (see [Spec-level tie-breaker](#spec-level-tie-breaker)).
 
 ### OFF-16: Nested, unclosed and inline Boneyard
 
@@ -1065,7 +1095,12 @@ INT. HOUSE - DAY
 **Spec text.** Boneyards wrap text in `/* */` and may span as many lines as the writer likes; they are exempt from the
 closing-mark limit. The spec does not say what an unclosed one does, whether they nest, how they combine with
 Notes or Emphasis (`/**/`, `[[/*]]`), or how the lines around a removed span affect adjacent element detection.
-Whether a line left empty by a removal counts as an empty line is OFF-1.
+Whether a line left empty by a removal counts as an empty line is OFF-1. The spec's own Boneyard example shows the
+detection question without answering it: a transition line sits directly above the opening mark with no empty line
+between them, and the scene heading directly below the closing mark has no empty line before it either. Whether the
+removed text counts as leaving an empty line there, or the example simply breaks the framing rules, is not said (see
+OFF-9). The Error Handling tie-breaker does not reach an unclosed `/*`, because the spec exempts Boneyard from the
+limit in the same passage (see [Spec-level tie-breaker](#spec-level-tie-breaker)).
 
 ### OFF-17: Title page edges
 
@@ -1085,20 +1120,25 @@ Draft date: 5:30 pm
 
 - **Reading A (end of the title page):** it runs to the first empty line.
 - **Reading B:** it runs to the first line that is not a key or an indented value, with or without an empty line.
-- **Reading C (start):** the first line being `Word: text` means a title page. The Action line above would then be
-  misread; or a parser requires a known key.
+- **Reading C (start):** the first line being `Word: text`, with any key, means a title page. The Action line above
+  would then be misread. The spec leans this way: a lone draft-date line is "a valid Title Page" on its own, and
+  unsupported keys are ignored, not rejected. The alternative is that a parser requires a known key.
 - **Reading D (keys):** matching is case-sensitive, or insensitive; duplicates merge, overwrite or keep both; unknown
   keys are kept as metadata.
-- **Reading E (values):** a one- or two-space indent is not a continuation (so it is a new element); a value may mix an
-  inline start and indented lines; an empty-valued key is allowed.
+- **Reading E (values):** a one- or two-space indent is not a continuation. That follows from the spec's literal text
+  (three or more spaces, or a tab). What such a line becomes is open: a new element, the end of the title page, or a
+  value anyway. Also open: whether a value may mix an inline start and indented lines, and whether an empty-valued key
+  is allowed.
 - **Reading F (before):** blank lines before the first key are allowed, or they mean there is no title page.
 
 **Spec text.** The title page always comes first in the document. Keys end with a colon and may contain
-spaces. Values are inline or indented by three or more spaces or a tab, and can have several lines. Unsupported keys
-are ignored but can be metadata. The spec says to drop down "two lines" to start the screenplay. It does not state
-key-case rules, duplicate handling, blank-line handling inside or before the page, a one-/two-space indent, or how to
-tell a title page from an Action line that has a colon. What counts as an empty line, where the title page ends, is
-OFF-1.
+spaces. Values are inline or indented by three or more spaces or a tab, and can have several lines; by the literal
+text a one- or two-space indent is therefore not a continuation (Reading E). Unsupported keys are ignored but can be
+metadata, and the spec calls a lone key-value line (its example is a draft date) "a valid Title Page" on its own; both
+lean towards any `Key:` first line starting a title page (Reading C), but the spec does not say so outright. The spec
+says to drop down "two lines" to start the screenplay. It does not state key-case rules, duplicate handling,
+blank-line handling inside or before the page, what a one- or two-space-indented line becomes, or how to tell a title
+page from an Action line that has a colon. What counts as an empty line, where the title page ends, is OFF-1.
 
 ### OFF-18: Tabs, indentation and recognising the element first
 
@@ -1121,8 +1161,10 @@ Hello.
 you have to recognise it first. The spec does not resolve this circle, nor say whether the conversion of a tab to four
 spaces applies in Dialogue or elsewhere. The spec's prose and its served examples also differ: the Action section's
 prose speaks of ten leading spaces on the card lines, while the example block on the page shows four; and the Indenting
-section's prose describes tabs while its example is shown with spaces. This file reports what the served HTML contains
-(checked in the raw bytes) without explaining the difference.
+section's prose describes tabs (four for Transitions, three for Character cues, two for Parentheticals, one for
+Dialogue) while its example is shown with spaces: 12 for the transition, 8 for the character cues, 4 for the
+parenthetical and 0 for the dialogue. At four spaces per tab, the example is one level short of the prose at every
+element. This file reports what the served HTML contains (checked in the raw bytes) without explaining the difference.
 
 ### OFF-19: `=` runs: page break, synopsis and whitespace
 
@@ -1209,7 +1251,9 @@ formatted output. The spec does not say whether being removed means the surround
 
 **Spec text.** The sigils are "preceding", "starting" or "beginning" the line. The spec does not say whether `!` and `>`
 are dropped like the others, how sigils combine, how they interact with leading whitespace (ignored for non-Action
-elements) or whether `!` and `@` apply when followed by whitespace.
+elements) or whether `!` and `@` apply when followed by whitespace. For `.>HEADING` the character after the period is
+a symbol, not an alphanumeric, so by the literal text of the heading rule (OFF-7) it is not a forced heading. The line
+does not start with `>`, so it is not a forced Transition either; what it becomes is not said.
 
 ### OFF-23: Significant trailing whitespace
 
@@ -1223,7 +1267,9 @@ Two trailing spaces.
 - **Reading A:** trailing spaces after `TO:` make it Action (the spec says so); trailing whitespace is otherwise
   stripped.
 - **Reading B:** trailing whitespace is never stripped, so a caret followed by a space is not "the last character".
-- **Reading C:** trailing double spaces keep their pre-1.1 meaning of forcing an Action line.
+- **Reading C (excluded by the 1.1 changelog entry that two trailing spaces no longer force Action; listed because
+  pre-1.1 files and some tools rely on it):** trailing double spaces keep their pre-1.1 meaning of forcing an Action
+  line.
 - **Reading D:** carriage returns (OFF-2) count as trailing whitespace, which changes lines 1, 3 and 4.
 
 **Spec text.** Spaces after the colon on a `TO:` line cause Action; the caret must be the last character; and the
@@ -1249,6 +1295,20 @@ That is all.
 **Spec text.** Dialogue is any text that follows a cue or Parenthetical (so, Reading A), and elsewhere the spec
 describes forced elements as overriding detection (so, Reading B). The spec states no priority between "text after a
 cue" and a forcing sigil at the start of that text.
+
+### Spec-level tie-breaker
+
+The Error Handling section says that when in doubt the text is returned as Action (see Error Handling above). That is a
+**principle, not a rule**: it names no case, and it does not choose between readings by itself. Read as a tie-breaker it
+leans towards Action in these cases:
+
+- **OFF-5:** an uppercase line at the end of the file (Reading B).
+- **OFF-11:** a caret cue with no preceding dialogue.
+- **OFF-12:** an unclosed parenthetical, or one that is not a whole line.
+- **OFF-15:** an unclosed `[[`.
+
+It does not reach an unclosed `/*`. The same passage explicitly exempts Boneyard from the closing-mark limit, so
+**OFF-16 stays open**. `SPEC.md` decides whether to adopt the principle for the four cases above.
 
 ## Summary for #4
 
