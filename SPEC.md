@@ -166,7 +166,7 @@ For each visible line, the first rule that fits wins. The title page is handled 
    block, see `OFF-24`):
    - `~` makes Lyrics;
    - `!` makes Action;
-   - `@` makes a Character cue;
+   - `@` followed by at least one non-whitespace character makes a Character cue;
    - `.` followed by an alphanumeric character makes a Scene Heading;
    - `>` makes Centered text or a Transition (`OFF-10`);
    - `#` makes a Section;
@@ -174,6 +174,14 @@ For each visible line, the first rule that fits wins. The title page is handled 
 2. **Inside a Dialogue block:** a Parenthetical or Dialogue line (4.5, 4.6).
 3. **By framing:** a Scene Heading, a Transition or a Character cue, each of which needs blank lines around it.
 4. **Otherwise Action.**
+
+**Carve-outs from the framing rules** (each is a decision row):
+
+- an uppercase line that ends in `TO:` plus spaces or tabs is never a Transition and never a Character cue; it is Action
+  (`OFF-23a`, `OFF-23b`);
+- a cue name needs an uppercase letter (`OFF-4c`), well-formed extension groups (`OFF-3c`) and a caret that is last
+  (`OFF-11c`); a line that fails any of these goes on to the later rules;
+- a bare prefix is a heading (`OFF-6d`), and a line that is a heading by prefix is never a title-page key (`OFF-17a`).
 
 Forced elements need no blank lines around them. A forcing sigil is only looked at as the first character after any
 leading whitespace, and only that one character is a sigil (`OFF-22`).
@@ -201,8 +209,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
   case, followed by a period or a space, with a blank line before and after (`OFF-6`).
 - **Sigil.** A single `.` followed by an alphanumeric character forces a heading, with no prefix and no blank lines
   needed (`OFF-7`). The view's text leaves the `.` out.
-- **Scene number.** `#n#` at the end of the heading, made of alphanumerics, `-` and `.` (`OFF-8`). The view exposes it
-  apart from the heading text.
+- **Scene number.** `#n#` at the end of the heading, after a space or tab, made of alphanumerics, `-` and `.` (`OFF-8`).
+  The view exposes it apart from the heading text.
 - **Tests.** `EL-heading-1` (each prefix, upper and lower case), `EL-heading-2` (forced heading), `EL-heading-3` (scene
   number), `EL-heading-4` (not a heading without a blank line before or after).
 
@@ -221,7 +229,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 
 - **Recognition.** A visible line with a blank line before it and a visible, non-blank line after it, whose **name** is
   uppercase text, optionally followed by parenthetical **extensions** in any case, optionally followed by a caret
-  (`OFF-3`, `OFF-4`, `OFF-5`, `OFF-11`).
+  (`OFF-3`, `OFF-4`, `OFF-5`, `OFF-11`). An uppercase line ending in `TO:` plus trailing whitespace is never a cue
+  (`OFF-23b`).
 - **Sigil.** `@` forces a cue and keeps the name's case. The view's name leaves the `@` out.
 - **View.** `Cue { name, extensions, forced }`. The caret is a token in the tree and decides pairing (4.7). `(CONT'D)`
   is an ordinary extension, kept as written.
@@ -286,7 +295,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 ### 4.13 Sections and Synopses
 
 - **Section.** A line starting with `#`. Depth is the number of leading `#`, with no maximum (`OFF-20`).
-- **Synopsis.** A line starting with a single `=` (`OFF-19`).
+- **Synopsis.** A line starting with a single `=` (`OFF-19`). A line starting with `==` that is not a Page Break is
+  Action.
 - Neither prints, neither needs blank lines around it, and both are transparent (3.4).
 - **Tests.** `EL-section-1` (depths 1 to 4), `EL-synopsis-1` (a synopsis after a heading).
 
@@ -706,7 +716,7 @@ The six candidates listed in issue #9 are covered as follows.
 | `unclosed-boneyard` | Warning | A `/*` with no `*/` after it. | OFF-16c | `DIAG-unclosed-boneyard` |
 | `stray-closer` | Info | A `]]` or `*/` outside any span, including after text on the same line. | OFF-15c, OFF-16d | `DIAG-stray-closer` |
 | `title-page-stray-line` | Warning | A line in the title page block that is neither a key line nor a valid continuation. | OFF-17d | `DIAG-title-page-stray-line` |
-| `adjacent-outline-line` | Info | A text line directly after a Section, Synopsis or Page Break line, with no blank line between. | OFF-19e, OFF-20e, OFF-21c | `DIAG-adjacent-outline-line` |
+| `adjacent-outline-line` | Info | A text line directly after a Section, Synopsis or Page Break line, with no blank line between, where the text line is not itself a Section, Synopsis or Page Break. | OFF-19e, OFF-20e, OFF-21c | `DIAG-adjacent-outline-line` |
 | `ambiguous-equals` | Info | A line that starts with `==` and is not a Page Break. | OFF-19b | `DIAG-ambiguous-equals` |
 | `sigil-in-dialogue` | Info | A line with a forcing sigil (`.`, `!`, `>`, `@`) directly inside a Dialogue block. | OFF-24b | `DIAG-sigil-in-dialogue` |
 
@@ -804,7 +814,8 @@ The tree is flat: a `Document` holds top-level element nodes and `Gap` nodes, an
 - **BOM.** A leading byte-order mark is the first token of the `Document`.
 - **Line breaks inside an element** (between two lines of one Action paragraph, between a cue and its dialogue line) are
   `LineBreak` tokens inside that element's node. A `DialogueBlock` node holds its cue, Parentheticals, Dialogue lines
-  and any interrupting Lyrics, Section, Synopsis, Note or Boneyard line.
+  and any interrupting Lyrics, Section, Synopsis, Page Break, Note or Boneyard line. An `Action` node holds its own
+  interrupting Section, Synopsis, Page Break, Note or Boneyard lines the same way.
 - **Leading and trailing whitespace of a line** is a `Whitespace` token inside the node of the element the line belongs
   to. So an element's span starts at its first byte and ends at its last byte before a line break.
 - **Everything between two top-level nodes is a `Gap`:** the line break that ended the previous element, the blank
@@ -849,8 +860,9 @@ a broken tree. The exact encoding of the arena is left to F2.
 
 ## 9. Typed view API sketch
 
-Built on demand from the tree by `Document::screenplay()`. All types are plain owned data. Text is held as spans into
-the document, so nothing is copied and the view stays tied to the tree it came from.
+Built on demand from the tree by `Document::screenplay()`. All types are plain owned data: they hold their own text, so
+a view can be built in memory (issue #12), serialised and read back (issue #8) without the document. A `span` is an
+optional back-reference to the source, `None` for a value that was built and not parsed.
 
 ```rust
 pub struct Screenplay {
@@ -862,13 +874,13 @@ pub struct Screenplay {
 pub struct TitlePage {
     pub entries: Vec<TitleEntry>,
     pub stray_lines: Vec<Text>, // OFF-17d
-    pub span: Span,
+    pub span: Option<Span>,
 }
 
 pub struct TitleEntry {
     pub key: Text,       // as written
     pub values: Vec<Text>,
-    pub span: Span,
+    pub span: Option<Span>,
 }
 
 impl TitlePage {
@@ -884,16 +896,16 @@ pub struct Scene {
     pub sections: Vec<Section>,   // the run of Sections right before the heading
     pub synopses: Vec<Synopsis>,  // Synopses right before or right after the heading
     pub elements: Vec<Element>,   // everything else, in source order
-    pub span: Span,
+    pub span: Option<Span>,
 }
 
-pub struct Heading { pub text: Text, pub forced: bool, pub span: Span }
+pub struct Heading { pub text: Text, pub forced: bool, pub span: Option<Span> }
 
 pub struct SceneNumber {
     pub text: String,
     #[cfg(feature = "locked-scene-numbers")]
     pub locked: bool,
-    pub span: Span,
+    pub span: Option<Span>,
 }
 
 pub struct Preamble { pub elements: Vec<Element> }
@@ -914,7 +926,15 @@ pub enum Element {
     Shot(Shot),
 }
 
-pub struct Action { pub text: Text, pub centered: bool, pub forced: bool }
+#[cfg(feature = "shot")]
+pub struct Shot { pub text: Text }
+
+pub struct Action {
+    pub text: Text,
+    pub centered: bool,
+    pub forced: bool,
+    pub interjections: Vec<Element>, // a Section, Synopsis or Page Break line inside the paragraph (OFF-21b)
+}
 pub struct Transition { pub text: Text, pub forced: bool }
 pub struct Lyrics { pub lines: Vec<Text> }
 
@@ -927,27 +947,27 @@ pub struct DialogueBlock {
 pub enum DialogueItem {
     Line(Text),
     Parenthetical(Text),
-    Interjection(Element), // a Lyrics, Section, Synopsis, Note or Boneyard line inside the block
+    Interjection(Element), // a Lyrics, Section, Synopsis, Page Break, Note or Boneyard line inside the block
 }
 
 pub struct Cue {
     pub name: Text,
     pub extensions: Vec<Extension>,
     pub forced: bool,
-    pub span: Span,
+    pub span: Option<Span>,
 }
 
 pub struct Extension { pub text: Text }
-impl Extension { pub fn is_contd(&self, doc: &Document) -> bool; }
+impl Extension { pub fn is_contd(&self) -> bool; }
 
 pub struct DualDialogue { pub left: DialogueBlock, pub right: DialogueBlock }
 
 pub struct Section { pub depth: usize, pub text: Text }
 pub struct Synopsis { pub text: Text }
-pub struct PageBreak { pub span: Span }
+pub struct PageBreak { pub span: Option<Span> }
 
-pub struct Note { pub text: Text, pub span: Span }
-impl Note { pub fn conventions(&self, doc: &Document) -> Option<NoteConvention>; }
+pub struct Note { pub text: String, pub span: Option<Span> }
+impl Note { pub fn conventions(&self) -> Option<NoteConvention>; }
 
 #[non_exhaustive]
 pub enum NoteConvention {
@@ -956,23 +976,22 @@ pub enum NoteConvention {
     Tag { tag: String, text: String },
 }
 
-pub struct Boneyard { pub span: Span }
-impl Boneyard { pub fn text<'a>(&self, doc: &'a Document) -> &'a str; }
+pub struct Boneyard { pub text: String, pub span: Option<Span> }
 
 /// Inline content: plain runs, emphasis, escapes and hidden spans.
-pub struct Text { pub span: Span, pub runs: Vec<Run> }
+pub struct Text { pub span: Option<Span>, pub runs: Vec<Run> }
 
 pub enum Run {
-    Plain(Span),
+    Plain(String),
     Emphasis { bold: bool, italic: bool, underline: bool, runs: Vec<Run> },
-    Escaped(Span), // the character after a backslash
+    Escaped(char), // the character after a backslash
     Note(Note),
     Boneyard(Boneyard),
 }
 
 impl Text {
     /// The visible text: no sigils, no hidden spans, no emphasis marks.
-    pub fn plain(&self, doc: &Document) -> String;
+    pub fn plain(&self) -> String;
 }
 ```
 
@@ -985,6 +1004,10 @@ How the awkward pieces appear:
 - **Boneyard.** The same, as `Element::Boneyard` and `Run::Boneyard`. A Boneyard that hides a whole scene still leaves
   the scene's tree nodes; the view shows an `Element::Boneyard` where it sits and no scene for text inside it.
 - **Forced elements.** `forced` is true when a sigil was used. The sigil is left out of every `Text`.
+- **Interjections do not split an element.** A Section, Synopsis or Page Break line inside an Action paragraph is kept
+  in `Action.interjections`, and one inside a Dialogue block is a `DialogueItem::Interjection`. The paragraph or the run
+  of Dialogue lines continues across it, as one element. A whole-line Note or Boneyard inside an Action paragraph is a
+  `Run` of its text.
 - **Section and Synopsis placement.** A run of Sections and Synopses directly before a heading belongs to that scene;
   Synopses directly after it belong to it too (`synopses`). Any other Section or Synopsis stays in `elements`.
 - **The note-conventions view is opt-in.** `Note::conventions` is computed on demand and has no Cargo feature.
@@ -1004,7 +1027,7 @@ impl Document {
 impl core::fmt::Display for Document { /* the same as write() */ }
 
 /// A canonical Fountain text for a document built from scratch (issue #12).
-pub fn canonical(screenplay: &Screenplay, doc: &Document) -> String;
+pub fn canonical(screenplay: &Screenplay) -> String;
 ```
 
 ### 10.1 Byte-for-byte round trip
@@ -1030,7 +1053,8 @@ pub fn canonical(screenplay: &Screenplay, doc: &Document) -> String;
 
 ### 10.3 Canonical form for new documents
 
-`canonical` writes a view that was built in memory, not parsed. It follows these rules:
+`canonical` writes a view that was built in memory, not parsed (its spans are `None`, which is why the view owns its
+text). It follows these rules:
 
 - `\n` line breaks, a final line break, no trailing whitespace, one blank line between elements.
 - Title page as `Key: value`, with continuation lines indented by four spaces, then one blank line.
@@ -1062,7 +1086,8 @@ modelled on the importer in `twopopfilm/twopop` (`parse.py`), and depart from it
 
 ### 11.1 What a scene is
 
-- A **scene** starts at a scene heading and runs to the next heading or the end of the document.
+- A **scene** starts at a scene heading and runs to the next heading or the end of the document, except that the
+  Sections and Synopses directly before a heading belong to that heading's scene (9), so a scene's span starts at them.
 - The **preamble** is everything before the first heading, apart from the title page. It has the same normalisation
   without a heading line, so a tool can hash it too.
 
@@ -1079,7 +1104,7 @@ heading, then one line per kept element in source order.
 3. **Kept elements** each give one line, `kind:` then the text, with these kinds:
    - `action`: an Action paragraph, centered or not;
    - `character`: the cue, see rule 4;
-   - `dialogue`: one entry per run of dialogue lines between Parentheticals;
+   - `dialogue`: one entry per run of dialogue lines between Parentheticals, continuing across any interjections;
    - `parenthetical`: the whole parenthesised line;
    - `transition`;
    - `lyric`: one entry per run of `~` lines;
@@ -1087,7 +1112,9 @@ heading, then one line per kept element in source order.
    - `shot`, with the `shot` flag.
 
    In a dual dialogue the left block comes before the right block, with no marker. An element whose collapsed text is
-   empty is dropped.
+   empty is dropped. A Synopsis inside an Action paragraph or a Dialogue block, and a Lyrics line inside a Dialogue
+   block, give their own line straight after the line of the element they interrupt, in source order. The interrupted
+   element is still one line.
 4. **Cue line.** The name followed by its extension groups, except any `(CONT'D)` group, collapsed and upper-cased. So a
    spelling change of a name's case does not count as an edit, `(V.O.)` does, and an app adding or removing `(CONT'D)`
    does not. The caret is layout and is not hashed.
@@ -1102,17 +1129,17 @@ pub const HASH_SCHEME: u32 = 1;
 
 impl Scene {
     /// The normalised text of rule 2 to 6. Always available, no extra dependency.
-    pub fn normalized_text(&self, doc: &Document) -> String;
+    pub fn normalized_text(&self) -> String;
 
     /// Lowercase hex SHA-256 of `normalized_text`. Needs the `scene-hash` feature.
     #[cfg(feature = "scene-hash")]
-    pub fn hash(&self, doc: &Document) -> String;
+    pub fn hash(&self) -> String;
 }
 
 impl Preamble {
-    pub fn normalized_text(&self, doc: &Document) -> String;
+    pub fn normalized_text(&self) -> String;
     #[cfg(feature = "scene-hash")]
-    pub fn hash(&self, doc: &Document) -> String;
+    pub fn hash(&self) -> String;
 }
 ```
 
@@ -1176,7 +1203,7 @@ own hash. `normalized_text()` stays available in every build, so option A remain
 | `HASH-2` | `\n`, `\r\n` and `\r` give the same hash. |
 | `HASH-3` | Re-wrapping the lines of one Action paragraph and one Dialogue block does not change the hash. |
 | `HASH-4` | Extra blank lines between elements do not change the hash. |
-| `HASH-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash. |
+| `HASH-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. |
 | `HASH-6` | Adding, changing or locking a scene number does not change the hash. |
 | `HASH-7` | Case of the heading and of a cue name does not change the hash. |
 | `HASH-8` | Adding or removing `(CONT'D)` on a cue does not change the hash; changing `(V.O.)` does. |
