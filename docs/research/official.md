@@ -378,10 +378,10 @@ open italics. The spec shows that two asterisks that each have a space on their 
 them, but that a pair where the first is flush against the following word and the second is flush against the
 preceding word does. It advises escaping one or both marks to avoid accidental italics.
 
-**Line breaks.** The spec says that, as in Markdown, emphasis is not carried across line breaks. Its example for this
-has an *empty* line between the two lines that each hold one asterisk, so it shows the limit for a double line break
-only. It cannot tell a limit at a single line break from the double-line-break limit in Error Handling (OFF-14). This
-is a different rule from Notes and Boneyard (see OFF-14, OFF-15, OFF-16).
+**Line breaks.** Borrowing again from Markdown, the spec says a span does not continue past a line break. Its example
+for this has an *empty* line between the two lines that each hold one asterisk, so it shows the limit for a double line
+break only. It cannot tell a limit at a single line break from the double-line-break limit in Error Handling (OFF-14).
+This is a different rule from Notes and Boneyard (see OFF-14, OFF-15, OFF-16).
 
 **Original example.**
 
@@ -861,11 +861,11 @@ end, or prose that happens to start with `int ` or `ext `. What counts as an emp
 - **Reading C (excluded by the spec's literal text):** anything but another period forces a heading. The spec names
   an alphanumeric character as the only trigger, so a period followed by a space or a symbol does not qualify.
 
-**Spec text.** Only a single leading period followed by an alphanumeric character forces a heading; this keeps
-ellipses from being read as headings. By that literal text `. SPACE AFTER`, `..DOUBLE`, `...trailing off` and
-`.>HEADING` (a symbol after the period) are not forced headings, so Reading C is out. What stays open is the meaning
-of "alphanumeric" (Reading A or B: the spec does not define it). The spec also does not spell out what the excluded
-lines become (ordinary detection by the other rules, or Action).
+**Spec text.** A heading is forced by one period at the start of the line when the very next character is a letter or
+digit; this keeps ellipses from being read as headings. By that literal text `. SPACE AFTER`, `..DOUBLE`,
+`...trailing off` and `.>HEADING` (a symbol after the period) are not forced headings, so Reading C is out. What stays
+open is the meaning of "alphanumeric" (Reading A or B: the spec does not define it). The spec also does not spell out
+what the excluded lines become (ordinary detection by the other rules, or Action).
 
 ### OFF-8: Scene-number character set and placement
 
@@ -886,12 +886,12 @@ INT. KITCHEN - DAY #7# trailing words
 - **Reading E (excluded by the spec's literal text):** a space or an underscore may sit inside the number, so `#1 A#`
   and `#1_A#` are scene numbers. The spec allows only alphanumerics, dashes and periods.
 
-**Spec text.** Scene numbers are alphanumerics, plus dashes and periods, wrapped in `#`, and are "appended" to
-headings; the section lists valid forms. By the literal text a space or an underscore inside the number is not
-allowed (so `#1 A#` and `#1_A#` are not scene numbers, Reading E), and "appended" points to the end of the line. Still
-open: whether alphanumeric includes Unicode (Readings A and B), what happens with text after the number (Reading C),
-and whether a forced heading may have one (Reading D). The spec also does not mention the clash with a Section line:
-a line like `# 12 #` (see OFF-20).
+**Spec text.** A scene number is built from letters, digits, dashes and periods between two `#` marks, and the spec
+says it is "appended" to a heading; the section lists valid forms. By the literal text a space or an underscore inside
+the number is not allowed (so `#1 A#` and `#1_A#` are not scene numbers, Reading E), and "appended" points to the end
+of the line. Still open: whether alphanumeric includes Unicode (Readings A and B), what happens with text after the
+number (Reading C), and whether a forced heading may have one (Reading D). The spec also does not mention the clash
+with a Section line: a line like `# 12 #` (see OFF-20).
 
 ### OFF-9: Transitions that do not end in `TO:`, and the blank-line edges
 
