@@ -7,9 +7,9 @@ into a syntax tree that keeps every byte of the source, gives you a typed screen
 back out unchanged. That makes it a foundation for editors, linters, converters and production tools that need to
 change one detail of a script without disturbing the rest.
 
-> **Status: pre-alpha.** There is no code yet, and the crate is not on crates.io. Work is under way:
-> milestone F1, a standards study, is in progress, and no parser code is written until its `SPEC.md` is settled.
-> Everything below describes the planned 0.1 release. See the [roadmap](#roadmap).
+> **Status: pre-alpha.** There is no code yet, and the crate is not on crates.io. Milestone F1, the standards study,
+> is done: [`SPEC.md`](SPEC.md) is written, and parser work (F2) starts from it. Everything below describes the
+> planned 0.1 release. See the [roadmap](#roadmap).
 
 ## Goals
 
@@ -22,8 +22,12 @@ change one detail of a script without disturbing the rest.
   - transitions, centered text and lyrics;
   - sections, synopses, notes and boneyard;
   - page breaks and forced elements.
-- **Extensions where tools actually use them.** Conventions from screenwriting apps (revision marks, note styles,
-  stage-play variants…) are supported behind feature flags, each documented in `SPEC.md`.
+- **Extensions where tools actually use them (planned).** [`SPEC.md`](SPEC.md) rules on each one. Open title-page keys,
+  sections of any depth, `(CONT'D)` kept as written, Beat's revision block (kept as an ordinary boneyard) and note
+  conventions (an opt-in typed view) change no parse, so they are always on. Slugline's locked scene numbers (`##12A#`)
+  and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag. Everything
+  else surveyed, such as brace directives, endnotes and stage-play variants, is not supported in 0.1: the text is kept
+  and written back as it is.
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree, and
   reports ambiguous cases as diagnostics instead of errors.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
@@ -39,10 +43,11 @@ change one detail of a script without disturbing the rest.
 Fountain's [official syntax](https://fountain.io/syntax) leaves real cases open, and apps disagree on them. This
 crate treats correctness as something to measure:
 
-- **A written spec first.** Milestone F1 studies the official syntax and the extensions apps use in practice, and
-  ends in `SPEC.md`. It states what is standard, which extensions are supported, and how each ambiguous case is
-  decided.
-- **Every decision is tested.** Each ruling in `SPEC.md` has a test that names it.
+- **A written spec first.** Milestone F1 studied the official syntax and the extensions apps use in practice, and
+  ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
+  case is decided.
+- **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
+  name. The tests themselves are planned for F2 to F4.
 - **A conformance corpus.** It holds original examples modelled on the spec's own (the spec's text has no licence, so
   it is not copied) and edge cases from the study, each with its source and licence recorded. The spec's examples
   and sample scripts are used only with written permission. Every script must round-trip byte-for-byte.
@@ -56,7 +61,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 
 | Milestone | Scope                                                       | State           |
 |-----------|-------------------------------------------------------------|-----------------|
-| F1        | Standards study: the official syntax, extensions, `SPEC.md` | **In progress** |
+| F1        | Standards study: the official syntax, extensions, `SPEC.md` | **Done**        |
 | F2        | Lossless parser, typed view, diagnostics, scene hashes      | Planned         |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API     | Planned         |
 | F4        | Conformance corpus and differential testing                 | Planned         |

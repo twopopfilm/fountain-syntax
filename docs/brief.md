@@ -33,8 +33,9 @@ The first milestone is a written standards study:
 - **Interchange:** Final Draft FDX (a separate crate later). The mapping notes are in
   [research/extensions.md](research/extensions.md#fdx-mapping-notes).
 
-The study ends in `SPEC.md`. It states what the library treats as standard and which extensions it supports behind
-feature flags, and records every decision on an ambiguous case with a test for each.
+The study ends in [`SPEC.md`](../SPEC.md). It states what the library treats as standard and which extensions it
+supports (some always on, two behind feature flags), and records every decision on an ambiguous case with a test ID
+for each.
 
 ## Proposed design (refined by the study)
 
