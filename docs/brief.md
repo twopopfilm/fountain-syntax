@@ -29,8 +29,9 @@ The first milestone is a written standards study:
   `SPEC.md`: [research/reference-parser.md](research/reference-parser.md).
 - **Extensions apps use in practice:** Beat, Highland, Slugline, Afterwriting, Fade In's Fountain export,
   screenplay-tools. Examples are revision marks (the spec lists "marking changes" as a future goal), notes
-  conventions and stage-play variants.
-- **Interchange:** Final Draft FDX (a separate crate later).
+  conventions and stage-play variants. The survey is in [research/extensions.md](research/extensions.md).
+- **Interchange:** Final Draft FDX (a separate crate later). The mapping notes are in
+  [research/extensions.md](research/extensions.md#fdx-mapping-notes).
 
 The study ends in `SPEC.md`. It states what the library treats as standard and which extensions it supports behind
 feature flags, and records every decision on an ambiguous case with a test for each.
