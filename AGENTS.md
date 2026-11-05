@@ -64,3 +64,12 @@ Fill this section in when the crate exists (F2). Rules that already apply:
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
   planned features as planned; never describe something as working before it does.
+
+## /next: project rules
+
+- **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no personal names, non-noreply email addresses, absolute or home-directory paths, machine specs or credentials.
+- **No parser code until `SPEC.md` is merged.** F1 is a standards study that ends in `SPEC.md`.
+- **Every new issue needs a milestone** of this repository (F1–F5) and goes on org project #2. The queue pass reports an open issue that lacks a milestone.
+- **Never edit another repository** (Twopop Studio, the Python `twopop`, the kit). Stop, say what and why, and let the maintainer decide. Never touch the shared ComfyUI server.
+- **Test fixtures** must be original, public-domain or redistributable. Record each one's source and licence in the corpus README.
+- **Merging, and publishing to crates.io,** are the maintainer's call.
