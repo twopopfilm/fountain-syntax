@@ -13,11 +13,14 @@ meant to be useful on its own.
   - `rustwell` (0.1, December 2025) is new and formatting-focused.
 - **Tools that edit scripts need more than a typical parser gives:**
   - **Lossless parsing with source spans.** An editor can highlight, and a program can rewrite one detail without
-    disturbing the rest of the text. Examples: locking scene numbers as `#12A#`, inserting a `= synopsis` line.
+    disturbing the rest of the text. Examples: setting scene numbers as `#12A#`, inserting a `= synopsis` line.
   - **Every element type:** scene headings and scene numbers, action, character, dialogue, parentheticals, dual
     dialogue, transitions, centered text, lyrics, sections, synopses, notes, boneyard, page breaks, the title page and
     forced elements.
-  - **Stable per-scene text normalisation and hashes**, so a tool can compare script drafts scene by scene.
+  - **Self-describing hashes at element, scene and document level**, and over the exact bytes of any span, so a tool
+    can compare script drafts scene by scene and see which element changed. A second scheme, compatible with Twopop's
+    importer, is also available. The hashes sit behind an optional `hash` feature (SHA-256 from `sha2`, and Unicode
+    normalisation).
   - **A parser that never fails.** Fountain has no invalid input, so ambiguous cases are reported as diagnostics.
 
 ## Research first, then the spec (milestone F1)
@@ -33,10 +36,11 @@ The first milestone is a written standards study:
 - **Interchange:** Final Draft FDX (a separate crate later). The mapping notes are in
   [research/extensions.md](research/extensions.md#fdx-mapping-notes).
 
-The study ends in `SPEC.md`. It states what the library treats as standard and which extensions it supports behind
-feature flags, and records every decision on an ambiguous case with a test for each.
+The study ends in [`SPEC.md`](../SPEC.md). It states what the library treats as standard and which extensions it
+supports (some always on, two behind feature flags), and records every decision on an ambiguous case with a test ID
+for each. See [SPEC.md](../SPEC.md) section 5.3 for what is and is not supported.
 
-## Proposed design (refined by the study)
+## Design (see SPEC.md sections 8 to 11)
 
 - A lossless syntax tree with spans, plus a typed screenplay view (title page, scenes, elements); serde for both.
 - A Fountain writer that round-trips byte-for-byte when nothing has changed.
@@ -69,4 +73,4 @@ project's test files before reusing them.
 - Every corpus script round-trips byte-for-byte.
 - Every `SPEC.md` decision has a passing test.
 - Diffs against `screenplay-tools` are all classified.
-- Scene hashes are stable across whitespace-only edits.
+- Hashes are stable across whitespace-only edits.
