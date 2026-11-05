@@ -1575,7 +1575,9 @@ importer's own fixtures. Moving to scheme 2 is a separate step (11.8).
 
 The library makes the migration possible; the application runs it. An application that stored scheme 1 digests (Twopop
 Studio's `text_sha`) migrates **lazily**, a scene at a time, as it meets each stored value. Twopop Studio keeps scheme 1
-while its Python oracle exists, so that parity can be proven, and migrates after.
+while its Python oracle exists, so that parity can be proven, and migrates after. Twopop Studio tracks its own
+migration as an issue in its repository (`twopopfilm/twopop-studio#252`, "M4.11 Migrate scene hashes to fountain-syntax
+scheme 2"), which waits for the parity gate and for this crate's issues #10 and #35.
 
 **Rules for any application:**
 
@@ -1697,9 +1699,9 @@ Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash
 ## 12. Test IDs
 
 Every decision, element, extension, diagnostic, hash rule and writer property in this file has an ID. **Each ID names a
-test to be written** in F2 to F4: the parser, view, diagnostics and hash tests in F2 (issues #7 to #10), the writer
-tests in F3 (#12, #13) and the conformance corpus in F4 (#15, #16). The test carries the ID in its name, so `grep` finds
-the test for any decision.
+test to be written** in F2 to F4: the parser, view, diagnostics and scheme 2 hash tests in F2 (issues #7 to #10), the
+scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and the conformance corpus in F4 (#15, #16). The test
+carries the ID in its name, so `grep` finds the test for any decision.
 
 | Scheme | Meaning | Where defined |
 |---|---|---|
