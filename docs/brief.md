@@ -25,6 +25,8 @@ meant to be useful on its own.
 The first milestone is a written standards study:
 - **The official syntax:** fountain.io/syntax. Version 1.1 (2014) is the current revision, confirmed on
   2026-11-04. The study is in [research/official.md](research/official.md).
+- **The reference parser:** how the Objective-C reference implementation treats each open case, as evidence for
+  `SPEC.md`: [research/reference-parser.md](research/reference-parser.md).
 - **Extensions apps use in practice:** Beat, Highland, Slugline, Afterwriting, Fade In's Fountain export,
   screenplay-tools. Examples are revision marks (the spec lists "marking changes" as a future goal), notes
   conventions and stage-play variants.

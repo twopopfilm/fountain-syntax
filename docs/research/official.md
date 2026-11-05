@@ -34,7 +34,7 @@ The spec has no licence, so nothing here is copied from it.
 | The `fountain` organisation on GitHub | One repository (`.github`, last updated April 2023). No spec, draft or syntax repository. |
 | The reference code linked from the Developers page (an Objective-C parser and writer) | Its README defers to fountain.io for the format. No spec file, tag or release. |
 | A GitHub search of the `fountain` organisation | Same single repository. |
-| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for any case here. A pass over it is tracked in #26. |
+| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for any case here. How it treats each case is in [reference-parser.md](reference-parser.md). |
 
 **Conclusion:** 1.1 (2014) is the current official revision. No newer revision or draft was found. The page's
 sections are the 21 listed below, in the page's order.
@@ -717,7 +717,8 @@ points, if any, are noted in the case they feed.
 ## Ambiguous cases
 
 Each case gives a short original example, the competing readings, and the spec's relevant text paraphrased. None is
-ruled on here. `SPEC.md` (#4) assigns each a decision and a test.
+ruled on here. `SPEC.md` (#4) assigns each a decision and a test. How the reference parser treats each case is
+recorded, as evidence only, in [reference-parser.md](reference-parser.md).
 
 ### OFF-1: What is an "empty" line?
 
