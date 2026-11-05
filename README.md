@@ -33,11 +33,13 @@ change one detail of a script without disturbing the rest.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
   the tree and the view.
 - **Targeted edits.** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
-- **Draft comparison.** Stable per-scene text normalisation and hashes, so tools can match scenes across
-  drafts and tell real changes from whitespace. The hashes are compatible with Twopop's importer, so hashes it stored
-  stay valid.
-- **Small and safe.** No `unsafe`. The core needs no dependencies beyond the optional `serde` and `sha2` (for scene
-  hashes) features. An optional WASM build for a browser playground is being considered.
+- **Draft comparison (planned).** Self-describing hashes at three levels (element, scene and document) and over the
+  exact bytes of any span, so tools can match scenes across drafts, tell real changes from whitespace and see which
+  element changed. A second scheme, compatible with the Twopop importer, is also available, so hashes it stored can be
+  checked and migrated.
+- **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
+  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). An optional WASM build for a browser
+  playground is being considered.
 
 ## Correctness
 

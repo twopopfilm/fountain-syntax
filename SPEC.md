@@ -4,7 +4,7 @@
 in this file names a test to be written in milestones F2 to F4. Section 13 lists what is still open.
 
 This is the contract for the 0.1 release. It states what the library treats as standard, which extensions it supports,
-how every ambiguous case is decided, and the shape of the API and of the scene hashes. It is written in our own words:
+how every ambiguous case is decided, and the shape of the API and of the hashes. It is written in our own words:
 the text of fountain.io has no licence, so none of it is copied.
 
 ## Contents
@@ -19,7 +19,7 @@ the text of fountain.io has no licence, so none of it is copied.
 8. [Syntax tree API sketch](#8-syntax-tree-api-sketch)
 9. [Typed view API sketch](#9-typed-view-api-sketch)
 10. [Writer](#10-writer)
-11. [Scene normalisation and hashes](#11-scene-normalisation-and-hashes)
+11. [Hashes: elements, scenes and documents](#11-hashes-elements-scenes-and-documents)
 12. [Test IDs](#12-test-ids)
 13. [Open items](#13-open-items)
 
@@ -80,8 +80,8 @@ tell the caller that an input was a judgement call.
 - A byte-order mark (U+FEFF) at the very start is kept in the tree as leading trivia. It is not content. A U+FEFF
   anywhere else is an ordinary character.
 - Spans are byte offsets into the `&str` and always fall on character boundaries.
-- Text is never converted: no curly quotes, dashes or ellipses (the spec's Punctuation section). There is no Unicode
-  normalisation either (see section 11).
+- Text is never converted: no curly quotes, dashes or ellipses (the spec's Punctuation section). Parsing and the typed
+  view apply no Unicode normalisation either. Only the scheme 2 hashes do, on their own copy of the text (11.3).
 
 ### 3.2 Lines
 
@@ -330,7 +330,7 @@ These add no flag because valid 1.1 input parses the same with or without them.
 |---|---|---|---|
 | **Open title-page keys** (survey 2) | Any key, in any case, repeated or not, is kept. | Case-insensitive lookup. Typed accessors for title, credit, author or authors, source, draft date, contact, notes, copyright and date. Highland's image keys (`TC`, `CC`, `BC`) are ordinary keys with no accessor. | `EXT-open-keys-1`, `EXT-open-keys-2` |
 | **Sections of any depth** (survey 3) | Any number of `#`. | `Section.depth` as `usize`. | `EXT-sections-1` |
-| **`(CONT'D)` kept as written** (survey 5) | The extension stays exactly as typed. The library never adds, strips or normalises it. | `Extension::is_contd()`, true for `CONT'D` in any case with a straight or curly apostrophe. | `EXT-contd-1`, `EXT-contd-2` |
+| **`(CONT'D)` kept as written** (survey 5) | The extension stays exactly as typed. The library never adds, strips or normalises it. Scheme 2 hashes leave it out and scheme 1 hashes ignore every extension (section 11). | `Extension::is_contd()`, true for `CONT'D` in any case with a straight or curly apostrophe. | `EXT-contd-1`, `EXT-contd-2` |
 | **Beat's revision boneyard** (survey 4) | The block Beat writes at the end of a file is an ordinary Boneyard: hidden from recognition and hashes, written back byte for byte. | Nothing special. `Boneyard::text()` returns its raw text. The library does not parse the JSON inside it. | `EXT-revision-1` |
 | **Note conventions as an opt-in typed view** (survey 1) | The note is an ordinary Note. | `Note::conventions()` returns `Option<NoteConvention>`, computed on demand: a colour (a word, `color` and a word, or `#` and six hex digits), a marker (`marker`, an optional colour, an optional colon and text, as Beat uses) or a tag (one word and a colon at the start, as Slugline uses). Nothing is interpreted unless the caller asks. | `EXT-notes-view-1`, `EXT-notes-view-2` |
 
@@ -431,7 +431,7 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
 | OFF-3b | More than one extension group. | Any number of groups, each a balanced pair of parentheses with no nested pair: `OTTO (V.O.) (CONT'D)` is a cue. | A | P2 | Agrees for `(V.O.) (CONT'D)`, which is a cue there. | none |
 | OFF-3c | Text after a group, or an unclosed or nested group. | Not a cue. The line falls to the next rule, usually Action. | C | P2 | Does not cover. Any line with no ASCII lowercase letter is a cue there, so `MARA (HI) THERE` is a cue. | none |
 | OFF-3d | An extension after a forced `@` name. | Allowed: `@deLaCruz (V.O.)`. The name keeps its case and is not tested for uppercase. | n/a | P2 | Does not cover; the `@` rule runs first and keeps the whole text. | none |
-| OFF-3e | What happens to `(CONT'D)`. | It is an extension like any other, kept exactly as written. The library never adds, strips or rewrites it. Hashes ignore it, and every other extension (section 11). | n/a | P2 | Related: accepts only the exact lowercase `(cont'd)`. Per extensions.md, screenplay-tools strips it on read and adds it on write; Slugline adds it only when drawing. | none |
+| OFF-3e | What happens to `(CONT'D)`. | It is an extension like any other, kept exactly as written. The library never adds, strips or rewrites it. Scheme 2 hashes leave `(CONT'D)` out of a cue and see every other extension, so the hash of a cue is the same with or without it. Scheme 1 hashes ignore every extension (11.3, 11.7). | n/a | P2 | Related: accepts only the exact lowercase `(cont'd)`. Per extensions.md, screenplay-tools strips it on read and adds it on write; Slugline adds it only when drawing. | none |
 
 #### OFF-4: non-ASCII uppercase and caseless names
 
@@ -742,9 +742,11 @@ pub fn parse(source: &str) -> Document;
 | `serde` | `Serialize` and `Deserialize` on the tree, the view and `Diagnostic` | `serde` |
 | `locked-scene-numbers` | Slugline's `##n#` (5.2) | none |
 | `shot` | Beat's `!!` Shot (5.2) | none |
-| `scene-hash` | `Scene::hash` (section 11) | `sha2` 0.10 |
+| `hash` | The hash methods and digests of section 11 (scheme 2 and scheme 1) | `sha2` 0.10 and `unicode-normalization` |
 
-The core crate has no dependency other than `serde` and `sha2`, each behind its own optional feature.
+The core crate has no dependency other than `serde` (behind `serde`), and `sha2` and `unicode-normalization` (behind
+`hash`), each optional. `unicode-normalization` has not been individually approved by the maintainer (11.2, and section
+13, item 7).
 
 ### 8.2 The tree
 
@@ -867,7 +869,7 @@ optional back-reference to the source, `None` for a value that was built and not
 ```rust
 pub struct Screenplay {
     pub title_page: Option<TitlePage>,
-    pub preamble: Preamble, // elements before the first scene heading; not hashed (11.1)
+    pub preamble: Preamble, // elements before the first heading, except those attached to scene 1; hashed by scheme 2
     pub scenes: Vec<Scene>,
 }
 
@@ -896,8 +898,9 @@ pub struct Scene {
     pub sections: Vec<Section>,   // the run of Sections right before the heading
     pub synopses: Vec<Synopsis>,  // Synopses right before or right after the heading
     pub elements: Vec<Element>,   // everything else, in source order
-    pub span: Option<Span>,
-    // and a private hash scope, filled in by `screenplay()` (11.1)
+    pub span: Option<Span>,       // from the first byte of the first attached Section or Synopsis, or of the heading,
+                                  // to the last byte of the last element; no line break or blank line after it
+    // and a private scheme 1 hash scope, filled in by `screenplay()` (11.7)
 }
 
 pub struct Heading { pub text: Text, pub forced: bool, pub span: Option<Span> }
@@ -909,6 +912,8 @@ pub struct SceneNumber {
     pub span: Option<Span>,
 }
 
+/// The elements before the first scene heading, apart from the title page and apart from the Sections and Synopses
+/// directly before that heading, which belong to the first scene.
 pub struct Preamble { pub elements: Vec<Element> }
 
 #[non_exhaustive]
@@ -1010,9 +1015,14 @@ How the awkward pieces appear:
   of Dialogue lines continues across it, as one element. A whole-line Note or Boneyard inside an Action paragraph is a
   `Run` of its text.
 - **Section and Synopsis placement.** A run of Sections and Synopses directly before a heading belongs to that scene;
-  Synopses directly after it belong to it too (`synopses`). Any other Section or Synopsis stays in `elements`. **Hashes
-  follow a different rule:** a Synopsis directly before a heading belongs to the earlier scene for `Scene::hash`
-  (11.1).
+  Synopses directly after it belong to it too (`synopses`). Any other Section or Synopsis stays in `elements`. Scheme 2
+  hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
+  to the earlier scene for `Scene::hash_v1` (11.7).
+- **Hashes.** The hash methods of the types above are listed once, in 11.2, with their signatures:
+  `Element::hashes`, `Scene::{hash, element_hashes, source_hash, hash_v1}`, `Preamble::hash` and
+  `Screenplay::{hash, title_page_hash, source_hash}` need the `hash` feature, and `Scene::{normalized_text_v1,
+  heading_line_v1, element_lines_v1}` exist in every build. They are methods of the view, so a view built in memory can
+  be hashed.
 - **The note-conventions view is opt-in.** `Note::conventions` is computed on demand and has no Cargo feature.
 
 ## 10. Writer
@@ -1083,36 +1093,382 @@ The canonical text re-parses to a view equal to the one given, and writing it ag
 | `WR-7` | `with_replaced` changes only the replaced span: every other byte is identical, and spans after the edit are shifted correctly. |
 | `WR-8` | `canonical` uses a sigil only where the text would otherwise re-parse as a different element. |
 
-## 11. Scene normalisation and hashes
+## 11. Hashes: elements, scenes and documents
 
-Tools compare drafts scene by scene. For that, each scene has a **normalised text** and a **hash** of it.
+Tools compare drafts, decide which work is stale and look for the element that changed. For that the library hashes a
+screenplay at three levels (an **element**, a **scene**, a **document**) and hashes the exact bytes of any span. There
+are two **schemes**, which are two complete sets of rules:
 
-**Hash scheme 1 is the rule of the Twopop importer** (`parse.py` in `twopopfilm/twopop`), applied to this library's
-parse. That is deliberate. Twopop Studio stores each scene's hash (`text_sha`), feeds it into the input hash of every
+- **Scheme 2 is the default and the recommended scheme for every application.** It follows best practice for hashing
+  structured content, and it is described in 11.3 to 11.6.
+- **Scheme 1 is kept, frozen, as a compatibility scheme** (11.7). It is the rule of the Twopop importer (`parse.py` in
+  `twopopfilm/twopop`), applied to this library's parse. It exists so that Twopop Studio can prove parity with its
+  Python oracle until the oracle retires, and so that stored hashes can be migrated without false staleness (11.8).
+
+The maintainer decided on 2026-11-05 to apply best practice in the core library even where the applications that use it
+have to adapt. Scheme 2 is therefore not shaped by any existing consumer, and the migration is the application's work.
+
+Scheme 2 follows six design rules, which every later rule serves:
+
+1. A hash changes if and only if what it names changes in a way that matters to the work.
+2. The encoding is **injective** (two different inputs never share their bytes) and **domain-separated** (a hash of one
+   kind can never equal a hash of another kind).
+3. Hashes are **hierarchical**: element, then scene, then document. A tool can see which element changed.
+4. **Every digest names its scheme**, in its type and in its text form.
+5. The lossless tree always allows a byte-exact hash too (the source facet, 11.3).
+6. Any change to a rule is a **new scheme number**, never a silent change to an existing scheme.
+
+### 11.1 Digests and their text form
+
+```rust
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum HashScheme { V1, V2 }
+
+impl HashScheme {
+    pub const fn number(self) -> u32; // 1 or 2
+}
+
+/// The scheme that new code should use.
+pub const HASH_SCHEME_CURRENT: u32 = 2;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Digest {
+    pub scheme: HashScheme,
+    pub bytes: [u8; 32],
+}
+
+impl core::fmt::Display for Digest { /* the text form below */ }
+impl core::str::FromStr for Digest { type Err = ParseDigestError; }
+pub struct ParseDigestError { /* what was wrong */ }
+```
+
+**Text form.** A scheme 2 digest prints as `fs2:` and 64 lowercase hexadecimal digits. A scheme 1 digest prints as the
+bare 64 lowercase hexadecimal digits, which is exactly what the importer and Twopop Studio store today. `FromStr`
+accepts those two forms and nothing else: a bare 64-digit string is scheme 1, and `fs2:` plus 64 digits is scheme 2.
+Uppercase digits, spaces, a wrong length and any other prefix (`fs1:` and `fs3:` included) are errors, so a digest from
+a scheme this crate does not know is never mistaken for one it knows. Text, parsed and printed again, is unchanged.
+
+`Digest` equality compares the scheme as well as the bytes, so a scheme 1 digest never equals a scheme 2 digest. A
+digest records how its bytes were made, not which level it hashes (element, scene, document, span): the name of the
+method or field says that.
+
+`Digest`, `HashScheme`, `HASH_SCHEME_CURRENT` and the text form need no dependency and exist in every build.
+
+### 11.2 Features and dependencies
+
+**Decided (maintainer, 2026-11-05).** One Cargo feature, **`hash`**, off by default. It adds every method that computes
+a digest and depends on two crates:
+
+- `sha2`, version 0.10, so that it unifies with Twopop Studio's lockfile;
+- `unicode-normalization`, for NFC. Every scheme 2 hash needs NFC (11.3), so scheme 2 cannot be offered without it.
+
+**`unicode-normalization` is a second dependency that the maintainer has not individually approved.** The `sha2` choice
+was decided on 2026-11-05; this one comes from the best-practice instruction and is flagged in section 13 (item 7), with
+a recommendation to accept it.
+
+**Without `hash`**, these are available in every build and need no dependency:
+
+- the scheme 1 line methods `normalized_text_v1`, `heading_line_v1` and `element_lines_v1` (11.7). They apply neither
+  NFC nor SHA, so a consumer with its own hashing (Twopop Studio has) can keep it and feed it these lines;
+- the types of 11.1, and the spans and source text of the lossless tree, which a caller can hash with its own tools.
+
+The hash API, in one place. They are methods of the types in section 9.
+
+```rust
+// Every build.
+impl Scene {
+    pub fn normalized_text_v1(&self) -> String;
+    pub fn heading_line_v1(&self) -> String;
+    pub fn element_lines_v1(&self) -> Vec<String>;
+}
+
+// With the `hash` feature.
+impl Element {
+    pub fn hashes(&self) -> Vec<Digest>;
+}
+impl Scene {
+    pub fn hash(&self) -> Digest;
+    pub fn element_hashes(&self) -> Vec<Digest>;
+    pub fn source_hash(&self, document: &Document) -> Option<Digest>;
+    pub fn hash_v1(&self) -> Digest;
+}
+impl Preamble {
+    pub fn hash(&self) -> Digest;
+}
+impl Screenplay {
+    pub fn hash(&self) -> Digest;
+    pub fn title_page_hash(&self) -> Digest;
+    pub fn source_hash(&self, document: &Document) -> Digest;
+}
+impl Document {
+    pub fn source_hash(&self, span: Span) -> Digest;
+}
+impl<'a> Node<'a> {
+    pub fn source_hash(&self) -> Digest;
+}
+```
+
+- `Scene::hash`, `Preamble::hash` and `Screenplay::hash` are the scene, preamble and document hashes of scheme 2.
+  `Scene::element_hashes` lists the element hashes that `Scene::hash` is made of, in order.
+- `Element::hashes` gives the hashes of the records one view element contributes, in order: none for a Section, Page
+  Break, Note or Boneyard, and several for a dialogue block (a Character, then its Dialogue and Parentheticals). The
+  view's `Element` is not one hashed element, which is why this is a list.
+- The source hashes take the document because the view holds spans and no source text (section 9).
+  `Scene::source_hash` is `None` for a scene built in memory, which has no span. `Screenplay::source_hash` hashes the
+  whole input. `Document::source_hash(span)` and `Node::source_hash` hash any span or node.
+- `title_page_hash` of a screenplay with no title page is the hash of a title page with no entries.
+- Every method with a scheme in its name is scheme 1; every method without one is scheme 2.
+
+### 11.3 Scheme 2: what is hashed
+
+**Two facets.** The **story** facet hashes the content that matters to the work; it is what `hash`, `element_hashes`,
+`Preamble::hash` and `title_page_hash` give. The **source** facet hashes the exact bytes of a span; it changes on any
+edit at all, whitespace included, and is a cache key for anything derived from the bytes (`source_hash`).
+
+**The typed text of a piece of content** is the text as written, with the element's own sigils and marks removed and
+nothing else: no forcing `.`, `!`, `@`, `>` or `~`, no `>` and `<` of centered text, no `=` of a Synopsis, no `!!`, no
+parentheses of a Parenthetical, no scene number, no caret. It is not `Text::plain()`: emphasis marks (`*`, `_`) and
+backslash escapes stay as typed, so a change of italics or underline is a change of content.
+
+**Normalisation of story text**, in this order:
+
+1. **Delete hidden spans** (Notes and Boneyards), as characters, including any line breaks inside them.
+   `Mara /* aside */ waits.` becomes `Mara  waits.`
+2. **NFC**: Unicode canonical composition. `é` as one character and as `e` plus U+0301 become the same text.
+3. **Collapse white space.** Each run of Unicode `White_Space` characters becomes one space (U+0020), and the ends are
+   trimmed. `White_Space` is U+0009 to U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000 to U+200A, U+2028,
+   U+2029, U+202F, U+205F and U+3000 (not U+001C to U+001F). Line breaks inside an element become spaces; Lyrics are the
+   exception, because each `~` line is kept apart (see the record below).
+4. **Upper-case, for the heading, the cue name, the cue extensions and the title-page keys only.** Use the full Unicode
+   upper-case mapping, independent of locale (Rust's `str::to_uppercase`), then apply NFC again, because upper-casing
+   can leave text that is not in NFC. The result is what is hashed. Case is kept everywhere else.
+
+Nothing else is changed: not punctuation, quotes, emphasis marks, escapes or text that only looks like a tag
+(`#prop-coin`). Normalisation is applied to the hashed copy only. The view, the tree and the writer never normalise
+Unicode.
+
+**What a scene holds, in what order.** A scheme 2 scene is the view's `Scene` (section 9) and nothing else: its heading,
+and its elements in the order `synopses`, then `elements`, which is source order. So a Synopsis or Section directly
+before a heading belongs to the scene that follows, and a Synopsis directly after a heading belongs to that scene.
+Scheme 2 has no separate hash scope. The **preamble** is `Preamble::elements`: the elements before the first heading
+that the view does not attach to the first scene.
+
+**The element records.** Every scene and the preamble is a list of records. A view element can give none, one or
+several, as the last column says. A record is **dropped** if its text is empty after normalisation: a Character with an
+empty name, a Lyrics element none of whose `~` lines has text, and every other kind with empty text. A dropped record is
+not counted.
+
+| Kind (tag in 11.4) | Fields, in order | Typed text and notes |
+|---|---|---|
+| Action | `text`, `centered` | The paragraph's text, with its line breaks as spaces. `centered` is true for `>` `<` text. Forced (`!`) or not makes no difference. |
+| Character | `name`, `extensions`, `dual` | The cue name, normalised and upper-cased. `extensions` is the list of extension groups in order: the text inside each pair of parentheses, normalised and upper-cased, **leaving out every group for which `Extension::is_contd` is true**. A group with empty text stays in the list as an empty string. `dual` is true for both cues of a `DualDialogue` and false for every other cue, an unpaired caret included. A forced (`@`) cue is an ordinary cue. |
+| Dialogue | `text` | The lines of one run, joined with spaces and collapsed. A run is the Dialogue lines between two Parentheticals, or between a Parenthetical and an end of the block. |
+| Parenthetical | `text` | The text inside the parentheses, normalised. `( quietly )` and `(quietly)` give `quietly`. |
+| Transition | `text` | The text, without a forcing `>`. Forced or not makes no difference. |
+| Lyrics | `lines` | One entry per `~` line of the run, each normalised, without the `~`. Empty lines are dropped from the list. The verse's line breaks are content. |
+| Synopsis | `text` | The text, without the `=`. |
+| Shot | `text` | The text, without the `!!`. Exists only with the `shot` feature. |
+
+The heading is not a record. It is the first field of the scene hash: the heading's visible text with the forcing `.`
+and the scene number (locked or not) removed, normalised and upper-cased. It has no tag.
+
+**Not hashed in the story facet:** Sections, Page Breaks, Notes and Boneyards (whole-line or inline), scene numbers,
+forcing sigils and the `forced` flags, the caret, the title page (it has its own hash), the stray lines of a title page,
+and the way a line was wrapped. A Note or Boneyard that is a whole line inside an Action paragraph or a Dialogue block
+neither adds a record nor ends the run.
+
+**Records of a dialogue block, in order.** A `DialogueBlock` gives its Character record, then its items:
+
+- each run of consecutive `Line` items is one Dialogue record, and each Parenthetical item is one Parenthetical record
+  that ends the run before it;
+- an interjection gives the records of an element of its own kind (a Lyrics or Synopsis one; a Section, Page Break, Note
+  or Boneyard gives none);
+- an interjection with `Line` items on both sides of it, in the same run, does not split the run: its records come
+  straight after that run's Dialogue record. Any other interjection keeps its place among the items.
+
+An `Action` gives its record, then the records of its interjections (a Synopsis gives one; the rest give none). A
+`DualDialogue` gives the records of its left block, then those of its right block, with no marker between them, and the
+`dual` flag of both cues is true.
+
+### 11.4 Scheme 2: the byte layout
+
+**Primitives.**
+
+- `u32`: four bytes, big endian.
+- `bool`: one byte, `0x00` or `0x01`.
+- `string`: a `u32` count of bytes, then the UTF-8 bytes of the normalised text.
+- `list<T>`: a `u32` count of items, then the items.
+- A hash inside another hash is its 32 raw bytes, not its text form.
+- A count or length that does not fit a `u32` is outside the scheme. An implementation must not wrap or truncate it (it
+  may panic, as no real screenplay reaches 4 GiB in one string).
+
+**Tags**, one byte each, at the start of an element record:
+
+| Tag | Kind | Fields after the tag |
+|---|---|---|
+| `0x01` | Action | `string` text, `bool` centered |
+| `0x02` | Character | `string` name, `list<string>` extensions, `bool` dual |
+| `0x03` | Dialogue | `string` text |
+| `0x04` | Parenthetical | `string` text |
+| `0x05` | Transition | `string` text |
+| `0x06` | Lyrics | `list<string>` lines |
+| `0x07` | Synopsis | `string` text |
+| `0x08` | Shot | `string` text |
+
+The tags `0x00` and `0x09` to `0xFF` are reserved. Using one is a new scheme number.
+
+**Domains.** `domain(name)` is the ASCII bytes of `fountain-syntax/` + `name` + `/2`, then one NUL byte (`0x00`). The
+six names are `element`, `scene`, `preamble`, `document`, `title-page` and `source`. A name contains no NUL, so the NUL
+ends the domain and no domain is the start of another.
+
+**The hashes.** `||` is concatenation. `SHA-256` is applied to the whole byte string.
+
+```text
+element_hash    = SHA-256( domain("element")    || record )
+scene_hash      = SHA-256( domain("scene")      || string(heading) || u32(n) || e_1 || ... || e_n )
+preamble_hash   = SHA-256( domain("preamble")   || u32(n) || e_1 || ... || e_n )
+document_hash   = SHA-256( domain("document")   || preamble_hash || u32(m) || s_1 || ... || s_m )
+title_page_hash = SHA-256( domain("title-page") || u32(k) || entry_1 || ... || entry_k )
+source_hash     = SHA-256( domain("source")     || the bytes of the span )
+```
+
+- `record` is the tag and then the fields of the tag table above, in order.
+- `e_i` are the element hashes of the kept records, in order, and `n` is their number. `s_j` are the scene hashes in
+  document order and `m` is their number.
+- `entry` is `string(key)` followed by `list<string>(lines)`. The key is normalised and upper-cased. The lines are the
+  entry's value lines in order (the inline value, then the continuation lines), each normalised (case is kept), with
+  empty lines dropped. An entry whose key is empty after normalisation is kept.
+- The bytes of `source_hash` are the last field, so they need no length. A scene's span is `Scene::span` (section 9).
+
+**Why the layout is injective.** The first byte of a record names the kind, so the fields that follow have one fixed
+shape. A string and a list carry their length, so the next field starts at a known place. A scene hash holds fixed-width
+children and a count. The domains are prefix-free, so no two kinds of hash share a pre-image. A scene's hash does not
+depend on its position, its number or the scenes around it, so two identical scenes have equal hashes.
+
+### 11.5 Scheme 2: known answers
+
+These are the vectors for the tests `HASH2-40` to `HASH2-45`. An implementation, or a reader with `sha256sum` and a hex
+editor, can check them. The pre-image of the first one, in full (54 bytes):
+
+```text
+domain    666f756e7461696e2d73796e7461782f656c656d656e742f32 00   ("fountain-syntax/element/2", NUL)
+tag       01                                                      (Action)
+text      00000016 4d6172612066696c6c7320746865206b6574746c652e   (22 bytes: "Mara fills the kettle.")
+centered  00
+```
+
+Digests are shown in their text form. `H` is the heading `INT. KITCHEN - DAY`, whose string is `00000012` and its 18
+bytes.
+
+| Vector | Input | What is hashed | Digest |
+|---|---|---|---|
+| `HASH2-40` | A scene with only the heading `INT. KITCHEN - DAY`. | `scene_hash` with `string(H)` and `u32(0)`. The pre-image is 50 bytes. | `fs2:59bb346594a6fee2987e19850929c14dfc8ceb86ee6293e8eb24a72ebd617248` |
+| `HASH2-41` | The Action `Mara fills the kettle.` | `element_hash` of the 54-byte pre-image above. | `fs2:1cd74cd5159cd81b65c689eff8d55d8dc7bfa6de082dbb341873240f6595850b` |
+| `HASH2-41` | The scene `H` with that one Action. | `scene_hash` with `string(H)`, `u32(1)` and the element hash above. The pre-image is 82 bytes. | `fs2:39ad14125a7c97078c25a78852cc36793e0fd890ce68c33491a1a08fa3bf9c78` |
+| `HASH2-42` | The cue `MARA (V.O.) (CONT'D)` | A Character: name `MARA`, extensions `["V.O."]`, `dual` false. 48-byte pre-image. | `fs2:1a556f7deab4f5fa5628f2e5d969f50285b3c00f75fe18d6a8dd00f26646af95` |
+| `HASH2-42` | The Parenthetical `(quietly)` | A Parenthetical with the text `quietly`. | `fs2:07e731a7acbe2ca8fa63f9a0a9e38dfb1abb4af25c2287e3e715e0bfe8ab45a3` |
+| `HASH2-42` | The Dialogue `Tea?` | A Dialogue with the text `Tea?`. | `fs2:b37c03f30bd33f9849e35026d903755b6bd92eacdd9bc69a90b303295bc651c1` |
+| `HASH2-42` | The scene `H` with those three, in that order. | `scene_hash` with `string(H)`, `u32(3)` and the three hashes above. 146-byte pre-image. | `fs2:1605f74bdad918ae3f826b7c5ea6f8b36b59466c10f2dc426514262b359d62aa` |
+| `HASH2-43` | The Action `Caf` + U+00E9 (precomposed). | An Action with the text of 5 bytes `43 61 66 c3 a9`, `centered` false. | `fs2:dd8fe5281b946df777823637c8a3b957734f80784d8574d0c49b9f0fa8e7f050` |
+| `HASH2-43` | The Action `Cafe` + U+0301 (decomposed). | After NFC the same text and the same record. | `fs2:dd8fe5281b946df777823637c8a3b957734f80784d8574d0c49b9f0fa8e7f050` |
+| `HASH2-44` | `> The end <` as Action. | An Action with the text `The end` and `centered` true. | `fs2:d110baae28cb16a64562de38a45bed9c1ec7afda132311c1b01a9793c98cd192` |
+| `HASH2-44` | The right-hand cue `OTTO (v.o.) (cont'd) (filtered) ^` of a dual pair. | A Character: name `OTTO`, extensions `["V.O.", "FILTERED"]`, `dual` true. | `fs2:e9959f1d4a68e8749ae4c32bdb89ab58869100e8fcc05016cdc7b26070247dea` |
+| `HASH2-44` | The two lines `~La la` and `~Lo lo`. | A Lyrics with the lines `["La la", "Lo lo"]`. | `fs2:29e754ee12c86a5ed2ccefa29c894e9a2336092760afb4abf2b78e9dc3b8be44` |
+| `HASH2-45` | The document in the next paragraph: its preamble. | `preamble_hash` with `u32(0)`. | `fs2:354e078bdd8af223f493f82eec629de6f22e72660aef1936ebf92739fd443cac` |
+| `HASH2-45` | The same document. | `document_hash`: the preamble hash, `u32(1)` and the scene hash of the `HASH2-41` scene. | `fs2:2b182de81221644c685c35b4917275421b0c85a053d77b012275aceaf641987f` |
+| `HASH2-45` | The same document. | `title_page_hash`: `u32(1)`, `string("TITLE")`, a list of the one string `Tea Time`. | `fs2:9ea6372e0b7d474e70cd1a48cda79753a36058c111d4792a4c4d21700b0d962c` |
+| `HASH2-45` | The same document, whole. | `source_hash` of its 60 bytes. | `fs2:84f98daa89e4fd67b4dc773e449db8f969237b077469878eb521229d96634482` |
+| `HASH2-45` | The scene's span of the same document (without the first blank line and the final line break). | `source_hash` of its 42 bytes. | `fs2:9e15d23ca2039b27e7ed261a564741edddedecd07a07db5139b77b8100f93a00` |
+
+The document of `HASH2-45`, with `\n` line breaks and a final one:
+
+```text
+Title: Tea Time
+
+INT. KITCHEN - DAY
+
+Mara fills the kettle.
+```
+
+The `HASH2-42` scene is this text. Its cue shows the exclusion of `(CONT'D)`, and its Parenthetical the removal of the
+parentheses:
+
+```text
+INT. KITCHEN - DAY
+
+MARA (V.O.) (CONT'D)
+(quietly)
+Tea?
+```
+
+### 11.6 Scheme 2: what the hashes guarantee
+
+**Stable (G1).** None of these changes any story hash:
+
+- the amount or kind of spaces and tabs inside a line, or at its start or end (inside the parentheses of a Parenthetical
+  too);
+- the line endings (`\n`, `\r\n`, `\r`);
+- re-wrapping the lines of one Action paragraph or one run of Dialogue lines (a line break to a space or the reverse).
+  Lyrics are the exception: each `~` line is its own entry;
+- adding or removing extra blank lines between elements, as long as one remains;
+- adding, changing or removing a scene number, a Section, a Note, a Boneyard or a Page Break;
+- the spelling of a forcing sigil: `.INT. X` against `INT. X`, `>CUT TO:` against `CUT TO:`;
+- adding or removing `(CONT'D)`, in any case and with either apostrophe;
+- the case of a heading, a cue name or a cue extension;
+- NFC against NFD spelling of the same text;
+- the spacing around the dual-dialogue caret (`OTTO^`, `OTTO ^`, `OTTO ^ `);
+- the title page: it is in no scene, preamble or document hash of the story facet.
+
+This holds provided the edit does not move non-whitespace text to or from the start of a line in a way that changes how
+the line is read, and does not create or remove a blank line inside an element. That proviso is the boundary, below.
+
+**Changes (G2).** A story hash changes for any change of kept content:
+
+- a different word; the case of Action or Dialogue text; an emphasis mark or an escape;
+- the **kind** of an element with the same words (Action made into a Transition by `>`, Dialogue made into Action);
+- any other **extension** of a cue, added, removed, changed or reordered (`(V.O.)`, `(O.S.)`);
+- the **dual** flag (a block paired or unpaired by a caret) and the **centered** flag;
+- the line structure of Lyrics (`~a b` against `~a` and `~b`);
+- reordering elements or lines, and adding or removing an element of a kept kind (a Synopsis included);
+- the preamble (it changes the preamble hash and the document hash, and no scene hash).
+
+**The hierarchy.** An edit to one element changes that element's hash, the hash of its scene and the document hash, and
+no other element hash and no other scene hash. Adding, removing or reordering scenes changes the document hash only.
+
+**The boundary.** A blank line added inside an Action paragraph splits it into two Action records, and a blank line
+added inside a run of Dialogue lines splits it into Dialogue and Action. Those edits change how the text is read, so
+they change the hash. A blank line under a bare cue (`OFF-5b`) turns the cue into Action: the kind changes, so the hash
+changes. Scheme 2 has no hole of the kind scheme 1 has (11.7).
+
+### 11.7 Scheme 1: the compatibility scheme
+
+Scheme 1 is **frozen**. Its rules and its output never change; a different rule would be a different scheme. It is the
+rule of the Twopop importer (`parse.py` in `twopopfilm/twopop`), applied to this library's parse. That is deliberate.
+Twopop Studio stores each scene's hash (`text_sha`, a bare 64-digit string), feeds it into the input hash of every
 breakdown and shot-list record, and uses it for exact scene matching when a script is imported again. Staleness is a
 comparison of stored hashes, so a different algorithm would make all stored breakdown and shot-list work stale. Studio's
 own hash code reproduces the importer's rule byte for byte and has to keep matching it until the Python oracle is
-retired.
+retired. This subsection is complete in itself: it needs nothing from 11.3 to 11.6, only the methods of 11.2.
 
-A richer scheme (the element kind in the text, cue extensions, the preamble) is **not** in 0.1. It would be a new scheme
-number and would need a migration in every consumer that stores hashes. Consumers should store `HASH_SCHEME` next to
-each hash so they can tell which rule made it.
+Scheme 1 hashes **scenes only** (no element, preamble or document hash), and it yields a `Digest` of scheme `V1`, which
+prints as the bare hexadecimal text that Studio stores.
 
-### 11.1 What a scene is, for hashing
+**What a scene is, for scheme 1 (the hash scope).**
 
 - A scene starts at a scene heading and runs to the next heading or the end of the document. **Every kept element
   belongs to the last heading seen before it.** This is the importer's rule.
 - **This differs from the typed view** for Synopses directly before a heading. The view attaches the Sections and
-  Synopses directly before a heading to the scene that follows (section 9), but for hashing such a Synopsis belongs to
+  Synopses directly before a heading to the scene that follows (section 9), but for scheme 1 such a Synopsis belongs to
   the earlier scene, because it comes after that scene's last element and before the next heading. A Section is never
-  hashed, so only Synopses show the difference. `Scene::normalized_text` and `Scene::hash` follow this **hash scope**,
-  not the view's span. The view records each scene's hash scope in a private field that `screenplay()` fills in, so the
-  methods work on a `Scene` alone. For a scene built in memory the scope is its own `synopses` and `elements`.
+  hashed, so only Synopses show the difference. The scheme 1 methods follow this **hash scope**, not the view's span.
+  The view records each scene's hash scope in a private field that `screenplay()` fills in, so the methods work on a
+  `Scene` alone. For a scene built in memory the scope is its own `synopses` and `elements`. Only scheme 1 uses it.
 - **The preamble** is everything before the first heading, apart from the title page. Scheme 1 does **not** hash it; the
-  importer only counts those elements. `Screenplay::preamble` still lists them. A kept element before the first heading
-  (a Synopsis directly before it, say) is in no scene's hash scope.
+  importer only counts those elements. A kept element before the first heading (a Synopsis directly before it, say) is
+  in no scene's hash scope.
 
-### 11.2 The normalised text
+**The normalised text.**
 
 1. **Shape.** The text is the heading line, then `\n`, then the element lines joined with `\n`, with no newline after
    the last element line. **A scene with no kept elements still ends with the `\n`**: its text is the heading line and a
@@ -1120,7 +1476,7 @@ each hash so they can tell which rule made it.
 2. **Hidden spans, then whitespace.** Hidden spans (Notes, Boneyards) are deleted from every piece of text. Then each
    run of Unicode white-space characters becomes a single space and leading and trailing white space is removed. Line
    breaks inside an element become spaces. `Mara /* aside */ waits.` gives `Mara waits.` No other normalisation: not
-   Unicode normal forms (section 13), and not case, apart from rules 3 and 5.
+   Unicode normal forms, and not case, apart from rules 3 and 5.
 3. **Heading line.** The heading's visible text, collapsed, then upper-cased. It leaves out the forcing `.`, the scene
    number (locked or not) and hidden spans.
 4. **Element lines.** Each kept element gives one line, which is that element's text only, collapsed, **with no kind
@@ -1148,36 +1504,22 @@ each hash so they can tell which rule made it.
    `!`, `@`, `~`, `>`, `<`.
 7. **Kept as typed:** emphasis marks and escapes, so a change in italics or underline is a change of content. Text that
    only looks like a tag, such as `#prop-coin`, stays in the text; tags are not supported (5.3).
-8. **Hash.** The lowercase hexadecimal SHA-256 of the UTF-8 bytes of the normalised text. A constant `HASH_SCHEME: u32 =
-   1` names this scheme. Any change to the rules is a new scheme number.
+8. **Hash.** The SHA-256 of the UTF-8 bytes of the normalised text, as a `Digest` of scheme `V1`. Its text form is the
+   lowercase hexadecimal of the 32 bytes.
 
 Known answer: the text `HEADING ONLY` plus a newline (13 bytes) hashes to
 `f7eb426cff87a0a1af2b2d5390cc9a2477df78d309f88f77f176751c57863e6f`.
 
-```rust
-pub const HASH_SCHEME: u32 = 1;
+The methods are those of 11.2: `Scene::normalized_text_v1` gives the text of rules 1 to 7 over the scene's hash scope,
+`heading_line_v1` and `element_lines_v1` give its pieces (the heading line, and the element lines in order), and
+`Scene::hash_v1` (with `hash`) gives the digest.
 
-impl Scene {
-    /// The text of rules 1 to 7 over the scene's hash scope (11.1), not over its view span.
-    /// Always available, no extra dependency.
-    pub fn normalized_text(&self) -> String;
+**What scheme 1 guarantees.**
 
-    /// The pieces of that text: the heading line, and the element lines in order.
-    pub fn heading_line(&self) -> String;
-    pub fn element_lines(&self) -> Vec<String>;
+*Stable (G1).* The hash does not change for a whitespace-only edit, meaning one of these:
 
-    /// Lowercase hex SHA-256 of `normalized_text`. Needs the `scene-hash` feature.
-    #[cfg(feature = "scene-hash")]
-    pub fn hash(&self) -> String;
-}
-```
-
-### 11.3 What the hash guarantees
-
-**Stable (G1).** The hash does not change for a whitespace-only edit, meaning one of these:
-
-- the amount or kind of spaces and tabs inside a line, or at its start or end (inside the parentheses of a
-  Parenthetical too);
+- the amount or kind of spaces and tabs inside a line, or at its start or end (inside the parentheses of a Parenthetical
+  too);
 - the line endings (`\n`, `\r\n`, `\r`);
 - re-wrapping the lines of one Action paragraph or one run of Dialogue lines (a line break to a space or the reverse).
   Lyrics are the exception: each `~` line is its own hash line;
@@ -1189,27 +1531,27 @@ impl Scene {
 This holds provided the edit does not move non-whitespace text to or from the start of a line in a way that changes how
 the line is read, and does not create or remove a blank line inside an element.
 
-**Changes (G2).** The hash changes for any change of kept text: a different word, case in Action or Dialogue, an
+*Changes (G2).* The hash changes for any change of kept text: a different word, case in Action or Dialogue, an
 emphasis mark, a different cue name, a reordered line, an added or removed element of a kept kind, a different
-Synopsis. Moving a Synopsis across a heading moves it between the hash scopes of two scenes (11.1).
+Synopsis. Moving a Synopsis across a heading moves it between the hash scopes of two scenes.
 
-**Limits (G3).** Scheme 1 **does not see a change of element kind or of a cue's extension when the text is the same**,
+*Limits (G3).* Scheme 1 **does not see a change of element kind or of a cue's extension when the text is the same**,
 because the importer does not. Action made into a Transition with the same words, Dialogue made into Action, a cue
-that gains or loses `(V.O.)`: the hash stays. This is a known limit, accepted for compatibility with the importer.
+that gains or loses `(V.O.)`: the hash stays. It also does not hash the preamble. This is a known limit, accepted for
+compatibility with the importer, and scheme 2 removes it.
 
-**The boundary.** A blank line added inside an Action paragraph splits it into two lines, and a blank line added inside
+*The boundary.* A blank line added inside an Action paragraph splits it into two lines, and a blank line added inside
 a run of Dialogue lines splits it into Dialogue and Action. Those edits change how the text is read, so they change the
 hash. A blank line under a cue (`OFF-5b`) turns the cue into Action, but by G3 the hash changes only if that moves text:
 under a bare cue the lines are the same and the hash stays; under a cue with an extension the Action line now holds the
 extension and the hash changes.
 
-### 11.4 How scheme 1 agrees with the importer
-
-The hashing rule is the importer's, as verified against its code and its captured fixtures: the same shape, the same
-heading line, the same line for each kind, the same scene membership. So the differences that remain are all caused by
-**parsing, not hashing**. Where a ruling in section 6 splits or joins elements
+**How scheme 1 agrees with the importer.** The hashing rule is the importer's, as verified against its code and its
+captured fixtures: the same shape, the same heading line, the same line for each kind, the same scene membership. So the
+differences that remain are all caused by **parsing, not hashing**. Where a ruling in section 6 splits or joins elements
 differently from the importer's parser, or decides a case differently, the elements and so the hash differ for that
-input. The F4 diff harness classifies each such difference.
+input. The F4 diff harness classifies each such difference. This library claims parity with the importer for scheme 1
+on the importer's own fixtures and nowhere else.
 
 | Known case | Why the elements can differ |
 |---|---|
@@ -1225,48 +1567,132 @@ importer splits with Python's default `split()`, that also treats U+001C to U+00
 ordinary text and are not compared on those characters (section 13, item 6).
 
 **What this means for a consumer.** A tool that stores `text_sha` from the importer can adopt this crate without
-re-hashing, for every script both parsers read the same way. A script that is parsed differently shows as one `changed`
-scene on its first re-import. `HASH-21` and `HASH-22` check the agreement on the importer's own fixtures.
+re-hashing, for every script both parsers read the same way: `hash_v1` gives the same value. A script that is parsed
+differently shows as one `changed` scene on its first re-import. `HASH1-21` and `HASH1-22` check the agreement on the
+importer's own fixtures. Moving to scheme 2 is a separate step (11.8).
 
-### 11.5 Where SHA-256 comes from
+### 11.8 Migrating an application from scheme 1 to scheme 2
 
-**Decided (maintainer, 2026-11-05): option B.** A `scene-hash` Cargo feature, off by default, adds `Scene::hash` using
-the `sha2` crate, version 0.10 so that it unifies with Twopop Studio's lockfile. `normalized_text()`, `heading_line()`
-and `element_lines()` are available in every build.
+The library makes the migration possible; the application runs it. An application that stored scheme 1 digests (Twopop
+Studio's `text_sha`) migrates **lazily**, a scene at a time, as it meets each stored value. Twopop Studio keeps scheme 1
+while its Python oracle exists, so that parity can be proven, and migrates after.
 
-Consumers that already have their own hashing (Twopop Studio does) can keep it and feed it `Scene::normalized_text()`,
-or the pieces (the heading line and the element lines). The crate's `scene-hash` feature is for the consumers that do
-not. The alternatives were that callers hash (option A) and a hand-written SHA-256 (option C).
+**Rules for any application:**
 
-### 11.6 Tests
+1. Store the digest in its text form (`Digest` printed), so that the scheme is stored with every hash. A scheme 2 value
+   starts with `fs2:`.
+2. Read a stored value with `FromStr`. A bare 64-digit value is scheme 1. Do not guess the scheme any other way.
+3. Compare only digests of the same scheme. Never compare a scheme 1 digest with a scheme 2 digest, even when the bytes
+   are equal: they are never equal as `Digest` values.
+4. Build any input hash that embeds a scene hash from the digest's text form, so that a change of scheme is visible in
+   the input hash.
+
+**Rebaseline a scene whose stored digest is scheme 1:**
+
+1. Compute `hash_v1()` of the scene as it is now, from the same parse.
+2. If it equals the stored digest, the scene has not changed by the rule that made the stored value. Store `hash()` (the
+   scheme 2 digest) **without marking any dependent work stale**.
+3. If it differs, the scene changed. Handle it as any change (dependent work becomes stale), and store `hash()`.
+4. Scene matching on re-import follows the same rule: while a stored value is scheme 1, match it against the new
+   scene's `hash_v1()`; once it is scheme 2, match it against `hash()`.
+
+**Input hashes that embed a scene hash** (a breakdown's input hash, say) change when the embedded digest changes from
+scheme 1 to scheme 2. The application must **re-base them in the same step** as step 2, by computing them again with the
+scheme 2 digest, and only for records whose stored input hash matched the old computation. A record that was already
+stale stays stale. The library cannot do this: it does not know what an application derives from a hash.
+
+**One blind spot, once.** Between the last scheme 1 comparison and the rebaseline, a change of element kind or of a cue
+extension is invisible, as it is today (11.7, G3). From the rebaseline on, scheme 2 sees it. This is the price of
+migrating without false staleness.
+
+**The library's job:** keep scheme 1 frozen and available (`hash_v1`, `normalized_text_v1`), give both digests from one
+parse, and make the scheme part of every digest. **The application's job:** store the scheme, run the rebaseline in one
+transaction with the input hashes, and never compare across schemes.
+
+### 11.9 Tests
+
+Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need that feature.
 
 | ID | Test |
 |---|---|
-| `HASH-1` | Spaces and tabs inside lines, at their ends and at their starts do not change the hash. |
-| `HASH-2` | `\n`, `\r\n` and `\r` give the same hash. |
-| `HASH-3` | Re-wrapping the lines of one Action paragraph and one Dialogue block does not change the hash. |
-| `HASH-4` | Extra blank lines between elements do not change the hash. |
-| `HASH-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. |
-| `HASH-6` | Adding, changing or removing a scene number, locked or not, does not change the hash. |
-| `HASH-7` | Case of the heading and of a cue name does not change the hash. |
-| `HASH-8` | Adding or removing `(CONT'D)` on a cue, adding, removing or changing `(V.O.)`, and adding or removing the dual-dialogue caret do not change the hash. |
-| `HASH-9` | A forced heading (`.INT. X`) and the same heading without the sigil have the same hash. |
-| `HASH-10` | Changing a word in Action, Dialogue, a Transition or a Synopsis changes the hash. |
-| `HASH-11` | Changing the case of Action or Dialogue text changes the hash. |
-| `HASH-12` | Adding or removing an emphasis mark changes the hash. |
-| `HASH-13` | Changing the element kind while the text stays the same (Action to Transition by `>`, Dialogue to Action) does **not** change the hash: the known limit G3. |
-| `HASH-14` | Swapping two lines changes the hash. |
-| `HASH-15` | A blank line inside an Action paragraph, and one inside a run of Dialogue lines, change the hash; a blank line under a bare cue does not, and under a cue with an extension it does (the boundary in 11.3). |
-| `HASH-16` | A Synopsis is hashed and a Section is not. A Synopsis after a scene's last element and before the next heading is in the earlier scene's hash and not in the next one's; a Synopsis directly after a heading is in its own scene's. |
-| `HASH-17` | Elements before the first heading (the preamble, and a Synopsis directly before the first heading) and the title page are in no scene's hash. |
-| `HASH-18` | A scene with only a heading has the text `HEADING` plus a newline. Two scenes with equal text have equal hashes. |
-| `HASH-19` | Dual dialogue hashes the left block, then the right, with no marker. |
-| `HASH-20` | A known-answer test: the text `HEADING ONLY` plus a newline (13 bytes) gives `f7eb426cff87a0a1af2b2d5390cc9a2477df78d309f88f77f176751c57863e6f`. Needs `scene-hash`. |
-| `HASH-21` | Parity with the importer on `edge_cases.fountain`, a fixture original to the Twopop project (MIT OR Apache-2.0; the test records its source and licence in the corpus README). The `THE ROOF AT DAWN` scene hashes to `6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625` and the `INT. LAUNDERETTE - DAY` scene to `7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508`. Needs `scene-hash`. |
-| `HASH-22` | Parity with the importer on its other captured scripts, by the same method: each scene's hash equals the stored value, and each difference is classified in the F4 diff harness as a parsing difference (11.4). Needs `scene-hash`. |
-| `HASH-23` | A Parenthetical line is the text inside the parentheses, trimmed and collapsed: `(quietly)` gives `quietly`, and `( quietly )` gives the same. |
-| `HASH-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
-| `HASH-25` | The line shapes: a cue line is the name only, upper-cased (no extension, no caret); a centered Action line has no `>` or `<`; a Shot line (with the `shot` flag) has no `!!`; no line has a kind prefix; `#prop-coin` stays in the text. |
+| `HASH1-1` | Spaces and tabs inside lines, at their ends and at their starts do not change the hash. |
+| `HASH1-2` | `\n`, `\r\n` and `\r` give the same hash. |
+| `HASH1-3` | Re-wrapping the lines of one Action paragraph and one Dialogue block does not change the hash. |
+| `HASH1-4` | Extra blank lines between elements do not change the hash. |
+| `HASH1-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. |
+| `HASH1-6` | Adding, changing or removing a scene number, locked or not, does not change the hash. |
+| `HASH1-7` | Case of the heading and of a cue name does not change the hash. |
+| `HASH1-8` | Adding or removing `(CONT'D)` on a cue, adding, removing or changing `(V.O.)`, and adding or removing the dual-dialogue caret do not change the hash. |
+| `HASH1-9` | A forced heading (`.INT. X`) and the same heading without the sigil have the same hash. |
+| `HASH1-10` | Changing a word in Action, Dialogue, a Transition or a Synopsis changes the hash. |
+| `HASH1-11` | Changing the case of Action or Dialogue text changes the hash. |
+| `HASH1-12` | Adding or removing an emphasis mark changes the hash. |
+| `HASH1-13` | Changing the element kind while the text stays the same (Action to Transition by `>`, Dialogue to Action) does **not** change the hash: the known limit G3. |
+| `HASH1-14` | Swapping two lines changes the hash. |
+| `HASH1-15` | A blank line inside an Action paragraph, and one inside a run of Dialogue lines, change the hash; a blank line under a bare cue does not, and under a cue with an extension it does (the boundary in 11.7). |
+| `HASH1-16` | A Synopsis is hashed and a Section is not. A Synopsis after a scene's last element and before the next heading is in the earlier scene's hash and not in the next one's; a Synopsis directly after a heading is in its own scene's. |
+| `HASH1-17` | Elements before the first heading (the preamble, and a Synopsis directly before the first heading) and the title page are in no scene's hash. |
+| `HASH1-18` | A scene with only a heading has the text `HEADING` plus a newline. Two scenes with equal text have equal hashes. |
+| `HASH1-19` | Dual dialogue hashes the left block, then the right, with no marker. |
+| `HASH1-20` | A known-answer test: the text `HEADING ONLY` plus a newline (13 bytes) gives `f7eb426cff87a0a1af2b2d5390cc9a2477df78d309f88f77f176751c57863e6f`, as the text form of `hash_v1`. Needs `hash`. |
+| `HASH1-21` | Parity with the importer on `edge_cases.fountain`, a fixture original to the Twopop project (MIT OR Apache-2.0; the test records its source and licence in the corpus README). The `THE ROOF AT DAWN` scene's `hash_v1` is `6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625` and the `INT. LAUNDERETTE - DAY` scene's is `7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508`. Needs `hash`. |
+| `HASH1-22` | Parity with the importer on its other captured scripts, by the same method: each scene's `hash_v1` equals the stored value, and each difference is classified in the F4 diff harness as a parsing difference (11.7). Needs `hash`. |
+| `HASH1-23` | A Parenthetical line is the text inside the parentheses, trimmed and collapsed: `(quietly)` gives `quietly`, and `( quietly )` gives the same. |
+| `HASH1-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
+| `HASH1-25` | The line shapes: a cue line is the name only, upper-cased (no extension, no caret); a centered Action line has no `>` or `<`; a Shot line (with the `shot` flag) has no `!!`; no line has a kind prefix; `#prop-coin` stays in the text. |
+| `HASH1-26` | `hash_v1` returns a `Digest` of scheme `V1` whose text form is the bare hexadecimal digits (no prefix), and it is the same on every call. The three `_v1` line methods exist and work in a build without `hash`. |
+
+Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash`.
+
+| ID | Test |
+|---|---|
+| `HASH2-1` | G1: spaces and tabs inside lines, at their ends and at their starts (inside the parentheses of a Parenthetical too) do not change any hash of the scene. |
+| `HASH2-2` | G1: `\n`, `\r\n` and `\r` give the same hashes. |
+| `HASH2-3` | G1: re-wrapping the lines of one Action paragraph and of one Dialogue run does not change any hash. Two `~` lines are two entries however they are spaced. |
+| `HASH2-4` | G1: extra blank lines between elements do not change any hash. |
+| `HASH2-5` | G1: adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change any hash of the scene, also inside an Action paragraph or a Dialogue block, and does not split a Dialogue run. |
+| `HASH2-6` | G1: adding, changing or removing a scene number, locked or not, does not change any hash. |
+| `HASH2-7` | G1: `.INT. X` and `INT. X`, a `!` paragraph and the same Action unforced, an `@` cue and the same cue unforced, and a `>` Transition and the same `TO:` line unforced have equal hashes. |
+| `HASH2-8` | G1: `(CONT'D)`, `(cont'd)` and `(CONT’D)` added or removed give equal hashes, and a cue with only `(CONT'D)` hashes as the bare cue. |
+| `HASH2-9` | G1: the case of a heading, a cue name and a cue extension does not change any hash. |
+| `HASH2-10` | G1: NFC and NFD spellings of the same text in a heading, an Action, a cue name, an extension, a Lyrics line and a title-page key give equal hashes. |
+| `HASH2-11` | G1: the spacing around the caret (`OTTO^`, `OTTO ^`, `OTTO ^ `) gives equal hashes. |
+| `HASH2-12` | G1: editing, adding or removing the title page changes no scene hash, no preamble hash and not `Screenplay::hash`. |
+| `HASH2-13` | G2: changing a word in the heading, Action, Dialogue, a Parenthetical, a Transition, Lyrics, a Synopsis or (with `shot`) a Shot changes that hash, and only the hashes above it. |
+| `HASH2-14` | G2: changing the case of Action or Dialogue text changes the hash. |
+| `HASH2-15` | G2: adding or removing an emphasis mark, and adding or removing an escape, changes the hash. |
+| `HASH2-16` | G2: the kind changes with the same words: Action to Transition by `>`, Dialogue to Action, Action to Synopsis, Action to Parenthetical. Each changes the hash. |
+| `HASH2-17` | G2: adding, removing, changing or reordering a cue extension other than `(CONT'D)` changes the hash. |
+| `HASH2-18` | G2: the dual flag. A block paired by a caret changes the hash of both cues, a caret on a block with no partner changes nothing, and unpairing changes it back. |
+| `HASH2-19` | G2: the centered flag. `> FIN <` and `FIN` have different hashes. |
+| `HASH2-20` | G2: Lyrics. One run of two lines and one line of the two joined differ; two runs and one run of the same lines differ; an empty `~` line is dropped. |
+| `HASH2-21` | G2: swapping two elements, two lines of one Dialogue run and two scenes changes the hash. |
+| `HASH2-22` | G2: adding or removing an element of a kept kind changes the hash; adding or removing a Synopsis changes it and adding a Section does not. |
+| `HASH2-23` | G2: the preamble. Adding, changing or removing a preamble element changes `Preamble::hash` and `Screenplay::hash`, and no scene hash. An empty preamble has one fixed hash. |
+| `HASH2-24` | The boundary: a blank line inside an Action paragraph, inside a run of Dialogue lines, and under a bare cue, and under a cue with an extension, each change the hash. |
+| `HASH2-25` | Scene membership follows the view: a Synopsis directly before a heading is in the scene that follows and not in the one before; a Synopsis directly after a heading is in its own scene; a Synopsis or Section before the first heading belongs to scene 1 and not to the preamble. |
+| `HASH2-26` | Dropped records: a Parenthetical `()`, a Synopsis `=` with no text, a forced Action line whose only text is a Note, a Lyrics element of empty `~` lines and a cue with an empty name give no record. The scene's hash equals that of the scene without them. An empty extension group `()` is kept. |
+| `HASH2-27` | A Parenthetical is the text inside the parentheses, trimmed and collapsed: `(quietly)` and `( quietly )` give equal hashes, and `(Quietly)` differs. |
+| `HASH2-28` | Dialogue records. A Lyrics or Synopsis line inside a Dialogue run does not split the run and its record comes after the run's; one between a cue and its first line comes before the run's. An Action's interjection records come after its record. A dual pair gives the left block's records, then the right's. |
+| `HASH2-29` | With `shot`, a `!!` line gives a Shot record without the marks; without it the line is an Action whose text begins with `!`. |
+| `HASH2-30` | Injectivity. Each pair has different hashes: Action `ab` then Action `c`, against Action `a` then Action `bc`; Dialogue `ab`, a Parenthetical, Dialogue `c`, against Dialogue `a`, a Parenthetical, Dialogue `bc`; Lyrics `["a b"]` against `["a","b"]`; the cue `X (A) (B)` against `X (A B)`; the cue `X (Y)` against the cue `X Y`; an Action `x` against a Transition `x` against a Synopsis `x`; a heading `A` with one Action `B` against a heading `A B` with no element; two scenes against one scene with the same elements. |
+| `HASH2-31` | Domain separation. The same payload bytes hashed under each of the six domains give six different digests, so an element hash never equals a scene hash, a preamble hash, a document hash, a title-page hash or a source hash. A scene with no elements and a preamble with no elements differ. |
+| `HASH2-32` | A scene's hash does not depend on its position or number: the same scene text in two places, or with another scene number, gives equal hashes, and two identical scenes in one document have equal hashes. |
+| `HASH2-33` | `Scene::element_hashes` has one digest per kept record, in order, equal to the concatenation of `Element::hashes` over the scene, and `Scene::hash` is recomputable from the heading and those digests. |
+| `HASH2-34` | The hierarchy. Changing one element changes its own hash, its scene's hash and the document hash and no other element or scene hash. |
+| `HASH2-35` | The document hash changes when a scene is added, removed or reordered, and when the preamble changes; it does not change with the title page. |
+| `HASH2-36` | `title_page_hash` changes with a key, a value or its lines, an added entry or reordered entries, not with key case, NFC against NFD or spacing, and not with a stray line. It does not depend on the story hashes. A screenplay with no title page gives the hash of zero entries. |
+| `HASH2-37` | Source hashes change on a whitespace-only edit (an indent, a trailing space, a line ending, a blank line) for a scene's span, the whole input and any node, and are equal for equal bytes. `Scene::source_hash` is `None` for a scene built in memory. |
+| `HASH2-38` | `Digest` text form. A scheme 2 digest prints as `fs2:` and 64 lowercase digits and a scheme 1 digest prints bare; both parse back to an equal value; a bare 64-digit string parses as scheme 1; uppercase digits, a wrong length, an `fs1:` or `fs3:` prefix and spaces are errors. |
+| `HASH2-39` | Scheme tags. `HASH_SCHEME_CURRENT` is 2 and equals `HashScheme::V2.number()`; `Scene::hash` and the other scheme 2 methods give `V2`; `hash_v1` gives `V1`; a `V1` and a `V2` digest with equal bytes are not equal. |
+| `HASH2-40` | Known answer (11.5): the scene with only a heading. |
+| `HASH2-41` | Known answers (11.5): the Action and the scene with one Action. |
+| `HASH2-42` | Known answers (11.5): the cue with `(V.O.)` and `(CONT'D)`, the Parenthetical, the Dialogue and the scene of the three. |
+| `HASH2-43` | Known answers (11.5): the Action with a precomposed `é` and the same Action with a decomposed one have the same recorded digest. |
+| `HASH2-44` | Known answers (11.5): the centered Action, the dual right-hand cue and the Lyrics. |
+| `HASH2-45` | Known answers (11.5): the empty preamble, the document, the title page and the two source hashes. |
+| `HASH2-46` | Migration (11.8). With a stored scheme 1 digest of a scene, a test application stores the scheme 2 digest and marks nothing stale when `hash_v1` equals the stored value, and marks the scene changed when it does not; it re-bases an input hash that embeds the digest in the same step; and it never compares a `V1` with a `V2`. A change of kind that scheme 1 cannot see is seen by `hash` afterwards. |
+| `HASH2-47` | Features. In a build without `hash` the types of 11.1, the `_v1` line methods and the spans exist and no digest method does (a compile-fail test); with `hash` every method of 11.2 exists. |
 
 ## 12. Test IDs
 
@@ -1281,7 +1707,8 @@ the test for any decision.
 | `OFF-<n><letter>` | One row of the decision table for case `OFF-<n>`. | Section 6 |
 | `EXT-<flag>-n` | An extension or feature flag. The always-on items use their own short names. | Section 5 |
 | `DIAG-<code>` | One diagnostic code: an input that fires it and a near miss that does not. | Section 7 |
-| `HASH-n` | A hash and normalisation rule. | Section 11 |
+| `HASH1-n` | A scheme 1 (compatibility) hash and normalisation rule. | Section 11 |
+| `HASH2-n` | A scheme 2 (default) hash, encoding, digest or migration rule. | Section 11 |
 | `WR-n` | A writer property. | Section 10 |
 
 **The conformance corpus (issue #15).** Each `OFF` row gets a corpus script that exercises it. **Every corpus script
@@ -1330,28 +1757,37 @@ diff harness would come from the start of the file and not from the case.
 `DIAG-to-trailing-space`, `DIAG-transition-lookalike`, `DIAG-unclosed-boneyard`, `DIAG-unclosed-note`,
 `DIAG-unframed-heading`, `DIAG-unframed-transition`
 
-**Hashes (section 11)**, 25 IDs:
+**Hashes, scheme 1 (section 11)**, 26 IDs:
 
-`HASH-1`, `HASH-2`, `HASH-3`, `HASH-4`, `HASH-5`, `HASH-6`, `HASH-7`, `HASH-8`, `HASH-9`, `HASH-10`, `HASH-11`,
-`HASH-12`, `HASH-13`, `HASH-14`, `HASH-15`, `HASH-16`, `HASH-17`, `HASH-18`, `HASH-19`, `HASH-20`, `HASH-21`,
-`HASH-22`, `HASH-23`, `HASH-24`, `HASH-25`
+`HASH1-1`, `HASH1-2`, `HASH1-3`, `HASH1-4`, `HASH1-5`, `HASH1-6`, `HASH1-7`, `HASH1-8`, `HASH1-9`, `HASH1-10`,
+`HASH1-11`, `HASH1-12`, `HASH1-13`, `HASH1-14`, `HASH1-15`, `HASH1-16`, `HASH1-17`, `HASH1-18`, `HASH1-19`,
+`HASH1-20`, `HASH1-21`, `HASH1-22`, `HASH1-23`, `HASH1-24`, `HASH1-25`, `HASH1-26`
+
+**Hashes, scheme 2 (section 11)**, 47 IDs:
+
+`HASH2-1`, `HASH2-2`, `HASH2-3`, `HASH2-4`, `HASH2-5`, `HASH2-6`, `HASH2-7`, `HASH2-8`, `HASH2-9`, `HASH2-10`,
+`HASH2-11`, `HASH2-12`, `HASH2-13`, `HASH2-14`, `HASH2-15`, `HASH2-16`, `HASH2-17`, `HASH2-18`, `HASH2-19`,
+`HASH2-20`, `HASH2-21`, `HASH2-22`, `HASH2-23`, `HASH2-24`, `HASH2-25`, `HASH2-26`, `HASH2-27`, `HASH2-28`,
+`HASH2-29`, `HASH2-30`, `HASH2-31`, `HASH2-32`, `HASH2-33`, `HASH2-34`, `HASH2-35`, `HASH2-36`, `HASH2-37`,
+`HASH2-38`, `HASH2-39`, `HASH2-40`, `HASH2-41`, `HASH2-42`, `HASH2-43`, `HASH2-44`, `HASH2-45`, `HASH2-46`, `HASH2-47`
 
 **Writer (section 10)**, 8 IDs:
 
 `WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`
 
-**Total: 221 IDs.**
+**Total: 269 IDs.**
 <!-- ID-INDEX:end -->
 
 ## 13. Open items
 
 Things the research could not settle, or that needed the maintainer's decision. Nothing here blocks F2. Items 1 to 4
-were resolved by the maintainer on 2026-11-05.
+were resolved by the maintainer on 2026-11-05. Item 7 asks for a decision on a dependency.
 
-1. **Scene hashes versus the importer's.** *Resolved by the maintainer on 2026-11-05:* scheme 1 is the importer's rule
-   and is compatible with it (11); the richer scheme is deferred and would be a new scheme number with a migration.
-2. **Where SHA-256 comes from.** *Resolved by the maintainer on 2026-11-05:* option B, an optional `scene-hash` feature
-   with `sha2` 0.10 (11.5).
+1. **Hash schemes.** *Resolved by the maintainer on 2026-11-05:* hash scheme 2 is the default and the recommended
+   scheme, and scheme 1 (the importer's rule) is retained, frozen, for compatibility. The instruction was to apply best
+   practice in the core library even if the applications that use it must adapt (11, and the migration in 11.8).
+2. **Where SHA-256 comes from.** *Resolved by the maintainer on 2026-11-05:* option B, an optional feature with `sha2`
+   0.10 (11.2). The feature is now called `hash`, because it also carries scheme 2.
 3. **Results of "literal first" that may surprise authors.** *Resolved by the maintainer on 2026-11-05:* all rulings
    approved as written. They follow from P1 and each has a diagnostic where one helps: `Ext. 12 is busy.` and a bare
    `INT.` are headings (`OFF-6c`, `OFF-6d`); `CUT TO:` directly above a heading is a Character cue (`OFF-9c`) while
@@ -1362,16 +1798,25 @@ were resolved by the maintainer on 2026-11-05.
 5. **Colour names and tag length for notes conventions.** The research gives neither Beat's list of colour names nor the
    exact limit of Slugline's "short prefix" (extensions.md: not determined). `NoteConvention` returns the words as typed
    and the tag as one word; the meaning is the caller's.
-6. **Whitespace and case mapping against Python.** The importer's hashing rule is now verified (11), but the collapse
-   here uses Unicode White_Space and the upper-casing uses Rust's full mapping, and neither was compared with Python's
-   on unusual characters (11.4). `HASH-22` covers only the captured scripts.
-7. **No Unicode normalisation in hashes.** `é` as one character and as `e` with an accent hash differently. Callers who
-   care must normalise before parsing. Confirm that is acceptable for 0.1.
+6. **Whitespace and case mapping against Python (scheme 1 only).** The importer's hashing rule is verified (11.7), but
+   the collapse here uses Unicode White_Space and the upper-casing uses Rust's full mapping, and neither was compared
+   with Python's on unusual characters. `HASH1-22` covers only the captured scripts. Scheme 2 has no Python to match.
+7. **The `unicode-normalization` dependency. Needs the maintainer's decision.** Scheme 2 applies NFC to everything it
+   hashes (11.3), which needs the `unicode-normalization` crate behind the `hash` feature. It is a second dependency
+   that the maintainer has not individually approved; it follows from the best-practice instruction. *Recommendation:
+   accept it.* NFC is a text-identity best practice, so that `é` typed as one character and as `e` plus an accent are
+   the same word. *Cost of dropping it:* NFC would become a documented non-goal, canonically equivalent spellings would
+   hash differently, and the tests `HASH2-10` and `HASH2-43` and the NFC step of 11.3 would go.
 8. **Reference parser, legacy results.** Several legacy-parser results are "not determined by reading" (`OFF-12`,
    `OFF-21`, `OFF-24`) or low confidence. No decision depends on them.
 9. **Serde encoding of the tree** (8.6) and the exact tokenisation (`TokenKind`) are left to F2. The invariants in 8.3
    are the contract.
-10. **Oracle behaviour on multi-line Lyrics and interrupted blocks.** How the importer treats several `~` lines and a
-    Dialogue block or Action paragraph interrupted by a Section, Synopsis or Lyrics line is settled only by the F4
-    parity tests (`HASH-22`). The importer's merging of consecutive Dialogue and Action lines was read from the parser's
-    default settings, not from a run of every shape.
+10. **Oracle behaviour on multi-line Lyrics and interrupted blocks (scheme 1 parity).** How the importer treats several
+    `~` lines and a Dialogue block or Action paragraph interrupted by a Section, Synopsis or Lyrics line is settled only
+    by the F4 parity tests (`HASH1-22`). The importer's merging of consecutive Dialogue and Action lines was read from
+    the parser's default settings, not from a run of every shape. Scheme 2 does not depend on it.
+11. **Details of scheme 2 chosen by the writer, for review.** They are rules now, and each is easy to change before F2:
+    the `dual` flag is true for both cues of a pair and false for an unpaired caret; empty `~` lines are dropped from a
+    Lyrics list but an empty extension group `()` is kept; the stray lines of a title page are not hashed; the heading
+    has no tag and is the first field of the scene hash; `Element::hashes` returns a list; and the source hashes of a
+    scene and a screenplay take the `Document`, because the view holds no source text.

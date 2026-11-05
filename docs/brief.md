@@ -17,8 +17,10 @@ meant to be useful on its own.
   - **Every element type:** scene headings and scene numbers, action, character, dialogue, parentheticals, dual
     dialogue, transitions, centered text, lyrics, sections, synopses, notes, boneyard, page breaks, the title page and
     forced elements.
-  - **Stable per-scene text normalisation and hashes**, so a tool can compare script drafts scene by scene. The hashes
-    are compatible with Twopop's importer, so stored hashes stay valid. SHA-256 comes from an optional `sha2` feature.
+  - **Self-describing hashes at element, scene and document level**, and over the exact bytes of any span, so a tool
+    can compare script drafts scene by scene and see which element changed. A second scheme, compatible with Twopop's
+    importer, is also available. The hashes sit behind an optional `hash` feature (SHA-256 from `sha2`, and Unicode
+    normalisation).
   - **A parser that never fails.** Fountain has no invalid input, so ambiguous cases are reported as diagnostics.
 
 ## Research first, then the spec (milestone F1)
@@ -71,4 +73,4 @@ project's test files before reusing them.
 - Every corpus script round-trips byte-for-byte.
 - Every `SPEC.md` decision has a passing test.
 - Diffs against `screenplay-tools` are all classified.
-- Scene hashes are stable across whitespace-only edits.
+- Hashes are stable across whitespace-only edits.
