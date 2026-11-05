@@ -53,13 +53,13 @@ crate treats correctness as something to measure:
 Work is tracked on the [Twopop Studio project board](https://github.com/orgs/twopopfilm/projects/2). Goals and the
 "done when" checks are in [docs/brief.md](docs/brief.md).
 
-| Milestone | Scope                                                           | State      |
-|-----------|-----------------------------------------------------------------|------------|
-| F1        | Standards study: the official syntax, extensions, `SPEC.md`     | **Next**   |
-| F2        | Lossless parser, typed view, diagnostics, scene hashes          | Planned    |
-| F3        | Writer with byte-for-byte round-trip; targeted edit API         | Planned    |
-| F4        | Conformance corpus and differential testing                     | Planned    |
-| F5        | Docs, compiled examples, and the 0.1 release on crates.io       | Planned    |
+| Milestone | Scope                                                       | State           |
+|-----------|-------------------------------------------------------------|-----------------|
+| F1        | Standards study: the official syntax, extensions, `SPEC.md` | **In progress** |
+| F2        | Lossless parser, typed view, diagnostics, scene hashes      | Planned         |
+| F3        | Writer with byte-for-byte round-trip; targeted edit API     | Planned         |
+| F4        | Conformance corpus and differential testing                 | Planned         |
+| F5        | Docs, compiled examples, and the 0.1 release on crates.io   | Planned         |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
 

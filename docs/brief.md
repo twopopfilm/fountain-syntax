@@ -24,7 +24,7 @@ meant to be useful on its own.
 
 The first milestone is a written standards study:
 - **The official syntax:** fountain.io/syntax. Version 1.1 (2014) was the latest revision found during planning;
-  confirm the current state when the study starts.
+  confirm the current state when the study starts. The study is in [research/official.md](research/official.md).
 - **Extensions apps use in practice:** Beat, Highland, Slugline, Afterwriting, Fade In's Fountain export,
   screenplay-tools. Examples are revision marks (the spec lists "marking changes" as a future goal), notes
   conventions and stage-play variants.
