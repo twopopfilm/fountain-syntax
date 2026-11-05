@@ -745,8 +745,7 @@ pub fn parse(source: &str) -> Document;
 | `hash` | The hash methods and digests of section 11 (scheme 2 and scheme 1) | `sha2` 0.10 and `unicode-normalization` |
 
 The core crate has no dependency other than `serde` (behind `serde`), and `sha2` and `unicode-normalization` (behind
-`hash`), each optional. `unicode-normalization` has not been individually approved by the maintainer (11.2, and section
-13, item 7).
+`hash`), each optional. The maintainer accepted `unicode-normalization` on 2026-11-05 (11.2, and section 13, item 7).
 
 ### 8.2 The tree
 
@@ -1161,11 +1160,8 @@ method or field says that.
 a digest and depends on two crates:
 
 - `sha2`, version 0.10, so that it unifies with Twopop Studio's lockfile;
-- `unicode-normalization`, for NFC. Every scheme 2 hash needs NFC (11.3), so scheme 2 cannot be offered without it.
-
-**`unicode-normalization` is a second dependency that the maintainer has not individually approved.** The `sha2` choice
-was decided on 2026-11-05; this one comes from the best-practice instruction and is flagged in section 13 (item 7), with
-a recommendation to accept it.
+- `unicode-normalization`, for NFC. Every scheme 2 hash needs NFC (11.3), so scheme 2 cannot be offered without it
+  (section 13, item 7).
 
 **Without `hash`**, these are available in every build and need no dependency:
 
@@ -1783,7 +1779,7 @@ diff harness would come from the start of the file and not from the case.
 ## 13. Open items
 
 Things the research could not settle, or that needed the maintainer's decision. Nothing here blocks F2. Items 1 to 4
-were resolved by the maintainer on 2026-11-05. Item 7 asks for a decision on a dependency.
+and 7 were resolved by the maintainer on 2026-11-05.
 
 1. **Hash schemes.** *Resolved by the maintainer on 2026-11-05:* hash scheme 2 is the default and the recommended
    scheme, and scheme 1 (the importer's rule) is retained, frozen, for compatibility. The instruction was to apply best
@@ -1803,11 +1799,10 @@ were resolved by the maintainer on 2026-11-05. Item 7 asks for a decision on a d
 6. **Whitespace and case mapping against Python (scheme 1 only).** The importer's hashing rule is verified (11.7), but
    the collapse here uses Unicode White_Space and the upper-casing uses Rust's full mapping, and neither was compared
    with Python's on unusual characters. `HASH1-22` covers only the captured scripts. Scheme 2 has no Python to match.
-7. **The `unicode-normalization` dependency. Needs the maintainer's decision.** Scheme 2 applies NFC to everything it
-   hashes (11.3), which needs the `unicode-normalization` crate behind the `hash` feature. It is a second dependency
-   that the maintainer has not individually approved; it follows from the best-practice instruction. *Recommendation:
-   accept it.* NFC is a text-identity best practice, so that `é` typed as one character and as `e` plus an accent are
-   the same word. *Cost of dropping it:* NFC would become a documented non-goal, canonically equivalent spellings would
+7. **The `unicode-normalization` dependency.** *Resolved by the maintainer on 2026-11-05: accepted.* Scheme 2 applies
+   NFC to everything it hashes (11.3), which needs the `unicode-normalization` crate behind the `hash` feature. NFC is a
+   text-identity best practice, so that `é` typed as one character and as `e` plus an accent are the same word. *Cost
+   of dropping it:* NFC would become a documented non-goal, canonically equivalent spellings would
    hash differently, and the tests `HASH2-10` and `HASH2-43` and the NFC step of 11.3 would go.
 8. **Reference parser, legacy results.** Several legacy-parser results are "not determined by reading" (`OFF-12`,
    `OFF-21`, `OFF-24`) or low confidence. No decision depends on them.
