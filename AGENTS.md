@@ -11,15 +11,18 @@ It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and i
 
 ## Keep the repository publishable
 
-This repository may go public at any time. Its history, issues and the project board must never contain personal
-data.
+This repository may go public at any time. Its history, issues and the project board must never contain personal data
+beyond the maintainer's name.
 
 - **Never commit:**
-  - personal names (write "the maintainer");
   - email addresses other than noreply ones;
+  - other people's personal data (names of private individuals, photos or likenesses);
   - absolute or home-directory paths;
   - machine specs or local install locations;
   - credentials.
+
+  The maintainer is identifiable: their name may appear (commit authorship, credits, the licence line), and their
+  personal email address never does.
 - **Run `scripts/check-public.sh` before every commit.** CI runs it, plus gitleaks, on every PR. The private name list
   lives at `~/.config/twopop/publiccheck.local` and is never committed.
 - **Commit identity** is the maintainer's GitHub noreply address, set in this repository's local git config; don't
@@ -67,7 +70,7 @@ Fill this section in when the crate exists (F2). Rules that already apply:
 
 ## /next: project rules
 
-- **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no personal names, non-noreply email addresses, absolute or home-directory paths, machine specs or credentials.
+- **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no non-noreply email addresses, absolute or home-directory paths, machine specs or credentials.
 - **No parser code until `SPEC.md` is merged.** F1 is a standards study that ends in `SPEC.md`.
 - **Every new issue needs a milestone** of this repository (F1–F5) and goes on org project #2. The queue pass reports an open issue that lacks a milestone.
 - **Never edit another repository** (Twopop Studio, the Python `twopop`, the kit). Stop, say what and why, and let the maintainer decide. Never touch the shared ComfyUI server.
