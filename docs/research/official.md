@@ -34,7 +34,7 @@ The spec has no licence, so nothing here is copied from it.
 | The `fountain` organisation on GitHub | One repository (`.github`, last updated April 2023). No spec, draft or syntax repository. |
 | The reference code linked from the Developers page (an Objective-C parser and writer) | Its README defers to fountain.io for the format. No spec file, tag or release. |
 | A GitHub search of the `fountain` organisation | Same single repository. |
-| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for any case here. How it treats each case is in [reference-parser.md](reference-parser.md). |
+| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for the readings and calls in this file; how it treats each case is recorded separately in [reference-parser.md](reference-parser.md). |
 
 **Conclusion:** 1.1 (2014) is the current official revision. No newer revision or draft was found. The page's
 sections are the 21 listed below, in the page's order.

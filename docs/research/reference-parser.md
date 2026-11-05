@@ -19,7 +19,7 @@ behaviour is **evidence, not a ruling**, and `SPEC.md` (#4) rules on each case.
 ### Method
 
 - **A static reading.** The code was read and each case's example was traced by hand through it. Nothing was built,
-  run or executed, and no test was run. Running it as an oracle is milestone F4.
+  run or executed, and no test was run. Running the reference parser as a test oracle is out of scope for this study and is not done here.
 - Where a result could not be settled by reading, the entry says **not determined by reading** rather than guessing.
 - The legacy parser (below) is a chain of text substitutions, which is much harder to trace by hand than the default
   line-by-line parser. Its notes are marked as lower confidence.
@@ -29,14 +29,14 @@ behaviour is **evidence, not a ruling**, and `SPEC.md` (#4) rules on each case.
 The repository holds two parsers for the body and the title page:
 
 - **The default parser** is `FastFountainParser`, a line-by-line parser with one pass over the lines. `FNScript`
-  uses it for every plain load method. The repository's `README.markdown` calls it "the default" and says it replaced
+  uses it for every plain load method. The repository's `README.markdown` describes it as the default parser and says it replaced
   the older parser because it is faster and relies less on regular expressions. The test classes in `FountainTests/`
   load their fixtures through it, directly or through `FNScript`. This file reports **this parser** unless an entry
   says otherwise.
 - **The legacy parser** is `FountainParser`, which turns the whole text into tagged markup with a chain of regular
   expression substitutions (defined in `FountainRegexes.m`) and then splits the tags into elements. `FNScript` uses it
-  only when the caller asks for the regex option on the older, longer load methods. The `README.markdown` says it is
-  "provided for legacy purposes" and that its regular expressions "are not fully compliant with the tests". It has no
+  only when the caller asks for the regex option on the older, longer load methods. The `README.markdown` describes it as
+  kept for legacy use and says its regular expressions do not fully match the tests. It has no
   rule for the 1.1 sigils `!`, `@` and `~`.
 
 Where the two differ on a case, both are recorded, with the default parser first. The text styling (bold, italic,
