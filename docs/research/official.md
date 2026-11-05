@@ -52,8 +52,9 @@ study. The raw HTML was then downloaded and read in full, so every rule below co
 
 - "Empty line" means the spec's blank line. The spec never defines it precisely: see OFF-1.
 - "Block" means a run of consecutive non-empty lines.
-- "Forced" means the writer overrides detection with a leading sigil. Whether the sigil is removed from the element's text is stated only for some sigils (see the forced-elements table).
-- `OFF-n` links to the ambiguous case with that number in [Ambiguous cases](#ambiguous-cases).
+- "Forced" means the writer overrides detection with a leading sigil. Whether the sigil is removed from the element's
+  text is stated only for some sigils (see the forced-elements table).
+- `OFF-n` refers to the ambiguous case with that number in [Ambiguous cases](#ambiguous-cases).
 - Examples use `<2sp>` on a line to mean a line that holds exactly two spaces.
 
 ## Elements
@@ -297,8 +298,8 @@ Open points: OFF-13, OFF-22, OFF-24.
 **Recognition.** A Transition is a line that is all uppercase, ends in `TO:`, has an empty line before it, and has
 an empty line after it.
 
-**Forced form.** A leading `>` forces any line to be a Transition. The spec does not say whether the `>` is dropped from the text (it
-says so for `.`, `@` and `~`); see OFF-22.
+**Forced form.** A leading `>` forces any line to be a Transition. The spec does not say whether the `>` is dropped from
+the text (it says so for `.`, `@` and `~`); see OFF-22.
 
 **Turning it off.** If a line meets the Transition rules but should be something else, the spec gives two options:
 a leading `.` makes it a Scene Heading, or one or more spaces after the colon make it Action, because the line no
@@ -506,8 +507,9 @@ Open points: OFF-1, OFF-2, OFF-23.
 [Spec: Indenting](https://fountain.io/syntax#indenting)
 
 **Rule.** Leading tabs and spaces are **ignored** for every element **except Action**. A writer can indent to make a
-file look like a formatted page. The spec's example indents Transitions by four tabs, Character cues by three,
-Parentheticals by two and Dialogue by one.
+file look like a formatted page. The spec's prose describes tabs, while its example block as served uses spaces
+(see OFF-18). The indent levels are four for Transitions, three for Character cues, two for Parentheticals and one
+for Dialogue.
 
 **Exception.** In Action, leading tabs and spaces are kept (see Action).
 
@@ -799,7 +801,8 @@ OTTO
 - **Reading B:** an uppercase line needs real following text to be a cue; here it is Action.
 
 **Spec text.** A Character cue has no empty line after it. The spec does not say what the end of the file counts as.
-A cue followed by an empty line is explicitly not a cue (Action instead), per the same rule.
+A cue followed by an empty line is explicitly not a cue (Action instead), per the same rule. What counts as an empty
+line here is OFF-1.
 
 ### OFF-6: Scene heading versus Action, and the blank-line and prefix edges
 
@@ -826,7 +829,7 @@ INT.
 **Spec text.** The heading is a prefixed line with a blank line after it, and it always has at least one blank line
 before it. The prefix must be followed by a dot or a space, and matching is case-insensitive.
 The spec does not address file start, a heading directly after the title page, a prefix followed by a tab or a line
-end, or prose that happens to start with `int ` or `ext `.
+end, or prose that happens to start with `int ` or `ext `. What counts as an empty line here is OFF-1.
 
 ### OFF-7: Forced heading `.` and the meaning of "alphanumeric"
 
@@ -883,9 +886,10 @@ CUT TO:
 INT. DECK - DAY
 ```
 
-- **Reading A:** none of the lines are Transitions (no `TO:`), so the first two are Action.
-- **Reading B:** `FADE IN:` is a Transition because it is uppercase with a trailing colon (not in the spec; listed because the colon
-  ending is common in screenplays).
+- **Reading A:** none of the lines is a Transition: `FADE OUT.` and `FADE IN:` do not end in `TO:`, and `BACK TO:` and
+  `CUT TO:` lack the empty line before or after that the spec requires. The first two are Action.
+- **Reading B:** `FADE IN:` is a Transition because it is uppercase with a trailing colon (not in the spec; listed
+  because the colon ending is common in screenplays).
 - **Reading C (the literal result of the Character rule, listed for the Transition/Character interaction):** `CUT TO:`
   directly followed by a heading is not a Transition (no empty line after) and reads as a Character cue with
   Dialogue.
@@ -893,7 +897,8 @@ INT. DECK - DAY
 **Spec text.** Automatic Transitions must be uppercase, framed by empty lines, and end in `TO:`. A leading `>` forces
 anything. The spec does not name `FADE IN:` or `FADE OUT.` and gives no other ending; it does not say what a
 `TO:` line becomes when it fails only the "followed by empty line" test. It does say that spaces after the colon turn a
-`TO:` line into Action, which means trailing whitespace is significant (see OFF-23).
+`TO:` line into Action, which means trailing whitespace is significant (see OFF-23). What counts as an empty line in the
+framing rule is OFF-1.
 
 ### OFF-10: Centered text versus forced Transition
 
@@ -907,7 +912,8 @@ anything. The spec does not name `FADE IN:` or `FADE OUT.` and gives no other en
 ```
 
 - **Reading A:** a line that both starts with `>` and ends with `<` is centered; any other `>` line is a Transition.
-- **Reading B:** trailing whitespace after `<` is ignored, so line 3 is centered; or it is not, so line 3 is a Transition.
+- **Reading B:** trailing whitespace after `<` is ignored, so line 3 is centered; or it is not, so line 3 is a
+  Transition.
 - **Reading C:** nested marks (`>>` ... `<<`) are centered text containing an `>`; or something else.
 - **Reading D:** a line like `> FIN` in the middle of Dialogue is part of the Dialogue.
 - **Reading E:** the `>` and `<` marks are dropped from the text, or kept as part of it.
@@ -1009,10 +1015,11 @@ lines*
   wording suggests.)
 - **Reading D:** a backslash escapes only emphasis characters; or any character; or `\\` yields one literal backslash.
 
-**Spec text.** Emphasis follows the rules of Markdown except for underscore, without naming a version. The Emphasis section
-says emphasis is not carried across line breaks, while Error Handling says a closing mark is not searched for past a
-*double* line break, which is a looser limit. The escape rule names only the emphasis characters. Intraword
+**Spec text.** Emphasis follows the rules of Markdown except for underscore, without naming a version. The Emphasis
+section says emphasis is not carried across line breaks, while Error Handling says a closing mark is not searched for
+past a *double* line break, which is a looser limit. The escape rule names only the emphasis characters. Intraword
 underscores, overlapping spans, `***` handling, and emphasis in titles or inside Notes and Boneyard are not covered.
+What counts as a blank line or a double line break is OFF-1.
 
 ### OFF-15: Nested and unclosed Notes
 
@@ -1036,7 +1043,7 @@ Hello ]] stray
 **Spec text.** Notes are double-bracket spans, inline or on their own line, and may include line breaks. The empty
 lines around a standalone Note are removed in parsing. Error Handling says a closing mark is not searched for past a
 double line break. The spec says nothing about nesting, a stray `]]`, a Note in the title page, or one inside a
-Boneyard (and vice versa).
+Boneyard (and vice versa). What counts as an empty line, which these limits depend on, is OFF-1.
 
 ### OFF-16: Nested, unclosed and inline Boneyard
 
@@ -1058,6 +1065,7 @@ INT. HOUSE - DAY
 **Spec text.** Boneyards wrap text in `/* */` and may span as many lines as the writer likes; they are exempt from the
 closing-mark limit. The spec does not say what an unclosed one does, whether they nest, how they combine with
 Notes or Emphasis (`/**/`, `[[/*]]`), or how the lines around a removed span affect adjacent element detection.
+Whether a line left empty by a removal counts as an empty line is OFF-1.
 
 ### OFF-17: Title page edges
 
@@ -1089,7 +1097,8 @@ Draft date: 5:30 pm
 spaces. Values are inline or indented by three or more spaces or a tab, and can have several lines. Unsupported keys
 are ignored but can be metadata. The spec says to drop down "two lines" to start the screenplay. It does not state
 key-case rules, duplicate handling, blank-line handling inside or before the page, a one-/two-space indent, or how to
-tell a title page from an Action line that has a colon.
+tell a title page from an Action line that has a colon. What counts as an empty line, where the title page ends, is
+OFF-1.
 
 ### OFF-18: Tabs, indentation and recognising the element first
 
@@ -1153,9 +1162,9 @@ INT. HOUSE - DAY #5#
 - **Reading C:** an empty Section (`# `) is a Section; or Action.
 - **Reading D:** the last lines show the scene-number delimiter `#` clashing with Section syntax (OFF-8).
 
-**Spec text.** A Section is a line that starts with one or more `#`, nested by more `#`. It cites Markdown ATX headers as the
-model, and Markdown requires a space only in some dialects. The spec gives no maximum depth and does not say whether
-empty text is allowed, whether an empty line must surround a Section, or how a Section inside a Dialogue block
+**Spec text.** A Section is a line that starts with one or more `#`, nested by more `#`. It cites Markdown ATX headers
+as the model, and Markdown requires a space only in some dialects. The spec gives no maximum depth and does not say
+whether empty text is allowed, whether an empty line must surround a Section, or how a Section inside a Dialogue block
 interacts with it.
 
 ### OFF-21: Synopsis and Section placement inside blocks
@@ -1171,7 +1180,8 @@ NELL
 Yes.
 ```
 
-- **Reading A:** Sections and Synopses are removed from the output and a surrounding Dialogue block continues across them.
+- **Reading A:** Sections and Synopses are removed from the output and a surrounding Dialogue block continues across
+  them.
 - **Reading B:** they end the block, and the following line starts a new element.
 - **Reading C:** inside a Dialogue block they are literal text.
 
@@ -1197,9 +1207,9 @@ formatted output. The spec does not say whether being removed means the surround
 - **Reading D:** a line that merely starts with `>` as ordinary text is a Transition anyway.
 - **Reading E:** the `!` and the `>` are dropped from the text (the spec says so only for `.`, `@` and `~`), or kept.
 
-**Spec text.** The sigils are "preceding", "starting" or "beginning" the line. The spec does not say whether `!` and `>` are dropped like the others, how sigils combine,
-how they interact with leading whitespace (ignored for non-Action elements) or whether `!` and `@` apply when followed
-by whitespace.
+**Spec text.** The sigils are "preceding", "starting" or "beginning" the line. The spec does not say whether `!` and `>`
+are dropped like the others, how sigils combine, how they interact with leading whitespace (ignored for non-Action
+elements) or whether `!` and `@` apply when followed by whitespace.
 
 ### OFF-23: Significant trailing whitespace
 
@@ -1210,7 +1220,8 @@ MARA ^
 Two trailing spaces.  
 ```
 
-- **Reading A:** trailing spaces after `TO:` make it Action (the spec says so); trailing whitespace is otherwise stripped.
+- **Reading A:** trailing spaces after `TO:` make it Action (the spec says so); trailing whitespace is otherwise
+  stripped.
 - **Reading B:** trailing whitespace is never stripped, so a caret followed by a space is not "the last character".
 - **Reading C:** trailing double spaces keep their pre-1.1 meaning of forcing an Action line.
 - **Reading D:** carriage returns (OFF-2) count as trailing whitespace, which changes lines 1, 3 and 4.
@@ -1236,8 +1247,8 @@ That is all.
 - **Reading C:** Sections, Synopses and page breaks end the block.
 
 **Spec text.** Dialogue is any text that follows a cue or Parenthetical (so, Reading A), and elsewhere the spec
-describes forced elements as overriding detection (so, Reading B). The spec states no priority between "text after a cue"
-and a forcing sigil at the start of that text.
+describes forced elements as overriding detection (so, Reading B). The spec states no priority between "text after a
+cue" and a forcing sigil at the start of that text.
 
 ## Summary for #4
 
@@ -1253,5 +1264,5 @@ and a forcing sigil at the start of that text.
 | Indentation and forcing sigils | OFF-18, OFF-22 |
 | Page breaks, Sections, Synopses | OFF-19, OFF-20, OFF-21 |
 
-Cases that are **root causes** for others: OFF-1 (empty line) feeds OFF-5, OFF-6, OFF-9, OFF-15 and OFF-17; OFF-2 (line
-endings) feeds OFF-23.
+Cases that are **root causes** for others: OFF-1 (empty line) feeds OFF-5, OFF-6, OFF-9, OFF-14, OFF-15, OFF-16 and
+OFF-17; OFF-2 (line endings) feeds OFF-23.

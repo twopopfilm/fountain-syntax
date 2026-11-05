@@ -23,8 +23,8 @@ meant to be useful on its own.
 ## Research first, then the spec (milestone F1)
 
 The first milestone is a written standards study:
-- **The official syntax:** fountain.io/syntax. Version 1.1 (2014) was the latest revision found during planning;
-  confirm the current state when the study starts. The study is in [research/official.md](research/official.md).
+- **The official syntax:** fountain.io/syntax. Version 1.1 (2014) is the current revision, confirmed on
+  2026-11-04. The study is in [research/official.md](research/official.md).
 - **Extensions apps use in practice:** Beat, Highland, Slugline, Afterwriting, Fade In's Fountain export,
   screenplay-tools. Examples are revision marks (the spec lists "marking changes" as a future goal), notes
   conventions and stage-play variants.
@@ -43,8 +43,9 @@ feature flags, and records every decision on an ambiguous case with a test for e
 ## Conformance
 
 The test corpus is built from:
-- fountain.io's sample scripts (check their terms first);
-- the spec's own examples;
+- fountain.io's sample scripts (only with written permission; see research/official.md);
+- original examples modelled on the spec's own (the spec's text is copyrighted and has no licence; see
+  research/official.md);
 - edge cases from the study;
 - Twopop's fixtures.
 

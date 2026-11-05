@@ -7,9 +7,9 @@ into a syntax tree that keeps every byte of the source, gives you a typed screen
 back out unchanged. That makes it a foundation for editors, linters, converters and production tools that need to
 change one detail of a script without disturbing the rest.
 
-> **Status: pre-alpha.** There is no code yet, and the crate is not on crates.io. Work starts with a standards
-> study (milestone F1), and no parser code is written until its `SPEC.md` is settled. Everything below describes
-> the planned 0.1 release. See the [roadmap](#roadmap).
+> **Status: pre-alpha.** There is no code yet, and the crate is not on crates.io. Work is under way:
+> milestone F1, a standards study, is in progress, and no parser code is written until its `SPEC.md` is settled.
+> Everything below describes the planned 0.1 release. See the [roadmap](#roadmap).
 
 ## Goals
 
@@ -43,8 +43,9 @@ crate treats correctness as something to measure:
   ends in `SPEC.md`. It states what is standard, which extensions are supported, and how each ambiguous case is
   decided.
 - **Every decision is tested.** Each ruling in `SPEC.md` has a test that names it.
-- **A conformance corpus.** It holds the spec's own examples, sample scripts, and edge cases from the study, each with
-  its source and licence recorded. Every script must round-trip byte-for-byte.
+- **A conformance corpus.** It holds original examples modelled on the spec's own (the spec's text has no licence, so
+  it is not copied) and edge cases from the study, each with its source and licence recorded. The spec's examples
+  and sample scripts are used only with written permission. Every script must round-trip byte-for-byte.
 - **Differential testing.** Parses are compared with `screenplay-tools`, an established Fountain parser. Every
   difference is classified as theirs-wrong, ours-wrong or a documented choice.
 

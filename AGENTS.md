@@ -4,8 +4,8 @@ A Rust library for parsing and writing Fountain screenplays: lossless, spec-comp
 It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and is meant to be useful on its own.
 
 - **Goals, milestones (F1–F5) and the "done when" checks:** `docs/brief.md`.
-- **Status:** pre-F1, so there's no code yet. F1 is a standards study that ends in `SPEC.md`. Write no parser code
-  until `SPEC.md` is merged.
+- **Status:** F1 (the standards study, which ends in `SPEC.md`) is in progress, and there's still no code. Write no
+  parser code until `SPEC.md` is merged.
 - **Machine-specific context** is kept outside the repository, in `~/.config/twopop/agents.local.md`. Read it if it
   exists. The template is `docs/agents.local.example.md`.
 
