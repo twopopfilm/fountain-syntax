@@ -17,7 +17,8 @@ meant to be useful on its own.
   - **Every element type:** scene headings and scene numbers, action, character, dialogue, parentheticals, dual
     dialogue, transitions, centered text, lyrics, sections, synopses, notes, boneyard, page breaks, the title page and
     forced elements.
-  - **Stable per-scene text normalisation and hashes**, so a tool can compare script drafts scene by scene.
+  - **Stable per-scene text normalisation and hashes**, so a tool can compare script drafts scene by scene. The hashes
+    are compatible with Twopop's importer, so stored hashes stay valid. SHA-256 comes from an optional `sha2` feature.
   - **A parser that never fails.** Fountain has no invalid input, so ambiguous cases are reported as diagnostics.
 
 ## Research first, then the spec (milestone F1)

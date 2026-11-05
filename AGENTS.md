@@ -59,8 +59,8 @@ beyond the maintainer's name.
 
 Fill this section in when the crate exists (F2). Rules that already apply:
 
-- **Rust stable;** no `unsafe`; minimal dependencies (the core parser should need none beyond `serde`, behind a
-  feature flag).
+- **Rust stable;** no `unsafe`; minimal dependencies; the core parser needs none beyond `serde`, and `sha2` for
+  scene hashes, each behind its own optional feature.
 - **Every `SPEC.md` decision has a test** that names it.
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo test`, `cargo clippy`, `cargo fmt --check` and `scripts/check-public.sh`.
