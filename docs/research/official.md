@@ -34,7 +34,7 @@ The spec has no licence, so nothing here is copied from it.
 | The `fountain` organisation on GitHub | One repository (`.github`, last updated April 2023). No spec, draft or syntax repository. |
 | The reference code linked from the Developers page (an Objective-C parser and writer) | Its README defers to fountain.io for the format. No spec file, tag or release. |
 | A GitHub search of the `fountain` organisation | Same single repository. |
-| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for any case here. A pass over it is tracked in #26. |
+| How the reference code above was used | Only to look for a newer revision. Its parsing behaviour was **not** used for the readings and calls in this file; how it treats each case is recorded separately in [reference-parser.md](reference-parser.md). |
 
 **Conclusion:** 1.1 (2014) is the current official revision. No newer revision or draft was found. The page's
 sections are the 21 listed below, in the page's order.
@@ -717,7 +717,8 @@ points, if any, are noted in the case they feed.
 ## Ambiguous cases
 
 Each case gives a short original example, the competing readings, and the spec's relevant text paraphrased. None is
-ruled on here. `SPEC.md` (#4) assigns each a decision and a test.
+ruled on here. `SPEC.md` (#4) assigns each a decision and a test. How the reference parser treats each case is
+recorded, as evidence only, in [reference-parser.md](reference-parser.md).
 
 ### OFF-1: What is an "empty" line?
 
@@ -866,6 +867,7 @@ digit; this keeps ellipses from being read as headings. By that literal text `. 
 `...trailing off` and `.>HEADING` (a symbol after the period) are not forced headings, so Reading C is out. What stays
 open is the meaning of "alphanumeric" (Reading A or B: the spec does not define it). The spec also does not spell out
 what the excluded lines become (ordinary detection by the other rules, or Action).
+Evidence from the reference parser, not a ruling: see [reference-parser.md, OFF-7](reference-parser.md#off-7-forced-heading--and-the-meaning-of-alphanumeric); it also forces a heading for a period followed by a space or a symbol.
 
 ### OFF-8: Scene-number character set and placement
 
@@ -892,6 +894,7 @@ the number is not allowed (so `#1 A#` and `#1_A#` are not scene numbers, Reading
 of the line. Still open: whether alphanumeric includes Unicode (Readings A and B), what happens with text after the
 number (Reading C), and whether a forced heading may have one (Reading D). The spec also does not mention the clash
 with a Section line: a line like `# 12 #` (see OFF-20).
+Evidence from the reference parser, not a ruling: see [reference-parser.md, OFF-8](reference-parser.md#off-8-scene-number-character-set-and-placement); it accepts a space or an underscore in the number but confirms the end-of-line placement.
 
 ### OFF-9: Transitions that do not end in `TO:`, and the blank-line edges
 
@@ -1139,6 +1142,7 @@ lean towards any `Key:` first line starting a title page (Reading C), but the sp
 says to drop down "two lines" to start the screenplay. It does not state key-case rules, duplicate handling,
 blank-line handling inside or before the page, what a one- or two-space-indented line becomes, or how to tell a title
 page from an Action line that has a colon. What counts as an empty line, where the title page ends, is OFF-1.
+Evidence from the reference parser, not a ruling: see [reference-parser.md, OFF-17](reference-parser.md#off-17-title-page-edges); under a bare key any indent, or none, continues a value.
 
 ### OFF-18: Tabs, indentation and recognising the element first
 
@@ -1275,6 +1279,7 @@ Two trailing spaces.
 **Spec text.** Spaces after the colon on a `TO:` line cause Action; the caret must be the last character; and the
 1.1 changelog lists "two trailing spaces force an Action line" as deprecated. The spec gives no general rule on
 trailing whitespace, so each rule that depends on "last character" is exposed to it.
+Evidence from the reference parser, not a ruling: see [reference-parser.md, OFF-23](reference-parser.md#off-23-significant-trailing-whitespace); Reading C is out as stated, but `CUT TO: ` is Action only when no text line follows.
 
 ### OFF-24: What a Dialogue block may contain
 
