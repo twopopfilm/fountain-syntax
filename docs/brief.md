@@ -13,7 +13,7 @@ meant to be useful on its own.
   - `rustwell` (0.1, December 2025) is new and formatting-focused.
 - **Tools that edit scripts need more than a typical parser gives:**
   - **Lossless parsing with source spans.** An editor can highlight, and a program can rewrite one detail without
-    disturbing the rest of the text. Examples: locking scene numbers as `#12A#`, inserting a `= synopsis` line.
+    disturbing the rest of the text. Examples: setting scene numbers as `#12A#`, inserting a `= synopsis` line.
   - **Every element type:** scene headings and scene numbers, action, character, dialogue, parentheticals, dual
     dialogue, transitions, centered text, lyrics, sections, synopses, notes, boneyard, page breaks, the title page and
     forced elements.
@@ -35,9 +35,9 @@ The first milestone is a written standards study:
 
 The study ends in [`SPEC.md`](../SPEC.md). It states what the library treats as standard and which extensions it
 supports (some always on, two behind feature flags), and records every decision on an ambiguous case with a test ID
-for each.
+for each. See [SPEC.md](../SPEC.md) section 5.3 for what is and is not supported.
 
-## Proposed design (refined by the study)
+## Design (see SPEC.md sections 8 to 11)
 
 - A lossless syntax tree with spans, plus a typed screenplay view (title page, scenes, elements); serde for both.
 - A Fountain writer that round-trips byte-for-byte when nothing has changed.

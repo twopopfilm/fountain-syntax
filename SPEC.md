@@ -1046,7 +1046,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
 ### 10.2 Edits
 
 - A **targeted edit** changes only the bytes of the span it replaces (issue #13). `with_replaced` is the one primitive;
-  set or lock a scene number, insert or replace a synopsis, add a note and rename a cue are named wrappers around it.
+  set a scene number (writes `#12A#`; the locked form `##12A#` is possible only with `locked-scene-numbers`),
+  insert or replace a synopsis, add a note and rename a cue are named wrappers around it.
 - New lines use the first line break found in the document (`\n` if there is none).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be.
@@ -1204,7 +1205,7 @@ own hash. `normalized_text()` stays available in every build, so option A remain
 | `HASH-3` | Re-wrapping the lines of one Action paragraph and one Dialogue block does not change the hash. |
 | `HASH-4` | Extra blank lines between elements do not change the hash. |
 | `HASH-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. |
-| `HASH-6` | Adding, changing or locking a scene number does not change the hash. |
+| `HASH-6` | Adding, changing or removing a scene number, locked or not, does not change the hash. |
 | `HASH-7` | Case of the heading and of a cue name does not change the hash. |
 | `HASH-8` | Adding or removing `(CONT'D)` on a cue does not change the hash; changing `(V.O.)` does. |
 | `HASH-9` | A forced heading (`.INT. X`) and the same heading without the sigil have the same hash. |

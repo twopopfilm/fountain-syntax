@@ -25,14 +25,14 @@ change one detail of a script without disturbing the rest.
 - **Extensions where tools actually use them (planned).** [`SPEC.md`](SPEC.md) rules on each one. Open title-page keys,
   sections of any depth, `(CONT'D)` kept as written, Beat's revision block (kept as an ordinary boneyard) and note
   conventions (an opt-in typed view) change no parse, so they are always on. Slugline's locked scene numbers (`##12A#`)
-  and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag. Everything
-  else surveyed, such as brace directives, endnotes and stage-play variants, is not supported in 0.1: the text is kept
-  and written back as it is.
+  and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag
+  (`locked-scene-numbers` and `shot`). Everything else surveyed, such as brace directives, endnotes and stage-play
+  variants, is not supported in 0.1: the text is kept and written back as it is.
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree, and
   reports ambiguous cases as diagnostics instead of errors.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
   the tree and the view.
-- **Targeted edits.** Lock a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
+- **Targeted edits.** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
 - **Draft comparison.** Stable per-scene text normalisation and hashes, so tools can match scenes across drafts and
   tell real changes from whitespace.
 - **Small and safe.** No `unsafe`. The core needs no dependencies beyond the optional `serde`. An optional WASM build
