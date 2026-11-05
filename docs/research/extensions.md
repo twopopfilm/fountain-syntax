@@ -18,15 +18,19 @@ Access date for every row: **2026-11-05**.
 | Beat | Open source app (macOS, iOS) | [Repository][beat-repo], [manual][beat-manual], [file format note][beat-format], [changelog][beat-changelog] | Commit `ab2382184ca41e50440ff695373b17b4e57c915f` on `main` (committed 2026-11-02). The newest release, `v2.1.18` (2026-05-26), is older than the pin, so the pinned code can differ from the shipped app. | GPL-3.0-or-later, read from the [licence file][beat-license] (GitHub reports "no assertion") |
 | Highland 2 | Closed app (Quote-Unquote Apps) | [Fountain syntax][hl-syntax], [Notes, Synopses and Such][hl-nsa], [text formatting][hl-fmt], [headers and footers][hl-hf], [what's new in 2.6][hl-26], [Revision Mode article][hl-rev] | Help pages for Highland 2 only (no version shown). Highland Pro: not determined from public sources. | Proprietary; terms not examined |
 | Slugline | Closed app (macOS, iOS) | [Dual dialogue][sl-dual], [FDX][sl-fdx], [CONT'D][sl-contd], [Slugline 2 launch][sl-2], [scene numbers][sl-sn], [outlining][sl-outline], [notes][sl-notes] | Slugline 2 for macOS, pages dated 2013 to 2020 | Proprietary; terms not examined |
-| Afterwriting | Open source web app, CLI and parser | [`afterwriting-labs`][aw-labs], [`aw-parser`][awp-repo], [CLI document][aw-clients] | `afterwriting-labs` commit `f1912c08d0905bac42e1805830a1e72f98b88c2f` (2024-09-24, `package.json` version 1.17.3). The parser it depends on is `aw-parser` 0.1.1, read at tag `v0.1.1`, commit `cf3c2c246e1d90992c69e3c11d237205e611543a` (2018-07-28). | MIT, per each repository's licence file and `package.json` |
-| Fade In | Closed app (GCC Productions Inc.), Fountain import and export | [Changelog ("older changes")][fi-cl], [Final Draft FAQ][fi-fd], [import FAQ][fi-punct], [Fountain app list][fountain-apps] | Newest dated changelog entry read: 4.2.0 (2025-04-08). The current changelog page was not reachable. | Proprietary; terms not examined |
+| Afterwriting | Open source web app, CLI and parser | [`afterwriting-labs`][aw-labs], [`aw-parser`][awp-repo], [CLI document][aw-clients] | `afterwriting-labs` commit `f1912c08d0905bac42e1805830a1e72f98b88c2f` (2024-09-24, `package.json` version 1.17.3). The parser it depends on is `aw-parser` 0.1.1, read at tag `v0.1.1`, commit `cf3c2c246e1d90992c69e3c11d237205e611543a` (2018-07-28). One later `aw-parser` commit, `090e911c49599e0dbe41229e4f6a2c0f9639df8c` (2021-11-03, the head of `master` on the access date), is read only for the `CONT'D` setting. | MIT, per each repository's licence file and `package.json` |
+| Fade In | Closed app (GCC Productions Inc.), Fountain import and export | [Changelog ("older changes")][fi-cl], [Final Draft FAQ][fi-fd] | Newest dated changelog entry read: 4.2.0 (2025-04-08), noted as the newest date seen and not relied on for any claim. The current changelog page was not reachable. | Proprietary; terms not examined |
 | screenplay-tools | Open source library (Python, JavaScript, C#, C++) | [Repository][st-repo], [README][st-readme] | Commit `e3659406de7ab293b17125e065ed8b4f9af74203` on `main` (committed 2026-10-20). The newest release, `v0.0.10` (2026-01-05), is older than the pin. | MIT, per the repository's licence file |
+
+The table lists each app's main sources. The full list of pages cited is the reference links at the end of this file.
 
 ### Method
 
 - **Public pages and static reading only.** Open source code was read in the repository at the pinned commit. Nothing
   was cloned, built, run or executed, and no test was run. The head of each default branch was checked again after
-  reading and still equalled its pin. Every code link below is a permalink to the pin.
+  reading and still equalled its pin, except `aw-parser`, which is pinned to a tag, so its head is not expected to
+  equal the pin. Every code link below is a permalink to the pin, except the one `aw-parser` link under "Other
+  extensions" (`parser.js` at master), which points to the later commit on purpose.
 - **Closed apps** are recorded from their published help pages, release notes and the vendor's own blog. Where those do
   not settle a point, the entry says **not determined from public sources**. No closed app was installed or run.
 - **Help pages lose markup characters.** Several help pages are rendered from Markdown, so the page text can show
@@ -186,7 +190,7 @@ spec sets no depth limit. See [OFF-20](official.md#off-20-section-edges),
 - **screenplay-tools**:
   - *extension:* the README says sections go up to six levels, where it calls three the norm
     ([README][st-readme]); the Python code stops counting at seven `#` ([`parser.py`][st-parser]). The 1.1 text sets no
-    limit, so the README's "three" is not the spec's rule ([official.md](official.md#sections-and-synopses)). The
+    limit, so the README's "three" is not the spec's rule ([official.md](official.md#sections-and-synopses); [OFF-20](official.md#off-20-section-edges) states the missing limit). The
     other three language versions: not read.
   - Both are dropped when writing FDX ([`fdx/writer.py`][st-fdxw]).
 
@@ -302,11 +306,11 @@ Each line is an extension unless marked otherwise.
   Afterwriting uses the word "shot" for a different thing: an uppercase line on its own, followed by an empty line,
   which 1.1 would leave to [OFF-5](official.md#off-5-a-cue-at-the-end-of-the-file-or-followed-by-an-empty-line)
   ([`parser.js`][awp-parser]).
-- **Macros, `{{ ... }}`** (Beat): text macros (`{{ship = Marlin}}` then `{{ship}}`), a `{{date}}` macro with a format
+- **Macros, `{{ ... }}`** (Beat): text macros (`{{vessel = Marlin}}` then `{{vessel}}`), a `{{date}}` macro with a format
   string, and numbered "serial" macros that count up (`{{serial scene = 1}}`), plus a built-in panel counter for comic
   scripts ([manual][beat-manual]). The macros can sit in the title page.
 - **Directives, `{{ ... }}`** (Highland 2): header and footer text (`{{HEADER: Draft 3}}`), page number start
-  (`{{PAGENUMBER: 3}}`), file include (`{{INCLUDE: ...}}`), watermark, endnote position, series counter, timestamp and
+  (`{{PAGENUMBER: 12}}`), file include (`{{INCLUDE: ...}}`), watermark, endnote position, series counter, timestamp and
   marker ([headers and footers][hl-hf], [Notes, Synopses and Such][hl-nsa], [what's new in 2.6][hl-26],
   [Series][hl-series], [Timestamp][hl-ts], [Markers][hl-markers]). **Beat and Highland use the same braces for
   different things.** A review posted to the Fountain developers' group in August 2016 questioned how consistent
@@ -396,7 +400,10 @@ These are places where an app treats input that 1.1 covers in a way the literal 
 
 ## Ranking
 
-A ranking for `SPEC.md` (#4) to weigh. It is **not a decision**. Columns:
+A ranking for `SPEC.md` (#4) to weigh. It is **not a decision**. The order is not a count of apps. Candidates that
+leave valid 1.1 parsing unchanged come first (items 1 to 5); then those that change it for some input (6 to 14, item 9
+only if its braces are expanded); item 15 is tool behaviour and comes last. Within a group the order is a rough
+judgement of how much a lossless parser needs the candidate. Columns:
 
 - **Apps**: how many of the six record the extension in the sources above (out of six).
 - **Conflict with 1.1**: whether the literal text says something different, with the `OFF-n` case.
@@ -413,7 +420,7 @@ A ranking for `SPEC.md` (#4) to weigh. It is **not a decision**. Columns:
 | 5 | Typed `(CONT'D)` handling: keep as written, never add or strip in the lossless tree | 4 (Slugline, Afterwriting, Fade In, screenplay-tools) | Related to [OFF-3](official.md#off-3-character-cue-with-extensions-such-as-contd-or-vo) | No, if only exposed as a view | Slugline adds it at render time; Afterwriting's newer parser adds it by option; screenplay-tools strips it on read and re-adds it on write. |
 | 6 | Locked scene numbers `##n#` | 1 (Slugline) | Yes: a number may not start with `#` ([OFF-8](official.md#off-8-scene-number-character-set-and-placement)) | Yes: today such a heading ends in text, not a number | Needed by any tool that edits Slugline files. |
 | 7 | `!!` Shot | 1 (Beat); an FDX paragraph type | Yes: forced Action in 1.1 ([OFF-22](official.md#off-22-forcing-sigils-leading-whitespace-stacking-and-lines-starting-with-)) | Yes | Could be a flag. |
-| 8 | Wider scene-heading prefixes (`e/i`) and lowercase headings | 1 (Beat); Afterwriting also accepts `est` and other forms | Partly: 1.1 lists the prefixes and is case-insensitive ([OFF-6](official.md#off-6-scene-heading-versus-action-and-the-blank-line-and-prefix-edges)) | Yes for new prefixes | Low value. |
+| 8 | Wider scene-heading prefixes (`e/i`) and lowercase headings | 1 (Beat) | Partly: 1.1 lists the prefixes and is case-insensitive ([OFF-6](official.md#off-6-scene-heading-versus-action-and-the-blank-line-and-prefix-edges)) | Yes for new prefixes | Low value. |
 | 9 | Brace directives `{{ ... }}` (macros, header, footer, include, series, markers) | 2 (Beat, Highland), with **different meanings** | None: braces are ordinary text in 1.1 | Yes if the text is expanded; no if only preserved | Do not interpret. Preserve as opaque text, possibly tagged by app. |
 | 10 | Line tags `#tag` | 1 (screenplay-tools), off by default | None stated. Shares `#` with sections and scene numbers ([OFF-8](official.md#off-8-scene-number-character-set-and-placement), [OFF-20](official.md#off-20-section-edges)); by reading, a well-formed `#n#` is not a tag | Yes: text after the first tag is cut off | Single library. |
 | 11 | Highland text styles (`+highlight+`, strikethrough, term lists, right align, checklists) | 1 (Highland) | If the strikethrough token is Markdown's double tilde (not determined), a line starting with it meets Lyrics ([OFF-13](official.md#off-13-lyrics-next-to-cues-and-dialogue), [OFF-22](official.md#off-22-forcing-sigils-leading-whitespace-stacking-and-lines-starting-with-)) | Yes | Single app. |
@@ -438,8 +445,12 @@ Observations, not rulings:
 For a later crate. **Notes, not a spec.** No official public FDX schema or documentation was found (searches on 2026-11-05
 returned only third-party descriptions). The notes below come from the open converters read at their pins: Beat's
 [exporter][beat-fdx], Afterwriting's [FDX-to-Fountain converter][aw-fdx], and screenplay-tools' FDX code
-([Python parser][st-fdxp], [Python writer][st-fdxw], [C# parser][st-cs]), plus the Fade In and Highland pages. Names
+([Python parser][st-fdxp], [Python writer][st-fdxw], [C# parser][st-cs]), plus vendor pages for Slugline and Fade In (below). Names
 below are taken from those readers and writers; whether Final Draft itself writes or accepts each is **not determined**.
+
+Vendor pages say little about the format. Slugline 2 for Mac opens FDX files directly, and exporting FDX needs its
+"Unlimited Writing" unlock ([FDX FAQ][sl-fdx]). Fade In imports and exports Final Draft 8 `.fdx` files, and reads the
+older `.fdr` for import only ([Final Draft FAQ][fi-fd]).
 
 ### Element mapping
 
@@ -557,8 +568,6 @@ Points for `SPEC.md`:
 [awp-master]: https://github.com/afterwriting/aw-parser/blob/090e911c49599e0dbe41229e4f6a2c0f9639df8c/parser.js
 [fi-cl]: https://www.fadeinpro.com/page.pl?content=changelog_old
 [fi-fd]: https://www.fadeinpro.com/kb/content/1/44/en/can-fade-in-open-final-draft-screenplays.html
-[fi-punct]: https://www.fadeinpro.com/kb/content/1/142/en/missing-punctuation-after-text-or-fountain-import.html
-[fountain-apps]: https://fountain.io/apps/
 [st-repo]: https://github.com/wildwinter/screenplay-tools/tree/e3659406de7ab293b17125e065ed8b4f9af74203
 [st-readme]: https://github.com/wildwinter/screenplay-tools/blob/e3659406de7ab293b17125e065ed8b4f9af74203/README.md
 [st-parser]: https://github.com/wildwinter/screenplay-tools/blob/e3659406de7ab293b17125e065ed8b4f9af74203/python/src/screenplay_tools/fountain/parser.py
