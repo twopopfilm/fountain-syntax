@@ -6,6 +6,8 @@
 
 use crate::Span;
 
+mod inline;
+
 /// A whole screenplay: the title page, the elements before the first scene, and the scenes.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
