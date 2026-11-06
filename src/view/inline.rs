@@ -7,18 +7,23 @@
 use super::{Boneyard, Note, Run, Text};
 use crate::Span;
 
-/// One piece of the source of a [`Text`], in source order.
+/// One piece of the source of a [`Text`].
+///
+/// Pieces must be given to [`text`] in source order. Line breaks are only ever a [`Piece::Break`]:
+/// a [`Piece::Text`] must not contain a line terminator, or emphasis would span the lines.
 #[derive(Debug)]
 pub(crate) enum Piece<'a> {
-    /// Visible text. `span` covers exactly `text` in the source.
+    /// Visible text without any line terminator. Only `span.start` is used; the end is derived
+    /// from the length of `text`.
     Text {
         /// The characters, as written.
         text: &'a str,
         /// Where they are in the source.
         span: Span,
     },
-    /// A line break as written (`\n` or `\r\n`). Emphasis never crosses it; it stays in the
-    /// output, inside a [`Run::Plain`].
+    /// A line break as written: `\n`, `\r\n` or a lone `\r`. Emphasis never crosses it; it stays
+    /// in the output, inside a [`Run::Plain`]. A trailing break is kept in the runs and counted in
+    /// [`Text::span`].
     Break {
         /// The break, as written.
         text: &'a str,
@@ -30,6 +35,11 @@ pub(crate) enum Piece<'a> {
     /// An inline Boneyard. Opaque, like [`Piece::Note`].
     Boneyard(Boneyard),
 }
+
+/// The most emphasis spans that can be open at once on one line. An opener seen while this many
+/// are open stays literal. It bounds the nesting depth of the result (so building and dropping
+/// it cannot overflow the stack) and the work of matching a closer.
+const MAX_EMPHASIS_DEPTH: usize = 32;
 
 /// Which spaces and tabs [`text`] drops.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -249,7 +259,7 @@ fn pair(toks: &[Tok]) -> Vec<Option<Mark>> {
                 marks[stack[p].at] = Some(Mark::Open(ch, len));
                 marks[i] = Some(Mark::Close);
                 stack.truncate(p);
-            } else if can_open {
+            } else if can_open && stack.len() < MAX_EMPHASIS_DEPTH {
                 stack.push(Opener { at: i, ch, len });
             }
         }
@@ -643,5 +653,98 @@ mod tests {
             Trim::Both,
         );
         assert_eq!(t.span, Some(Span::new(1, 20)));
+    }
+    /// The deepest nesting of emphasis runs.
+    fn depth(runs: &[Run]) -> usize {
+        runs.iter()
+            .map(|r| match r {
+                Run::Emphasis { runs, .. } => 1 + depth(runs),
+                _ => 0,
+            })
+            .max()
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn off_14_deep_nesting_is_capped() {
+        // Exactly at the cap: 32 nested spans.
+        let n = MAX_EMPHASIS_DEPTH;
+        let src = "*a ".repeat(n) + &"a* ".repeat(n);
+        let r = runs(&src);
+        assert_eq!(depth(&r), n);
+        assert_eq!(
+            text([vis(&src)], Trim::Both).plain(),
+            src.trim().replace('*', "")
+        );
+        // One more level: the 33rd opener and the last closer are literal.
+        let src = "*a ".repeat(n + 1) + &"a* ".repeat(n + 1);
+        let r = runs(&src);
+        assert_eq!(depth(&r), n);
+        let plain = text([vis(&src)], Trim::Both).plain();
+        assert_eq!(plain.matches('*').count(), 2);
+        assert_eq!(plain.len(), src.trim().len() - 2 * n);
+    }
+
+    #[test]
+    fn off_14_deep_nesting_is_capped_for_hostile_input() {
+        let n = 100_000;
+        let src = "*a ".repeat(n) + &"a* ".repeat(n);
+        let t = text([vis(&src)], Trim::Both);
+        assert_eq!(depth(&t.runs), MAX_EMPHASIS_DEPTH);
+        assert_eq!(t.plain().len(), src.trim().len() - 2 * MAX_EMPHASIS_DEPTH);
+        // Openers of one length, closers of another: nothing matches, everything is literal.
+        let src = "**a ".repeat(n / 2) + &"a* ".repeat(n / 2);
+        let t = text([vis(&src)], Trim::Both);
+        assert_eq!(t.runs, [plain(src.trim())]);
+    }
+
+    #[test]
+    fn off_14_lone_cr_is_a_line_break() {
+        let t = text([vis("*a"), brk("\r", 2), vis_at("b*", 3)], Trim::Both);
+        assert_eq!(t.runs, [plain("*a\rb*")]);
+        assert_eq!(t.span, Some(Span::new(0, 5)));
+    }
+
+    #[test]
+    fn off_14_multibyte_next_to_marks() {
+        assert_eq!(runs("*é*"), [italic(vec![plain("é")])]);
+        assert_eq!(runs("é_x_é"), [plain("é_x_é")]);
+        assert_eq!(
+            runs("日*本*語"),
+            [plain("日"), italic(vec![plain("本")]), plain("語")]
+        );
+        let t = text([vis_at(" *é* ", 4)], Trim::Both);
+        assert_eq!(t.span, Some(Span::new(5, 9)));
+    }
+
+    #[test]
+    fn off_14e_escape_next_to_hidden_atom() {
+        let n = note("n", Span::new(2, 7));
+        let t = text([vis("\\*"), Piece::Note(n.clone())], Trim::Both);
+        assert_eq!(t.runs, [Run::Escaped('*'), Run::Note(n.clone())]);
+        let t = text([Piece::Note(n.clone()), vis_at("\\_a", 7)], Trim::Both);
+        assert_eq!(
+            t.runs,
+            [Run::Note(n.clone()), Run::Escaped('_'), plain("a")]
+        );
+        // A backslash right before a hidden atom is literal.
+        let t = text([vis("a\\"), Piece::Note(n.clone())], Trim::Both);
+        assert_eq!(t.runs, [plain("a\\"), Run::Note(n)]);
+    }
+
+    #[test]
+    fn trim_action_lines_whitespace_only_middle_line() {
+        let t = text(
+            [
+                vis("a "),
+                brk("\n", 2),
+                vis_at("   \t", 3),
+                brk("\n", 7),
+                vis_at("  b", 8),
+            ],
+            Trim::ActionLines,
+        );
+        assert_eq!(t.runs, [plain("a\n\n  b")]);
+        assert_eq!(t.span, Some(Span::new(0, 11)));
     }
 }
