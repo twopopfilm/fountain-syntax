@@ -286,6 +286,9 @@ fn off_20e_no_blank_lines_needed() {
     assert_eq!(top(&doc), [NodeKind::Action, NodeKind::Section]);
     let doc = parse_checked("# s\ntext");
     assert_eq!(top(&doc), [NodeKind::Section, NodeKind::Action]);
+    // Transparent for framing: a cue right after a Section still has the document start before it.
+    let doc = parse_checked("# s\nMARA\nhi");
+    assert_eq!(top(&doc), [NodeKind::Section, NodeKind::DialogueBlock]);
 }
 
 /// OFF-21b

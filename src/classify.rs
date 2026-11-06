@@ -121,7 +121,9 @@ pub(crate) fn to_trailing_space(text: &str) -> bool {
 /// The parts of a Character cue, as ranges into the text given to [`cue`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CueParts {
-    /// The name, without the whitespace after it.
+    /// The name, without the whitespace after it. For a forced cue with malformed or empty parts the
+    /// range covers the whole text: malformed groups stay in it as name text, and an empty name
+    /// takes the whole text, caret included.
     pub(crate) name: Range<usize>,
     /// Each extension group, `(` to `)`.
     pub(crate) extensions: Vec<Range<usize>>,
@@ -173,6 +175,38 @@ fn groups(body: &str, mut at: usize) -> Option<Vec<Range<usize>>> {
         at += close + 2;
     }
     Some(out)
+}
+
+/// The parts of a title-page key line, as offsets into the text given to [`key_line`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct KeyParts {
+    /// The key, without the spaces before the colon.
+    pub(crate) key: Range<usize>,
+    /// The first colon.
+    pub(crate) colon: usize,
+}
+
+/// Reads a title-page key line, with its leading whitespace removed (SPEC 4.1, `OFF-17a`).
+///
+/// The key runs to the first colon and holds alphanumerics, spaces, `-`, `_`, `'` and `&`, at least
+/// one of them alphanumeric. A line the heading-prefix test matches is never a key line.
+pub(crate) fn key_line(trimmed_start: &str) -> Option<KeyParts> {
+    let colon = trimmed_start
+        .find(':')
+        .filter(|_| !heading_prefix(trimmed_start))?;
+    let key = &trimmed_start[..colon];
+    let allowed = |c: char| is_alnum(c) || matches!(c, ' ' | '-' | '_' | '\'' | '&');
+    (key.chars().all(allowed) && key.chars().any(is_alnum)).then(|| KeyParts {
+        key: 0..key.trim_end_matches(' ').len(),
+        colon,
+    })
+}
+
+/// Whether a line is indented as a title-page continuation: a tab, or three or more spaces
+/// (`OFF-17d`).
+pub(crate) fn continuation_indent(line: &str) -> bool {
+    let lead = &line[..line.len() - line.trim_start_matches([' ', '\t']).len()];
+    lead.contains('\t') || lead.len() >= 3
 }
 
 /// The scene number that ends a heading line, as the range of the whole `#…#` (`##…#` when locked)
@@ -368,6 +402,47 @@ mod tests {
         }
         for s in ["~x", "# x", "= x", "===", "x", "INT. X"] {
             assert!(!ends_block(shape(s)), "{s:?}");
+        }
+    }
+
+    #[test]
+    fn key_lines() {
+        fn key(t: &str) -> Option<(&str, usize)> {
+            key_line(t).map(|k| (&t[k.key], k.colon))
+        }
+        assert_eq!(key("Title: x"), Some(("Title", 5)));
+        assert_eq!(key("Draft date: 5:30"), Some(("Draft date", 10)));
+        assert_eq!(key("Title :"), Some(("Title", 6)));
+        assert_eq!(key("A-b_c's & d:"), Some(("A-b_c's & d", 11)));
+        assert_eq!(key("1:"), Some(("1", 1)));
+        assert_eq!(key("É:"), Some(("É", 2)));
+        // `EXT:` has no period or space after the prefix, so it is not a heading prefix.
+        assert_eq!(key("EXT: x"), Some(("EXT", 3)));
+        for no in [
+            "",
+            ":",
+            " :",
+            "-: x",
+            "'&:",
+            "Title",
+            "Mr. O: x",
+            "a,b: c",
+            "a\tb: c",
+            "#a: b",
+            "INT. A: B",
+            "int x: y",
+        ] {
+            assert_eq!(key_line(no), None, "{no:?}");
+        }
+    }
+
+    #[test]
+    fn continuation_indents() {
+        for yes in ["\tx", "   x", "    x", " \tx", "  \tx", "\t"] {
+            assert!(continuation_indent(yes), "{yes:?}");
+        }
+        for no in ["x", " x", "  x", "", "  ", " x\t"] {
+            assert!(!continuation_indent(no), "{no:?}");
         }
     }
 

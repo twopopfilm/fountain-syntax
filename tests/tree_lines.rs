@@ -138,6 +138,10 @@ fn tree_invariants_exhaustive() {
         "x[[a\rb]]y",
         "a\r[[n]]\r\nb",
         "[[\r\r]]",
+        // Title pages: continuation lines, stray lines, hidden spans and CRLF breaks.
+        "a:\r\n\tb\r\n  c\r\n   d: e\r\n\r\nINT. X",
+        "[[n]]\n\nA:\n[[n]]\n\tv /* x\n */ w\n/* y */\n\nb",
+        "a: b [[c\n\nd]]\n  \n\ta: b\n \n",
     ] {
         parse_checked(s);
     }

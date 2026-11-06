@@ -1,5 +1,6 @@
-//! The parse driver. A forward pass gives each logical line its role, a block pass groups the lines
-//! into items, and each item is emitted into the tree line by line. Notes and Boneyard are hidden nodes placed by the layout layer.
+//! The parse driver. The title page is read first, then a forward pass gives each logical line its
+//! role, a block pass groups the lines into items, and each item is emitted into the tree line by
+//! line. Notes and Boneyard are hidden nodes placed by the layout layer.
 
 use std::ops::Range;
 
@@ -25,6 +26,12 @@ enum Role {
     Cue,
     Dialogue,
     Parenthetical,
+    /// A title-page key line. This role and the two after it are set by [`title_page`].
+    TitleKey,
+    /// A title-page continuation line.
+    TitleValue,
+    /// A title-page line that is neither (`OFF-17d`).
+    TitleStray,
 }
 
 /// One part of the tree: a single line, whose own parts make its node if it has one, or an element
@@ -96,6 +103,48 @@ fn next_significant(roles: &[Role], i: usize) -> Role {
         .copied()
         .find(|&r| is_significant(r))
         .unwrap_or(Role::Blank)
+}
+
+/// Finds the title page (SPEC 4.1) and gives its lines their roles. It returns the line range of
+/// the page, which ends at the first blank line, or `None` when there is no page.
+///
+/// Blank and invisible lines before the first key line are leading trivia. A bare key starts a page
+/// only when the next visible line is indented as a continuation. A continuation line needs a
+/// current entry; a stray line ends it, and an invisible line does not.
+fn title_page(roles: &mut [Role], lines: &[Logical]) -> Option<Range<usize>> {
+    let is_blank = |r: &Role| matches!(r, Role::Blank | Role::TwoSpaces);
+    let start = roles
+        .iter()
+        .position(|r| !is_blank(r) && !matches!(r, Role::Invisible))?;
+    let end = roles[start..]
+        .iter()
+        .position(is_blank)
+        .map_or(roles.len(), |n| start + n);
+    let trimmed = |i: usize| lines[i].visible.trim_start_matches([' ', '\t']);
+    let first = classify::key_line(trimmed(start))?;
+    let bare = trimmed(start)[first.colon + 1..]
+        .trim_start_matches([' ', '\t'])
+        .is_empty();
+    let under = (start + 1..end).find(|&i| !matches!(roles[i], Role::Invisible));
+    if bare && !under.is_some_and(|i| classify::continuation_indent(&lines[i].visible)) {
+        return None;
+    }
+    let mut current = false;
+    for i in start..end {
+        if matches!(roles[i], Role::Invisible) {
+            continue;
+        }
+        roles[i] = if current && classify::continuation_indent(&lines[i].visible) {
+            Role::TitleValue
+        } else if classify::key_line(trimmed(i)).is_some() {
+            current = true;
+            Role::TitleKey
+        } else {
+            current = false;
+            Role::TitleStray
+        };
+    }
+    Some(start..end)
 }
 
 /// Assigns the roles that depend on context, in one pass that knows whether a Dialogue block is
@@ -172,6 +221,7 @@ fn is_member(wrap: NodeKind, role: Role) -> bool {
         (NodeKind::Lyrics, Role::Shaped(s)) => s == LineShape::Lyrics,
         (NodeKind::DialogueBlock, Role::Shaped(s)) => s == LineShape::Lyrics,
         (NodeKind::DialogueBlock, Role::Dialogue | Role::Parenthetical) => true,
+        (NodeKind::TitleEntry, Role::TitleValue) => true,
         _ => false,
     }
 }
@@ -209,6 +259,7 @@ fn items(roles: &[Role], range: Range<usize>) -> Vec<Item> {
             Role::Shaped(LineShape::Lyrics) => Some(NodeKind::Lyrics),
             Role::Shaped(s) if is_action_text(s) => Some(NodeKind::Action),
             Role::Cue | Role::Shaped(LineShape::ForcedCue) => Some(NodeKind::DialogueBlock),
+            Role::TitleKey => Some(NodeKind::TitleEntry),
             _ => None,
         };
         match wrap {
@@ -259,6 +310,46 @@ fn text_parts(visible: &str, mark: Option<(TokenKind, usize)>) -> Vec<Part> {
     parts.push(Part::Tok(TokenKind::Text, after..trail));
     parts.push(Part::Tok(TokenKind::Whitespace, trail..visible.len()));
     parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
+/// `[ws] TitleKey(Text) [ws] Colon [ws] TitleValue(Text)? [ws]`: a title-page key line.
+fn key_parts(visible: &str) -> Vec<Part> {
+    let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
+    let key = classify::key_line(&visible[lead..]).expect("the title pass read this key line");
+    let (key, colon) = (lead + key.key.start..lead + key.key.end, lead + key.colon);
+    let end = visible.trim_end_matches([' ', '\t']).len();
+    let rest = &visible[colon + 1..end];
+    let value = end - rest.trim_start_matches([' ', '\t']).len();
+    let mut parts = vec![
+        Part::Tok(TokenKind::Whitespace, 0..lead),
+        Part::Node(
+            NodeKind::TitleKey,
+            vec![Part::Tok(TokenKind::Text, key.clone())],
+        ),
+        Part::Tok(TokenKind::Whitespace, key.end..colon),
+        Part::Tok(TokenKind::Colon, colon..colon + 1),
+        Part::Tok(TokenKind::Whitespace, colon + 1..value),
+    ];
+    if value < end {
+        parts.push(Part::Node(
+            NodeKind::TitleValue,
+            vec![Part::Tok(TokenKind::Text, value..end)],
+        ));
+    }
+    parts.push(Part::Tok(TokenKind::Whitespace, end..visible.len()));
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
+/// `[ws] TitleValue(Text) [ws]`: the layout of a title-page continuation line.
+fn value_parts(visible: &str) -> Vec<Part> {
+    let mut parts = text_parts(visible, None);
+    for part in &mut parts {
+        if let Part::Tok(TokenKind::Text, _) = part {
+            *part = Part::Node(NodeKind::TitleValue, vec![part.clone()]);
+        }
+    }
     parts
 }
 
@@ -385,7 +476,11 @@ fn parts(visible: &str, role: Role) -> Vec<Part> {
         Role::Transition => return node(NodeKind::Transition, text_parts(visible, None)),
         Role::Dialogue => return node(NodeKind::Dialogue, text_parts(visible, None)),
         Role::Parenthetical => return node(NodeKind::Parenthetical, text_parts(visible, None)),
-        Role::Blank | Role::TwoSpaces | Role::Invisible => return text_parts(visible, None),
+        Role::TitleKey => return key_parts(visible),
+        Role::TitleValue => return value_parts(visible),
+        Role::Blank | Role::TwoSpaces | Role::Invisible | Role::TitleStray => {
+            return text_parts(visible, None);
+        }
     };
     match shape {
         LineShape::Plain => text_parts(visible, None),
@@ -457,6 +552,7 @@ pub(crate) fn document(src: &str) -> Document {
     let hidden = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
     let mut roles: Vec<Role> = lines.iter().map(role).collect();
+    let page = title_page(&mut roles, &lines);
     frame(&mut roles, &lines);
     let at = Lines {
         src,
@@ -464,7 +560,17 @@ pub(crate) fn document(src: &str) -> Document {
         roles: &roles,
         hidden: &hidden,
     };
-    for item in items(&roles, 0..roles.len()) {
+    let all = 0..roles.len();
+    let top = match page {
+        Some(page) => {
+            let mut top = items(&roles, 0..page.start);
+            top.push(Item::Wrap(NodeKind::TitlePage, items(&roles, page.clone())));
+            top.extend(items(&roles, page.end..all.end));
+            top
+        }
+        None => items(&roles, all),
+    };
+    for item in top {
         emit(&mut b, &at, &item);
         // The break after an element's last line belongs to the Gap, not to the element.
         line_break(&mut b, &lines[item.last_line()]);
