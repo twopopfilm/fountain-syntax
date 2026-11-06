@@ -89,7 +89,7 @@ fn el_character_2_view_forced_keeps_case() {
     assert_eq!(b.cue.name.plain(), "McCLANE");
     assert_eq!(b.cue.name.span, Some(Span::new(1, 8)));
     assert!(b.cue.forced);
-    // Decision 4: a forced cue stands with nothing after it.
+    // A forced cue stands with nothing after it.
     let b = only_block("@MARA\n");
     assert!(b.cue.forced);
     assert_eq!(b.cue.name.plain(), "MARA");

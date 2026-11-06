@@ -320,7 +320,7 @@ fn keep_hidden(out: &mut Vec<Piece<'_>>, line_start: usize) {
 
 /// The texts of an element with several (a title page, a Lyrics run, a cue), collected as
 /// piece lists before they are built. A hidden atom joins the most recent text (the nearest
-/// before it, Decision 4), or waits for the next one when there is none yet.
+/// text before it), or waits for the next one when there is none yet.
 #[derive(Default)]
 struct Slots<'a> {
     slots: Vec<Vec<Piece<'a>>>,

@@ -51,8 +51,9 @@ The `serde` feature exists too: a `Document` serialises as its source text and i
   conventions (an opt-in typed view) change no parse, so they are always on. Slugline's locked scene numbers (`##12A#`)
   and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag
   (`locked-scene-numbers` and `shot`). Everything else surveyed, such as brace directives, endnotes and stage-play
-  variants, is not supported in 0.1: the text is kept and written back as it is. The tree and the typed view already
-  handle them, with typed title-page accessors and the note-conventions view (`Note::conventions`).
+  variants, is not supported in 0.1: the text is kept and written back as it is. For the always-on extensions the tree
+  keeps the text, and the typed view adds typed title-page accessors (`TitlePage::title()` and others) and the opt-in
+  note-conventions reader (`Note::conventions`).
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree.
   Reporting ambiguous cases as diagnostics instead of errors is planned.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
@@ -75,8 +76,8 @@ crate treats correctness as something to measure:
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
-  name. The tests for the syntax tree and for the typed view's elements and scenes are written; the rest are
-  planned for F2 to F4.
+  name. The tests for the syntax tree and for the typed view (elements, scenes, dialogue and `serde`) are written;
+  the rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every

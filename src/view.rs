@@ -261,10 +261,12 @@ pub struct DialogueBlock {
 pub enum DialogueItem {
     /// A Dialogue line.
     Line(Text),
-    /// A Parenthetical line.
+    /// A Parenthetical line. The text keeps its parentheses.
     Parenthetical(Text),
     /// A Lyrics, Section, Synopsis, Page Break, Note or Boneyard line inside the block. Boxed to
-    /// keep the enum small (`clippy::large_enum_variant`).
+    /// keep the enum small (`clippy::large_enum_variant`). In a dual-dialogue pair, lines skipped
+    /// between the two halves (Sections, Synopses, Page Breaks, Notes and Boneyards) are appended to
+    /// the end of `left.items` as Interjections.
     Interjection(Box<Element>),
 }
 
@@ -298,7 +300,8 @@ impl Extension {
     }
 }
 
-/// Two dialogue blocks side by side.
+/// Two dialogue blocks side by side. Lines skipped between the two halves (Sections, Synopses,
+/// Page Breaks, Notes and Boneyards) are appended to the end of `left.items` as Interjections.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DualDialogue {
@@ -377,7 +380,8 @@ pub struct Boneyard {
     pub span: Option<Span>,
 }
 
-/// Inline content: plain runs, emphasis, escapes and hidden spans.
+/// Inline content: plain runs, emphasis, escapes and hidden spans. Line breaks inside the text
+/// are kept, as written, in the runs.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Text {
@@ -393,7 +397,8 @@ pub struct Text {
 pub enum Run {
     /// Plain text.
     Plain(String),
-    /// Emphasised text, which may nest.
+    /// Emphasised text, which may nest. Nesting is capped at 32 open spans per line; a deeper
+    /// opener stays literal.
     Emphasis {
         /// True for bold.
         bold: bool,
