@@ -52,7 +52,7 @@ The `serde` feature exists too: a `Document` serialises as its source text and i
   and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag
   (`locked-scene-numbers` and `shot`). Everything else surveyed, such as brace directives, endnotes and stage-play
   variants, is not supported in 0.1: the text is kept and written back as it is. The tree and the typed view already
-  handle them, with typed title-page accessors; the note-conventions view is planned.
+  handle them, with typed title-page accessors and the note-conventions view (`Note::conventions`).
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree.
   Reporting ambiguous cases as diagnostics instead of errors is planned.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both

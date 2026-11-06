@@ -1,7 +1,10 @@
 //! The typed view's elements and title page (SPEC 4, 9), read through `parse`.
 
+mod common;
+
 use fountain_syntax::{
-    Action, Element, Lyrics, Run, Scene, Screenplay, Span, Text, TitlePage, Transition, parse,
+    Action, Element, Lyrics, Note, NoteConvention, Run, Scene, Screenplay, Span, Text, TitlePage,
+    Transition, parse,
 };
 
 fn view(src: &str) -> Screenplay {
@@ -527,4 +530,149 @@ fn screenplay_is_linear_on_long_runs() {
     let v = view(&src);
     assert_eq!(v.scenes[0].sections.len(), n);
     assert_eq!(action(&v.scenes[0].elements[0]).interjections.len(), n);
+}
+
+/// The convention of a note with this text.
+fn conv(text: &str) -> Option<NoteConvention> {
+    Note {
+        text: text.to_owned(),
+        span: None,
+    }
+    .conventions()
+}
+
+fn s(x: &str) -> String {
+    x.to_owned()
+}
+
+#[test]
+fn ext_notes_view_1_colour_marker_tag_none() {
+    // Colours: a word, `color` and a word, `#` and six hex digits. The word stays as typed.
+    assert_eq!(conv("teal"), Some(NoteConvention::Colour(s("teal"))));
+    assert_eq!(conv("Teal"), Some(NoteConvention::Colour(s("Teal"))));
+    assert_eq!(conv("color teal"), Some(NoteConvention::Colour(s("teal"))));
+    assert_eq!(conv("COLOUR Teal"), Some(NoteConvention::Colour(s("Teal"))));
+    assert_eq!(
+        conv(" #a1b2c3 "),
+        Some(NoteConvention::Colour(s("#a1b2c3")))
+    );
+    assert_eq!(conv("#A1B2C3"), Some(NoteConvention::Colour(s("#A1B2C3"))));
+    assert_eq!(conv("été"), Some(NoteConvention::Colour(s("été"))));
+    // Not colours: wrong hex length or digit, or more than one word.
+    for not in [
+        "#12345",
+        "#a1b2c3d",
+        "#a1b2cg",
+        "#",
+        "teal green",
+        "color a b",
+    ] {
+        assert_eq!(conv(not), None, "{not:?}");
+    }
+
+    // Markers: `marker`, an optional colour word directly before a colon, the text.
+    let marker = |colour: Option<&str>, text: &str| NoteConvention::Marker {
+        colour: colour.map(s),
+        text: s(text),
+    };
+    assert_eq!(
+        conv("marker amber: fix pacing"),
+        Some(marker(Some("amber"), "fix pacing"))
+    );
+    assert_eq!(conv("Marker: fix"), Some(marker(None, "fix")));
+    assert_eq!(conv("marker fix pacing"), Some(marker(None, "fix pacing")));
+    assert_eq!(
+        conv("marker call at 12:30"),
+        Some(marker(None, "call at 12:30"))
+    );
+    assert_eq!(conv("marker"), Some(marker(None, "")));
+    assert_eq!(conv("marker teal:"), Some(marker(Some("teal"), "")));
+    assert_eq!(conv("markers are fun"), None);
+
+    // Tags: one word and a colon at the start.
+    let tag = |t: &str, text: &str| NoteConvention::Tag {
+        tag: s(t),
+        text: s(text),
+    };
+    assert_eq!(
+        conv("Check: confirm tides"),
+        Some(tag("Check", "confirm tides"))
+    );
+    assert_eq!(conv("TODO:later"), Some(tag("TODO", "later")));
+    assert_eq!(conv("À faire: café"), None, "two words before the colon");
+    assert_eq!(conv("Vérifier: café"), Some(tag("Vérifier", "café")));
+    assert_eq!(conv("Check:"), Some(tag("Check", "")));
+
+    // Neither.
+    assert_eq!(conv("remember to call the bank"), None);
+    assert_eq!(conv(""), None);
+    assert_eq!(conv("   \t\n "), None);
+    assert_eq!(conv(":"), None);
+    assert_eq!(conv(": text"), None);
+
+    // Through the view.
+    let v = view("[[Check: confirm tides]]\n");
+    let Element::Note(n) = &v.preamble.elements[0] else {
+        panic!("{v:?}")
+    };
+    assert_eq!(n.conventions(), Some(tag("Check", "confirm tides")));
+}
+
+/// Every Note of the elements, whole-line and inline in an Action.
+fn notes_of<'a>(elements: &'a [Element], out: &mut Vec<&'a Note>) {
+    for e in elements {
+        match e {
+            Element::Note(n) => out.push(n),
+            Element::Action(a) => {
+                out.extend(a.text.runs.iter().filter_map(|r| match r {
+                    Run::Note(n) => Some(n),
+                    _ => None,
+                }));
+                notes_of(&a.interjections, out);
+            }
+            _ => {}
+        }
+    }
+}
+
+#[test]
+fn ext_notes_view_2_conventions_change_nothing() {
+    let src = "[[teal]]\n\nINT. A\n\nHe waits [[Check: tides]] and [[marker amber: fix]] and \
+               [[just a thought]].\n\n[[color teal]]\n\n[[]]\n";
+    let doc = parse(src);
+    let before_view = doc.screenplay();
+    let before_tree = common::dump(doc.root());
+    let mut notes = Vec::new();
+    notes_of(&before_view.preamble.elements, &mut notes);
+    for sc in &before_view.scenes {
+        notes_of(&sc.elements, &mut notes);
+    }
+    assert!(notes.len() >= 5, "{notes:?}");
+    let found = notes.iter().filter(|n| n.conventions().is_some()).count();
+    assert!(found >= 3, "{found}");
+    assert_eq!(doc.screenplay(), before_view);
+    assert_eq!(common::dump(doc.root()), before_tree);
+    assert_eq!(doc.source(), src);
+    // The hash half of EXT-notes-view-2 (the same hashes with or without the call) waits for #10.
+}
+
+#[test]
+fn conventions_never_panic_on_short_text() {
+    let alphabet = ["m", "a", "r", "#", ":", " ", "é", "0", "f", "k"];
+    let mut inputs = vec![String::new()];
+    let mut last = vec![String::new()];
+    for _ in 0..3 {
+        let next: Vec<String> = last
+            .iter()
+            .flat_map(|x| alphabet.iter().map(move |c| format!("{x}{c}")))
+            .collect();
+        inputs.extend(next.iter().cloned());
+        last = next;
+    }
+    for text in &inputs {
+        let _ = conv(text);
+    }
+    let _ = conv("marke");
+    let _ = conv(&"é".repeat(100_000));
+    let _ = conv(&format!("marker {}:", "é ".repeat(50_000)));
 }
