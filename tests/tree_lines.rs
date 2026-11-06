@@ -114,9 +114,9 @@ fn empty_document_is_one_gap() {
 /// Every string up to length 4 over a small alphabet satisfies the tree invariants (SPEC 8.3).
 #[test]
 fn tree_invariants_exhaustive() {
-    const ALPHABET: [char; 19] = [
+    const ALPHABET: [char; 28] = [
         '\n', '\r', ' ', '\t', 'a', 'A', 'é', '.', '!', '@', '[', ']', '/', '*', '~', '>', '<',
-        '#', '=',
+        '#', '=', '^', '(', ')', ':', 'I', 'N', 'T', 'O', '1',
     ];
     let mut layer = vec![String::new()];
     parse_checked("");

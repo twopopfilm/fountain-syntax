@@ -58,9 +58,10 @@ fn el_heading_4_needs_blank_lines() {
         tree("a\nINT. X\n\nb"),
         r#"Document(Action(Text"a" LineBreak"\n" Text"INT. X") Gap(LineBreak"\n" LineBreak"\n") Action(Text"b"))"#
     );
+    // Lowercase, so the cue rule cannot take it (an uppercase one is a cue: tree_dialogue.rs).
     assert_eq!(
-        tree("INT. X\nb"),
-        r#"Document(Action(Text"INT. X" LineBreak"\n" Text"b"))"#
+        tree("int. x\nb"),
+        r#"Document(Action(Text"int. x" LineBreak"\n" Text"b"))"#
     );
     // Framed: the end of the document counts as a blank line.
     let doc = parse_checked("a\n\nINT. X");
@@ -98,8 +99,8 @@ fn off_6a_framing_skips_invisible_and_transparent_lines() {
     );
     // A Note line below, with text below it: not framed.
     assert_eq!(
-        tree("INT. X\n[[n]]\nmore"),
-        r#"Document(Action(Text"INT. X" LineBreak"\n" Note(Marker"[[" Text"n" Marker"]]") LineBreak"\n" Text"more"))"#
+        tree("int. x\n[[n]]\nmore"),
+        r#"Document(Action(Text"int. x" LineBreak"\n" Note(Marker"[[" Text"n" Marker"]]") LineBreak"\n" Text"more"))"#
     );
 }
 
@@ -356,6 +357,30 @@ fn hidden_placement_before_scene_number() {
     assert_eq!(
         tree("INT. X #1/*n*/2#"),
         r###"Document(SceneHeading(Text"INT. X" Whitespace" " SceneNumber(Marker"#" Text"1" Boneyard(Marker"/*" Text"n" Marker"*/") Text"2" Marker"#")))"###
+    );
+}
+
+/// Hidden-node placement: a hidden span inside a heading prefix splits the heading Text, and one
+/// right after the forced sigil sits between the Sigil and the Text, inside the heading.
+#[test]
+fn hidden_placement_in_prefix_and_after_sigil() {
+    assert_eq!(
+        tree("IN/*x*/T. A"),
+        r#"Document(SceneHeading(Text"IN" Boneyard(Marker"/*" Text"x" Marker"*/") Text"T. A"))"#
+    );
+    assert_eq!(
+        tree("./*x*/LAMP"),
+        r#"Document(SceneHeading(Sigil"." Boneyard(Marker"/*" Text"x" Marker"*/") Text"LAMP"))"#
+    );
+}
+
+/// OFF-21b
+#[test]
+fn off_21b_outline_line_before_forced_heading_is_top_level() {
+    // Decision 2: no Action member follows the Section, so it is top-level.
+    assert_eq!(
+        tree("a\n# s\n.HEAD"),
+        r###"Document(Action(Text"a") Gap(LineBreak"\n") Section(Marker"#" Whitespace" " Text"s") Gap(LineBreak"\n") SceneHeading(Sigil"." Text"HEAD"))"###
     );
 }
 

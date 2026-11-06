@@ -1,10 +1,10 @@
-//! The parse driver. A block pass groups the logical lines into items, and each item is emitted
-//! into the tree line by line. Notes and Boneyard are hidden nodes placed by the layout layer.
+//! The parse driver. A forward pass gives each logical line its role, a block pass groups the lines
+//! into items, and each item is emitted into the tree line by line. Notes and Boneyard are hidden nodes placed by the layout layer.
 
 use std::ops::Range;
 
 use crate::classify::{self, LineShape};
-use crate::hidden::{self, Logical};
+use crate::hidden::{self, Hidden, Logical};
 use crate::layout::{self, Part};
 use crate::lines;
 use crate::tree::{Document, NodeKind, Span, TokenKind, TreeBuilder};
@@ -13,20 +13,40 @@ use crate::tree::{Document, NodeKind, Span, TokenKind, TreeBuilder};
 #[derive(Clone, Copy, Debug)]
 enum Role {
     Blank,
+    /// Exactly two spaces: a Dialogue line inside a block, blank elsewhere (`OFF-1b`). [`frame`]
+    /// resolves it.
+    TwoSpaces,
     /// Only hidden spans and whitespace (SPEC 3.4, rule 3).
     Invisible,
     Shaped(LineShape),
+    /// An automatic Transition. This role and the ones after it are set by [`frame`].
+    Transition,
+    /// An automatic Character cue; a forced one stays `Shaped(LineShape::ForcedCue)`.
+    Cue,
+    Dialogue,
+    Parenthetical,
 }
 
-/// A run of logical lines emitted together: inside `wrap` when it is set, else a single line whose
-/// own parts make its node, if it has one.
-struct Item {
-    wrap: Option<NodeKind>,
-    lines: Range<usize>,
+/// One part of the tree: a single line, whose own parts make its node if it has one, or an element
+/// node around its parts.
+enum Item {
+    Line(usize),
+    Wrap(NodeKind, Vec<Item>),
+}
+
+impl Item {
+    fn last_line(&self) -> usize {
+        match self {
+            Item::Line(i) => *i,
+            Item::Wrap(_, kids) => kids.last().expect("an element has a line").last_line(),
+        }
+    }
 }
 
 fn role(line: &Logical) -> Role {
-    if line.is_blank() {
+    if line.visible == "  " && line.is_blank() {
+        Role::TwoSpaces
+    } else if line.is_blank() {
         Role::Blank
     } else if line.is_invisible() {
         Role::Invisible
@@ -37,12 +57,9 @@ fn role(line: &Logical) -> Role {
     }
 }
 
-/// Lines that continue an Action paragraph. A forced `@` cue is plain text for now.
+/// Lines that continue an Action paragraph.
 fn is_action_text(shape: LineShape) -> bool {
-    matches!(
-        shape,
-        LineShape::Plain | LineShape::ForcedAction | LineShape::ForcedCue
-    )
+    matches!(shape, LineShape::Plain | LineShape::ForcedAction)
 }
 
 /// Section, Synopsis and Page Break lines are transparent (SPEC 3.4, rule 3).
@@ -59,7 +76,7 @@ fn is_significant(role: Role) -> bool {
     match role {
         Role::Invisible => false,
         Role::Shaped(s) => !is_outline(s),
-        Role::Blank => true,
+        _ => true,
     }
 }
 
@@ -81,16 +98,68 @@ fn next_significant(roles: &[Role], i: usize) -> Role {
         .unwrap_or(Role::Blank)
 }
 
-/// Demotes the lines that are headings only by prefix to plain text unless a blank line comes before
-/// and after them (SPEC 4.2).
-fn frame(roles: &mut [Role]) {
+/// Assigns the roles that depend on context, in one pass that knows whether a Dialogue block is
+/// open (SPEC 4.0).
+///
+/// Inside a block every line that no sigil claims is a Parenthetical or Dialogue line; a blank line
+/// or a block-ending forced line ends it, and Lyrics, outline and invisible lines interrupt it.
+/// Outside a block the framing rules apply. The lines before `i` are resolved by then, so a
+/// two-space line seen there is already blank or Dialogue; one seen after `i` is outside any block
+/// a framed line could open, so it counts as blank, and it is never the text line a cue needs.
+fn frame(roles: &mut [Role], lines: &[Logical]) {
+    let mut in_block = false;
     for i in 0..roles.len() {
-        if matches!(roles[i], Role::Shaped(LineShape::PrefixHeading))
-            && !(matches!(prev_significant(roles, i), Role::Blank)
-                && matches!(next_significant(roles, i), Role::Blank))
-        {
-            roles[i] = Role::Shaped(LineShape::Plain);
-        }
+        let visible = lines[i].visible.trim_start_matches([' ', '\t']);
+        roles[i] = match roles[i] {
+            Role::Blank => {
+                in_block = false;
+                Role::Blank
+            }
+            Role::TwoSpaces if in_block => Role::Dialogue,
+            Role::TwoSpaces => Role::Blank,
+            Role::Shaped(s) if s == LineShape::Lyrics || is_outline(s) => roles[i],
+            Role::Shaped(s) if classify::ends_block(s) => {
+                in_block = s == LineShape::ForcedCue;
+                roles[i]
+            }
+            Role::Shaped(_) if in_block => {
+                let text = visible.trim_end_matches([' ', '\t']);
+                if text.starts_with('(') && text.ends_with(')') {
+                    Role::Parenthetical
+                } else {
+                    Role::Dialogue
+                }
+            }
+            Role::Shaped(s) => {
+                let r = framed(roles, i, s, visible);
+                in_block = matches!(r, Role::Cue);
+                r
+            }
+            r => r,
+        };
+    }
+}
+
+/// The framing rules for a line outside a block, in the order heading, transition, cue, after the
+/// `TO:` carve-out (SPEC 4.0, step 3). A line no rule takes is Action.
+fn framed(roles: &[Role], i: usize, shape: LineShape, visible: &str) -> Role {
+    let blank_before = matches!(prev_significant(roles, i), Role::Blank);
+    let after = next_significant(roles, i);
+    let framed = blank_before && matches!(after, Role::Blank | Role::TwoSpaces);
+    // The line after a cue must be a text line: not blank, not a two-space line, not a forced
+    // line that ends a block.
+    let text_after = matches!(after, Role::Shaped(s) if !classify::ends_block(s));
+    let trimmed = visible.trim_end_matches([' ', '\t']);
+    if classify::to_trailing_space(visible) {
+        Role::Shaped(LineShape::Plain)
+    } else if framed && shape == LineShape::PrefixHeading {
+        Role::Shaped(shape)
+    } else if framed && classify::transition(visible) {
+        Role::Transition
+    } else if blank_before && text_after && classify::cue(trimmed, false).is_some() {
+        Role::Cue
+    } else {
+        Role::Shaped(LineShape::Plain)
     }
 }
 
@@ -99,6 +168,8 @@ fn is_member(wrap: NodeKind, role: Role) -> bool {
     match (wrap, role) {
         (NodeKind::Action, Role::Shaped(s)) => is_action_text(s),
         (NodeKind::Lyrics, Role::Shaped(s)) => s == LineShape::Lyrics,
+        (NodeKind::DialogueBlock, Role::Shaped(s)) => s == LineShape::Lyrics,
+        (NodeKind::DialogueBlock, Role::Dialogue | Role::Parenthetical) => true,
         _ => false,
     }
 }
@@ -108,19 +179,20 @@ fn is_member(wrap: NodeKind, role: Role) -> bool {
 fn is_skippable(wrap: NodeKind, role: Role) -> bool {
     match (wrap, role) {
         (_, Role::Invisible) => true,
-        (NodeKind::Action, Role::Shaped(s)) => is_outline(s),
+        (NodeKind::Action | NodeKind::DialogueBlock, Role::Shaped(s)) => is_outline(s),
         _ => false,
     }
 }
 
-/// The block pass: groups lines into the items the tree is made of.
-fn items(roles: &[Role]) -> Vec<Item> {
+/// The block pass: groups the lines in `range` into the items the tree is made of.
+fn items(roles: &[Role], range: Range<usize>) -> Vec<Item> {
     let mut out = Vec::new();
     // The open element and its first line; `end` is one past its last member line, and the lines
     // from `end` to the current one are skippable lines waiting for a member.
     let mut open: Option<(NodeKind, usize)> = None;
     let mut end = 0;
-    for (i, &role) in roles.iter().enumerate() {
+    for i in range.clone() {
+        let role = roles[i];
         if let Some((wrap, _)) = open {
             if is_member(wrap, role) {
                 end = i + 1;
@@ -130,10 +202,11 @@ fn items(roles: &[Role]) -> Vec<Item> {
                 continue;
             }
         }
-        close(&mut out, open.take(), end, i);
+        close(&mut out, roles, open.take(), end, i);
         let wrap = match role {
             Role::Shaped(LineShape::Lyrics) => Some(NodeKind::Lyrics),
             Role::Shaped(s) if is_action_text(s) => Some(NodeKind::Action),
+            Role::Cue | Role::Shaped(LineShape::ForcedCue) => Some(NodeKind::DialogueBlock),
             _ => None,
         };
         match wrap {
@@ -141,28 +214,33 @@ fn items(roles: &[Role]) -> Vec<Item> {
                 open = Some((wrap, i));
                 end = i + 1;
             }
-            None => out.push(Item {
-                wrap: None,
-                lines: i..i + 1,
-            }),
+            None => out.push(Item::Line(i)),
         }
     }
-    close(&mut out, open, end, roles.len());
+    close(&mut out, roles, open, end, range.end);
     out
 }
 
 /// Ends the open element after its last member, `end`. The skippable lines up to `to` that no
-/// member followed are top-level.
-fn close(out: &mut Vec<Item>, open: Option<(NodeKind, usize)>, end: usize, to: usize) {
+/// member followed are top-level. Inside a Dialogue block, the lines after the cue are grouped
+/// again, so a run of Lyrics is one node there too.
+fn close(
+    out: &mut Vec<Item>,
+    roles: &[Role],
+    open: Option<(NodeKind, usize)>,
+    end: usize,
+    to: usize,
+) {
     let Some((wrap, start)) = open else { return };
-    out.push(Item {
-        wrap: Some(wrap),
-        lines: start..end,
-    });
-    out.extend((end..to).map(|i| Item {
-        wrap: None,
-        lines: i..i + 1,
-    }));
+    let kids = if wrap == NodeKind::DialogueBlock {
+        let mut kids = vec![Item::Line(start)];
+        kids.extend(items(roles, start + 1..end));
+        kids
+    } else {
+        (start..end).map(Item::Line).collect()
+    };
+    out.push(Item::Wrap(wrap, kids));
+    out.extend((end..to).map(Item::Line));
 }
 
 /// The leading whitespace, an optional `mark` of `(kind, byte length)` right after it, the text up
@@ -253,15 +331,63 @@ fn heading_parts(visible: &str, forced: bool) -> Vec<Part> {
     parts
 }
 
+/// `[ws] Sigil"@"? CharacterName(Text) ([ws] Extension(Marker"(" Text? Marker")"))* [ws]
+/// Caret(Marker"^")? [ws]`: the layout of a Character cue line.
+fn cue_parts(visible: &str, forced: bool) -> Vec<Part> {
+    let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
+    let at = lead + usize::from(forced);
+    let end = visible.trim_end_matches([' ', '\t']).len();
+    let cue = classify::cue(&visible[at..end], forced).expect("the block pass read this cue");
+    let shift = |r: &Range<usize>| at + r.start..at + r.end;
+    let mut parts = vec![Part::Tok(TokenKind::Whitespace, 0..lead)];
+    if forced {
+        parts.push(Part::Tok(TokenKind::Sigil, lead..at));
+    }
+    let name = shift(&cue.name);
+    let mut after = name.end;
+    parts.push(Part::Node(
+        NodeKind::CharacterName,
+        vec![Part::Tok(TokenKind::Text, name)],
+    ));
+    for ext in cue.extensions.iter().map(shift) {
+        let mut kids = vec![
+            Part::Tok(TokenKind::Marker, ext.start..ext.start + 1),
+            Part::Tok(TokenKind::Text, ext.start + 1..ext.end - 1),
+            Part::Tok(TokenKind::Marker, ext.end - 1..ext.end),
+        ];
+        kids.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+        parts.push(Part::Tok(TokenKind::Whitespace, after..ext.start));
+        parts.push(Part::Node(NodeKind::Extension, kids));
+        after = ext.end;
+    }
+    if let Some(c) = cue.caret.map(|c| at + c) {
+        parts.push(Part::Tok(TokenKind::Whitespace, after..c));
+        parts.push(Part::Node(
+            NodeKind::Caret,
+            vec![Part::Tok(TokenKind::Marker, c..c + 1)],
+        ));
+        after = c + 1;
+    }
+    parts.push(Part::Tok(TokenKind::Whitespace, after..visible.len()));
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
 /// The layout of one logical line.
 fn parts(visible: &str, role: Role) -> Vec<Part> {
     let sigil = |n| Some((TokenKind::Sigil, n));
     let node = |kind, parts| vec![Part::Node(kind, parts)];
-    let Role::Shaped(shape) = role else {
-        return text_parts(visible, None);
+    let shape = match role {
+        Role::Shaped(shape) => shape,
+        Role::Cue => return node(NodeKind::CharacterCue, cue_parts(visible, false)),
+        Role::Transition => return node(NodeKind::Transition, text_parts(visible, None)),
+        Role::Dialogue => return node(NodeKind::Dialogue, text_parts(visible, None)),
+        Role::Parenthetical => return node(NodeKind::Parenthetical, text_parts(visible, None)),
+        Role::Blank | Role::TwoSpaces | Role::Invisible => return text_parts(visible, None),
     };
     match shape {
-        LineShape::Plain | LineShape::ForcedCue => text_parts(visible, None),
+        LineShape::Plain => text_parts(visible, None),
+        LineShape::ForcedCue => node(NodeKind::CharacterCue, cue_parts(visible, true)),
         LineShape::ForcedHeading | LineShape::PrefixHeading => node(
             NodeKind::SceneHeading,
             heading_parts(visible, shape == LineShape::ForcedHeading),
@@ -280,6 +406,42 @@ fn parts(visible: &str, role: Role) -> Vec<Part> {
     }
 }
 
+/// What [`emit`] reads from.
+struct Lines<'a> {
+    src: &'a str,
+    lines: &'a [Logical],
+    roles: &'a [Role],
+    hidden: &'a [Hidden],
+}
+
+/// Emits `item`. The line break after each of its lines but the last belongs to it; the last one
+/// belongs to whatever holds the item.
+fn emit(b: &mut TreeBuilder, at: &Lines<'_>, item: &Item) {
+    match item {
+        Item::Line(i) => {
+            let line = &at.lines[*i];
+            let parts = parts(&line.visible, at.roles[*i]);
+            layout::emit_line(b, at.src, line, &parts, at.hidden);
+        }
+        Item::Wrap(kind, kids) => {
+            b.start_node(*kind);
+            for (k, kid) in kids.iter().enumerate() {
+                emit(b, at, kid);
+                if k + 1 < kids.len() {
+                    line_break(b, &at.lines[kid.last_line()]);
+                }
+            }
+            b.finish_node();
+        }
+    }
+}
+
+fn line_break(b: &mut TreeBuilder, line: &Logical) {
+    if let Some(brk) = line.brk {
+        b.token(TokenKind::LineBreak, brk);
+    }
+}
+
 pub(crate) fn document(src: &str) -> Document {
     let mut b = TreeBuilder::new();
     let from = if src.starts_with('\u{FEFF}') {
@@ -293,22 +455,17 @@ pub(crate) fn document(src: &str) -> Document {
     let hidden = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
     let mut roles: Vec<Role> = lines.iter().map(role).collect();
-    frame(&mut roles);
-    for item in items(&roles) {
-        if let Some(kind) = item.wrap {
-            b.start_node(kind);
-        }
-        for i in item.lines.clone() {
-            let line = &lines[i];
-            layout::emit_line(&mut b, src, line, &parts(&line.visible, roles[i]), &hidden);
-            // The break after an element's last line belongs to the Gap, not to the element.
-            if item.wrap.is_some() && i + 1 == item.lines.end {
-                b.finish_node();
-            }
-            if let Some(brk) = line.brk {
-                b.token(TokenKind::LineBreak, brk);
-            }
-        }
+    frame(&mut roles, &lines);
+    let at = Lines {
+        src,
+        lines: &lines,
+        roles: &roles,
+        hidden: &hidden,
+    };
+    for item in items(&roles, 0..roles.len()) {
+        emit(&mut b, &at, &item);
+        // The break after an element's last line belongs to the Gap, not to the element.
+        line_break(&mut b, &lines[item.last_line()]);
     }
     b.finish(src)
 }

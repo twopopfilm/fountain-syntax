@@ -85,6 +85,96 @@ pub(crate) fn heading_prefix(trimmed_start: &str) -> bool {
         })
 }
 
+/// Uppercase text (SPEC 3.5): at least one uppercase letter and no lowercase one.
+pub(crate) fn is_uppercase_text(text: &str) -> bool {
+    text.chars().any(char::is_uppercase) && !text.chars().any(char::is_lowercase)
+}
+
+/// The forced lines that end a Dialogue block (`OFF-24b`). Such a line is also never the text line
+/// a cue needs after it.
+pub(crate) fn ends_block(shape: LineShape) -> bool {
+    match shape {
+        LineShape::ForcedAction
+        | LineShape::ForcedCue
+        | LineShape::ForcedHeading
+        | LineShape::Centered
+        | LineShape::ForcedTransition => true,
+        #[cfg(feature = "shot")]
+        LineShape::Shot => true,
+        _ => false,
+    }
+}
+
+/// An automatic Transition, read with the leading whitespace removed: uppercase and ending in
+/// exactly `TO:` (`OFF-9d`).
+pub(crate) fn transition(trimmed_start: &str) -> bool {
+    is_uppercase_text(trimmed_start) && trimmed_start.ends_with("TO:")
+}
+
+/// An uppercase line ending in `TO:` and then spaces or tabs: never a Transition or a cue
+/// (`OFF-23a`, `OFF-23b`).
+pub(crate) fn to_trailing_space(text: &str) -> bool {
+    let body = text.trim_end_matches([' ', '\t']);
+    body.len() < text.len() && transition(body)
+}
+
+/// The parts of a Character cue, as ranges into the text given to [`cue`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct CueParts {
+    /// The name, without the whitespace after it.
+    pub(crate) name: Range<usize>,
+    /// Each extension group, `(` to `)`.
+    pub(crate) extensions: Vec<Range<usize>>,
+    /// The `^` of a dual-dialogue cue.
+    pub(crate) caret: Option<usize>,
+}
+
+/// Reads a cue from a line trimmed at both ends, after the `@` when `forced` (SPEC 4.4).
+///
+/// A caret counts only as the last character (`OFF-11c`). The name runs to the first `(`; after it
+/// come groups `(…)` with no `(` inside, separated by whitespace only (`OFF-3b`, `OFF-3c`). An
+/// automatic cue needs an uppercase name (`OFF-3a`, `OFF-4`). A forced cue always reads: with
+/// malformed groups the remainder is the name, and an empty name takes the whole text.
+pub(crate) fn cue(trimmed: &str, forced: bool) -> Option<CueParts> {
+    let caret = trimmed.ends_with('^').then(|| trimmed.len() - 1);
+    let body = trimmed[..caret.unwrap_or(trimmed.len())].trim_end_matches([' ', '\t']);
+    let open = body.find('(').unwrap_or(body.len());
+    let name = 0..body[..open].trim_end_matches([' ', '\t']).len();
+    let parts = |name, extensions| {
+        Some(CueParts {
+            name,
+            extensions,
+            caret,
+        })
+    };
+    match groups(body, open) {
+        _ if forced && name.is_empty() => Some(CueParts {
+            name: 0..trimmed.len(),
+            extensions: Vec::new(),
+            caret: None,
+        }),
+        Some(ext) if forced || is_uppercase_text(&body[name.clone()]) => parts(name, ext),
+        None if forced => parts(0..body.len(), Vec::new()),
+        _ => None,
+    }
+}
+
+/// The extension groups of `body` from `at` on, or `None` when anything else is there.
+fn groups(body: &str, mut at: usize) -> Option<Vec<Range<usize>>> {
+    let mut out = Vec::new();
+    while at < body.len() {
+        at = body.len() - body[at..].trim_start_matches([' ', '\t']).len();
+        let inner = body[at..].strip_prefix('(')?;
+        let close = inner.find(['(', ')'])?;
+        if inner.as_bytes()[close] != b')' {
+            return None;
+        }
+        out.push(at..at + close + 2);
+        at += close + 2;
+    }
+    Some(out)
+}
+
 /// The scene number that ends a heading line, as the range of the whole `#…#` (`##…#` when locked)
 /// and whether it is locked (`OFF-8`). It follows a space or tab and holds alphanumerics, `-` and
 /// `.`; only trailing whitespace may follow. A locked number needs the `locked-scene-numbers` feature.
@@ -186,6 +276,101 @@ mod tests {
         }
     }
 
+    #[test]
+    fn uppercase_text() {
+        for yes in ["MARA", "R2D2", "JOSÉ", "ΣΩΚΡΑΤΗΣ", "MR. O'BRIEN", "A 李"] {
+            assert!(is_uppercase_text(yes), "{yes:?}");
+        }
+        for no in ["Mara", "23", "李明", "", "елена", "(...)"] {
+            assert!(!is_uppercase_text(no), "{no:?}");
+        }
+    }
+
+    #[test]
+    fn transitions() {
+        assert!(transition("CUT TO:"));
+        assert!(transition("SMASH CUT TO:"));
+        for no in ["Cut to:", "CUT TO: ", "CUT TO:.", "TO", "FADE OUT."] {
+            assert!(!transition(no), "{no:?}");
+        }
+        assert!(to_trailing_space("CUT TO: "));
+        assert!(to_trailing_space("CUT TO:\t "));
+        for no in ["CUT TO:", "Cut to: ", "CUT TO:. ", "CUT  "] {
+            assert!(!to_trailing_space(no), "{no:?}");
+        }
+    }
+
+    fn cue_of(text: &str, forced: bool) -> Option<(&str, Vec<&str>, Option<usize>)> {
+        cue(text, forced).map(|c| {
+            let ext = c.extensions.iter().map(|r| &text[r.clone()]).collect();
+            (&text[c.name], ext, c.caret)
+        })
+    }
+
+    #[test]
+    fn cues() {
+        assert_eq!(cue_of("MARA", false), Some(("MARA", vec![], None)));
+        assert_eq!(
+            cue_of("OTTO (V.O.) (CONT'D)", false),
+            Some(("OTTO", vec!["(V.O.)", "(CONT'D)"], None))
+        );
+        assert_eq!(
+            cue_of("MARA (on the radio)", false),
+            Some(("MARA", vec!["(on the radio)"], None))
+        );
+        assert_eq!(cue_of("OTTO^", false), Some(("OTTO", vec![], Some(4))));
+        assert_eq!(
+            cue_of("MARA (V.O.) ^", false),
+            Some(("MARA", vec!["(V.O.)"], Some(12)))
+        );
+        assert_eq!(
+            cue_of("NAME ^ (V.O.)", false),
+            Some(("NAME ^", vec!["(V.O.)"], None))
+        );
+        assert_eq!(
+            cue_of("A ()(B)", false),
+            Some(("A", vec!["()", "(B)"], None))
+        );
+        for no in [
+            "Mara (V.O.)",
+            "MARA (HI) THERE",
+            "MARA (HI",
+            "MARA ((HI))",
+            "MARA (A (B))",
+            "23",
+            "李明",
+            "(V.O.)",
+            "^",
+            "",
+        ] {
+            assert_eq!(cue(no, false), None, "{no:?}");
+        }
+    }
+
+    #[test]
+    fn forced_cues() {
+        assert_eq!(
+            cue_of("deLaCruz (V.O.)", true),
+            Some(("deLaCruz", vec!["(V.O.)"], None))
+        );
+        assert_eq!(cue_of("NAME ^", true), Some(("NAME", vec![], Some(5))));
+        assert_eq!(cue_of("a (b", true), Some(("a (b", vec![], None)));
+        assert_eq!(cue_of("a (b ^", true), Some(("a (b", vec![], Some(5))));
+        assert_eq!(cue_of("^", true), Some(("^", vec![], None)));
+        assert_eq!(cue_of("(V.O.)", true), Some(("(V.O.)", vec![], None)));
+        assert_eq!(cue_of("李明", true), Some(("李明", vec![], None)));
+    }
+
+    #[test]
+    fn block_enders() {
+        for s in ["!x", "@X", ".X", ">x<", ">x"] {
+            assert!(ends_block(shape(s)), "{s:?}");
+        }
+        for s in ["~x", "# x", "= x", "===", "x", "INT. X"] {
+            assert!(!ends_block(shape(s)), "{s:?}");
+        }
+    }
+
     #[cfg(feature = "locked-scene-numbers")]
     #[test]
     fn locked_scene_numbers() {
@@ -207,6 +392,7 @@ mod tests {
         assert_eq!(shape("!!x"), LineShape::Shot);
         assert_eq!(shape("!!!x"), LineShape::Shot);
         assert_eq!(shape("!x"), LineShape::ForcedAction);
+        assert!(ends_block(LineShape::Shot));
     }
 
     #[cfg(not(feature = "shot"))]
