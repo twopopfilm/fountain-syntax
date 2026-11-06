@@ -125,6 +125,109 @@ fn off_17a_what_starts_a_title_page() {
     assert_eq!(keys("  Draft-date_1 & o'k: x"), ["Draft-date_1 & o'k"]);
 }
 
+/// OFF-17a
+#[test]
+fn off_17a_outline_lines_before_the_page() {
+    // The page starts at the first visible non-blank line, so Sections, Synopses and Page Breaks
+    // before the first key line are skipped like invisible lines, and stay top-level nodes.
+    assert_eq!(
+        tree("# Act\nTitle: Big\nAuthor: X\n\nINT. A\n\nhi"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"Big")) LineBreak"\n" TitleEntry(TitleKey(Text"Author") Colon":" Whitespace" " TitleValue(Text"X"))) Gap(LineBreak"\n" LineBreak"\n") SceneHeading(Text"INT. A") Gap(LineBreak"\n" LineBreak"\n") Action(Text"hi"))"##
+    );
+    assert_eq!(
+        tree("= syn\nTitle: x"),
+        r#"Document(Synopsis(Marker"=" Whitespace" " Text"syn") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x"))))"#
+    );
+    assert_eq!(
+        tree("===\nTitle: x"),
+        r#"Document(PageBreak(Marker"===") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x"))))"#
+    );
+    // Invisible and outline lines together keep their source order.
+    assert_eq!(
+        tree("[[n]]\n# Act\nTitle: x"),
+        r##"Document(Note(Marker"[[" Text"n" Marker"]]") Gap(LineBreak"\n") Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x"))))"##
+    );
+    assert_eq!(
+        tree("# Act\n[[n]]\nTitle: x"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n") Note(Marker"[[" Text"n" Marker"]]") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x"))))"##
+    );
+    assert_eq!(
+        top(&parse_checked("# Act\n= s\n===\nTitle: x\n\nhi")),
+        [
+            NodeKind::Section,
+            NodeKind::Synopsis,
+            NodeKind::PageBreak,
+            NodeKind::TitlePage,
+            NodeKind::Action
+        ]
+    );
+    // A Section, a blank line, then the key line: the blank line was always skipped.
+    assert_eq!(
+        tree("# Act\n\nTitle: x"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n" LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x"))))"##
+    );
+    // A bare key still needs an indented line under it.
+    assert!(is_title_page_after_outline("# Act\nTitle:\n\tx"));
+    // `#Title: x` is a Section, not a key line: it is skipped and the next line is tested.
+    assert_eq!(
+        tree("#Title: x\nAuthor: y"),
+        r##"Document(Section(Marker"#" Text"Title: x") Gap(LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"Author") Colon":" Whitespace" " TitleValue(Text"y"))))"##
+    );
+    // A first block of ordinary prose with a colon is a page, after a Section and a blank line too.
+    assert_eq!(
+        tree("# Act\n\nplain text: with colon"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n" LineBreak"\n") TitlePage(TitleEntry(TitleKey(Text"plain text") Colon":" Whitespace" " TitleValue(Text"with colon"))))"##
+    );
+}
+
+/// Whether any top-level node of `src` is a title page.
+fn is_title_page_after_outline(src: &str) -> bool {
+    top(&parse_checked(src)).contains(&NodeKind::TitlePage)
+}
+
+/// OFF-17a
+#[test]
+fn off_17a_outline_before_a_non_page() {
+    // A heading-prefix line is never a key line, whatever precedes it.
+    assert_eq!(
+        tree("# Act\nINT. HOUSE: DAY\n\nx"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n") SceneHeading(Text"INT. HOUSE: DAY") Gap(LineBreak"\n" LineBreak"\n") Action(Text"x"))"##
+    );
+    // A bare key with no indented value under it.
+    assert_eq!(
+        tree("# Act\nTitle:\nplain\n\nx"),
+        r##"Document(Section(Marker"#" Whitespace" " Text"Act") Gap(LineBreak"\n") Action(Text"Title:" LineBreak"\n" Text"plain") Gap(LineBreak"\n" LineBreak"\n") Action(Text"x"))"##
+    );
+    // An outline line after the first key line is still a stray line inside the page.
+    assert_eq!(
+        tree("Title: x\n# Act\nAuthor: y"),
+        r##"Document(TitlePage(TitleEntry(TitleKey(Text"Title") Colon":" Whitespace" " TitleValue(Text"x")) LineBreak"\n" Text"# Act" LineBreak"\n" TitleEntry(TitleKey(Text"Author") Colon":" Whitespace" " TitleValue(Text"y"))))"##
+    );
+    // The first visible non-blank line decides: ordinary text before the key line blocks the page.
+    assert!(!is_title_page_after_outline("# Act\nHello there\nTitle: x"));
+}
+
+/// OFF-6e
+#[test]
+fn off_6e_heading_after_page_with_leading_outline() {
+    let doc = parse_checked("# Act\nTitle: x\n\nINT. A\n\nb");
+    assert_eq!(
+        top(&doc),
+        [
+            NodeKind::Section,
+            NodeKind::TitlePage,
+            NodeKind::SceneHeading,
+            NodeKind::Action
+        ]
+    );
+    // The page end still counts as the blank line before the heading, which needs one after it.
+    let doc = parse_checked("# Act\nTitle: x\n\nINT. A\nb");
+    assert_eq!(
+        top(&doc),
+        [NodeKind::Section, NodeKind::TitlePage, NodeKind::Action]
+    );
+}
+
 /// OFF-17b
 #[test]
 fn off_17b_ends_at_the_first_blank_line() {

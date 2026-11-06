@@ -108,14 +108,15 @@ fn next_significant(roles: &[Role], i: usize) -> Role {
 /// Finds the title page (SPEC 4.1) and gives its lines their roles. It returns the line range of
 /// the page, which ends at the first blank line, or `None` when there is no page.
 ///
-/// Blank and invisible lines before the first key line are leading trivia. A bare key starts a page
-/// only when the next visible line is indented as a continuation. A continuation line needs a
-/// current entry; a stray line ends it, and an invisible line does not.
+/// Blank, invisible and outline (Section, Synopsis, Page Break) lines before the first key line are
+/// leading trivia: the page starts at the first visible non-blank line (SPEC 3.5). A bare key starts
+/// a page only when the next visible line is indented as a continuation. A continuation line needs
+/// a current entry; a stray line ends it, and an invisible line does not.
 fn title_page(roles: &mut [Role], lines: &[Logical]) -> Option<Range<usize>> {
     let is_blank = |r: &Role| matches!(r, Role::Blank | Role::TwoSpaces);
     let start = roles
         .iter()
-        .position(|r| !is_blank(r) && !matches!(r, Role::Invisible))?;
+        .position(|r| !is_blank(r) && is_significant(*r))?;
     let end = roles[start..]
         .iter()
         .position(is_blank)
