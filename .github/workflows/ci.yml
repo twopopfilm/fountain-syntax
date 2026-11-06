@@ -31,3 +31,7 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Test
         run: cargo test
+      - name: Clippy with all features
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test with all features
+        run: cargo test --all-features

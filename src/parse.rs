@@ -1,43 +1,212 @@
-//! The parse driver. For now every paragraph of text lines is one `Action`, and Notes and Boneyard
-//! are hidden nodes inside it or at the top level.
+//! The parse driver. A block pass groups the logical lines into items, and each item is emitted
+//! into the tree line by line. Notes and Boneyard are hidden nodes placed by the layout layer.
 
+use std::ops::Range;
+
+use crate::classify::{self, LineShape};
 use crate::hidden::{self, Logical};
 use crate::layout::{self, Part};
 use crate::lines;
 use crate::tree::{Document, NodeKind, Span, TokenKind, TreeBuilder};
 
-/// A line's leading whitespace, text and trailing whitespace, in visible offsets.
-fn line_parts(visible: &str) -> Vec<Part> {
+/// What a logical line is, for grouping.
+#[derive(Clone, Copy, Debug)]
+enum Role {
+    Blank,
+    /// Only hidden spans and whitespace (SPEC 3.4, rule 3).
+    Invisible,
+    Shaped(LineShape),
+}
+
+/// A run of logical lines emitted together: inside `wrap` when it is set, else a single line whose
+/// own parts make its node, if it has one.
+struct Item {
+    wrap: Option<NodeKind>,
+    lines: Range<usize>,
+}
+
+fn role(line: &Logical) -> Role {
+    if line.is_blank() {
+        Role::Blank
+    } else if line.is_invisible() {
+        Role::Invisible
+    } else {
+        Role::Shaped(classify::shape(
+            line.visible.trim_start_matches([' ', '\t']),
+        ))
+    }
+}
+
+/// Lines that continue an Action paragraph. A forced `.` heading or `@` cue is plain text for now.
+fn is_action_text(shape: LineShape) -> bool {
+    matches!(
+        shape,
+        LineShape::Plain
+            | LineShape::ForcedAction
+            | LineShape::ForcedCue
+            | LineShape::ForcedHeading
+    )
+}
+
+/// Section, Synopsis and Page Break lines are transparent (SPEC 3.4, rule 3).
+fn is_outline(shape: LineShape) -> bool {
+    matches!(
+        shape,
+        LineShape::Section(_) | LineShape::Synopsis | LineShape::PageBreak
+    )
+}
+
+/// Whether `role` continues the open `wrap` element.
+fn is_member(wrap: NodeKind, role: Role) -> bool {
+    match (wrap, role) {
+        (NodeKind::Action, Role::Shaped(s)) => is_action_text(s),
+        (NodeKind::Lyrics, Role::Shaped(s)) => s == LineShape::Lyrics,
+        _ => false,
+    }
+}
+
+/// Whether `role` may sit inside the open `wrap` element between two members. It joins the element
+/// only when a member follows; otherwise it is top-level, as are leading ones.
+fn is_skippable(wrap: NodeKind, role: Role) -> bool {
+    match (wrap, role) {
+        (_, Role::Invisible) => true,
+        (NodeKind::Action, Role::Shaped(s)) => is_outline(s),
+        _ => false,
+    }
+}
+
+/// The block pass: groups lines into the items the tree is made of.
+fn items(roles: &[Role]) -> Vec<Item> {
+    let mut out = Vec::new();
+    // The open element and its first line; `end` is one past its last member line, and the lines
+    // from `end` to the current one are skippable lines waiting for a member.
+    let mut open: Option<(NodeKind, usize)> = None;
+    let mut end = 0;
+    for (i, &role) in roles.iter().enumerate() {
+        if let Some((wrap, _)) = open {
+            if is_member(wrap, role) {
+                end = i + 1;
+                continue;
+            }
+            if is_skippable(wrap, role) {
+                continue;
+            }
+        }
+        close(&mut out, open.take(), end, i);
+        let wrap = match role {
+            Role::Shaped(LineShape::Lyrics) => Some(NodeKind::Lyrics),
+            Role::Shaped(s) if is_action_text(s) => Some(NodeKind::Action),
+            _ => None,
+        };
+        match wrap {
+            Some(wrap) => {
+                open = Some((wrap, i));
+                end = i + 1;
+            }
+            None => out.push(Item {
+                wrap: None,
+                lines: i..i + 1,
+            }),
+        }
+    }
+    close(&mut out, open, end, roles.len());
+    out
+}
+
+/// Ends the open element after its last member, `end`. The skippable lines up to `to` that no
+/// member followed are top-level.
+fn close(out: &mut Vec<Item>, open: Option<(NodeKind, usize)>, end: usize, to: usize) {
+    let Some((wrap, start)) = open else { return };
+    out.push(Item {
+        wrap: Some(wrap),
+        lines: start..end,
+    });
+    out.extend((end..to).map(|i| Item {
+        wrap: None,
+        lines: i..i + 1,
+    }));
+}
+
+/// The leading whitespace, an optional `mark` of `(kind, byte length)` right after it, the text up
+/// to the trailing whitespace, and the trailing whitespace. Empty parts are left out.
+fn text_parts(visible: &str, mark: Option<(TokenKind, usize)>) -> Vec<Part> {
     let body = visible.trim_matches([' ', '\t']);
     let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
     let trail = lead + body.len();
-    [
-        Part::Tok(TokenKind::Whitespace, 0..lead),
-        Part::Tok(TokenKind::Text, lead..trail),
-        Part::Tok(TokenKind::Whitespace, trail..visible.len()),
-    ]
-    .into_iter()
-    .filter(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()))
-    .collect()
+    let after = lead + mark.map_or(0, |(_, n)| n);
+    let mut parts = vec![Part::Tok(TokenKind::Whitespace, 0..lead)];
+    if let Some((kind, _)) = mark {
+        parts.push(Part::Tok(kind, lead..after));
+    }
+    parts.push(Part::Tok(TokenKind::Text, after..trail));
+    parts.push(Part::Tok(TokenKind::Whitespace, trail..visible.len()));
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
 }
 
-/// Which lines belong to an Action: a non-blank line with a text line at or before it and at or
-/// after it, with no blank line between (decision 2: invisible lines at a paragraph's ends are
-/// top-level).
-fn action_members(lines: &[Logical]) -> Vec<bool> {
-    let is_text = |l: &Logical| !l.is_blank() && !l.is_invisible();
-    let mut member = vec![false; lines.len()];
-    let mut seen = false;
-    for (m, l) in member.iter_mut().zip(lines) {
-        seen = !l.is_blank() && (seen || is_text(l));
-        *m = seen;
+/// A marker of `n` bytes after the leading whitespace, then optional whitespace, text and trailing
+/// whitespace: the layout of a Section and a Synopsis.
+fn marked_parts(visible: &str, n: usize) -> Vec<Part> {
+    let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
+    let trail = lead + visible.trim_matches([' ', '\t']).len();
+    let after = lead + n;
+    let rest = &visible[after..trail];
+    let gap = after + rest.len() - rest.trim_start_matches([' ', '\t']).len();
+    let mut parts = vec![
+        Part::Tok(TokenKind::Whitespace, 0..lead),
+        Part::Tok(TokenKind::Marker, lead..after),
+        Part::Tok(TokenKind::Whitespace, after..gap),
+        Part::Tok(TokenKind::Text, gap..trail),
+        Part::Tok(TokenKind::Whitespace, trail..visible.len()),
+    ];
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
+/// `>`, optional whitespace, text, optional whitespace and `<`, inside leading and trailing
+/// whitespace. Only the outermost marks are markers.
+fn centered_parts(visible: &str) -> Vec<Part> {
+    let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
+    let trail = lead + visible.trim_matches([' ', '\t']).len();
+    let inner = &visible[lead + 1..trail - 1];
+    let text_start = lead + 1 + inner.len() - inner.trim_start_matches([' ', '\t']).len();
+    let text_end = trail - 1 - (inner.len() - inner.trim_end_matches([' ', '\t']).len());
+    let mut parts = vec![
+        Part::Tok(TokenKind::Whitespace, 0..lead),
+        Part::Tok(TokenKind::Marker, lead..lead + 1),
+        Part::Tok(TokenKind::Whitespace, lead + 1..text_start),
+        Part::Tok(TokenKind::Text, text_start..text_end.max(text_start)),
+        Part::Tok(TokenKind::Whitespace, text_end.max(text_start)..trail - 1),
+        Part::Tok(TokenKind::Marker, trail - 1..trail),
+        Part::Tok(TokenKind::Whitespace, trail..visible.len()),
+    ];
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
+/// The layout of one logical line.
+fn parts(visible: &str, role: Role) -> Vec<Part> {
+    let sigil = |n| Some((TokenKind::Sigil, n));
+    let node = |kind, parts| vec![Part::Node(kind, parts)];
+    let Role::Shaped(shape) = role else {
+        return text_parts(visible, None);
+    };
+    match shape {
+        LineShape::Plain | LineShape::ForcedCue | LineShape::ForcedHeading => {
+            text_parts(visible, None)
+        }
+        LineShape::Lyrics | LineShape::ForcedAction => text_parts(visible, sigil(1)),
+        #[cfg(feature = "shot")]
+        LineShape::Shot => node(NodeKind::Shot, text_parts(visible, sigil(2))),
+        LineShape::ForcedTransition => node(NodeKind::Transition, text_parts(visible, sigil(1))),
+        LineShape::Centered => node(NodeKind::Centered, centered_parts(visible)),
+        LineShape::Section(depth) => node(NodeKind::Section, marked_parts(visible, depth)),
+        LineShape::Synopsis => node(NodeKind::Synopsis, marked_parts(visible, 1)),
+        LineShape::PageBreak => node(
+            NodeKind::PageBreak,
+            text_parts(visible, Some((TokenKind::Marker, visible.trim().len()))),
+        ),
     }
-    let mut ahead = false;
-    for (m, l) in member.iter_mut().zip(lines).rev() {
-        ahead = !l.is_blank() && (ahead || is_text(l));
-        *m &= ahead;
-    }
-    member
 }
 
 pub(crate) fn document(src: &str) -> Document {
@@ -52,18 +221,21 @@ pub(crate) fn document(src: &str) -> Document {
     let physical = lines::physical(src, from);
     let hidden = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
-    let member = action_members(&lines);
-    for (i, line) in lines.iter().enumerate() {
-        if member[i] && !(i > 0 && member[i - 1]) {
-            b.start_node(NodeKind::Action);
+    let roles: Vec<Role> = lines.iter().map(role).collect();
+    for item in items(&roles) {
+        if let Some(kind) = item.wrap {
+            b.start_node(kind);
         }
-        layout::emit_line(&mut b, src, line, &line_parts(&line.visible), &hidden);
-        // The break after a paragraph's last line belongs to the Gap, not to the Action.
-        if member[i] && !member.get(i + 1).copied().unwrap_or(false) {
-            b.finish_node();
-        }
-        if let Some(brk) = line.brk {
-            b.token(TokenKind::LineBreak, brk);
+        for i in item.lines.clone() {
+            let line = &lines[i];
+            layout::emit_line(&mut b, src, line, &parts(&line.visible, roles[i]), &hidden);
+            // The break after an element's last line belongs to the Gap, not to the element.
+            if item.wrap.is_some() && i + 1 == item.lines.end {
+                b.finish_node();
+            }
+            if let Some(brk) = line.brk {
+                b.token(TokenKind::LineBreak, brk);
+            }
         }
     }
     b.finish(src)

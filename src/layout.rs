@@ -12,8 +12,7 @@ use crate::tree::{Span, TokenKind, TreeBuilder};
 pub(crate) enum Part {
     /// A token over a non-empty visible range.
     Tok(TokenKind, Range<usize>),
-    /// A node over its parts. Task 4 builds these in the parser; until then only the tests do.
-    #[cfg(test)]
+    /// A node over its parts.
     Node(crate::tree::NodeKind, Vec<Part>),
 }
 
@@ -58,7 +57,6 @@ impl Cursor<'_> {
             self.flush();
             match part {
                 Part::Tok(kind, r) => self.take(*kind, r.len()),
-                #[cfg(test)]
                 Part::Node(kind, kids) => {
                     self.b.start_node(*kind);
                     self.parts(kids);
