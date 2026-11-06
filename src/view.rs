@@ -173,7 +173,7 @@ pub struct Preamble {
 /// One block of a scene. New variants may be added.
 ///
 /// `Shot` exists only with the `shot` feature: serialised data that holds one cannot be read by a
-/// build without that feature (the same caveat as the [`Document`](crate::Document) serde impl).
+/// build without that feature (unlike [`Document`](crate::Document), which is re-parsed from its source and so reads as a different tree instead of failing).
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
