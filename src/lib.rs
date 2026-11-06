@@ -5,8 +5,10 @@
 //! page, scene headings with their scene numbers, action, cues, dialogue and parentheticals,
 //! dual-dialogue carets, transitions, centered text, lyrics, sections, synopses and page breaks
 //! (and Shot with the `shot` feature). Notes and Boneyard are `Note` and `Boneyard` nodes, and a `Gap`
-//! holds everything between two top-level nodes. The typed view, the diagnostics and the writer are
-//! not written yet. The design is in `SPEC.md`.
+//! holds the line breaks and blank lines around top-level nodes: before the first, between two, and
+//! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number. The typed
+//! view, the diagnostics, the writer, `serde` support and the hashes are not written yet. The design
+//! is in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};

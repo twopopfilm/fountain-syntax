@@ -68,7 +68,8 @@ on Linux, macOS and Windows, then `cargo clippy --all-targets --all-features -- 
   `shot` (no dependency). Only the last two exist so far.
 - **Every `SPEC.md` decision has a test** that names it.
 - **The writer must round-trip unchanged input byte-for-byte.**
-- **Before every PR:** `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check` and
+- **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
+  `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
   `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label

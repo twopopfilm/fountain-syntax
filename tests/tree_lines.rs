@@ -38,7 +38,7 @@ fn off_2c_bom() {
     );
     let inside = parse_checked("a\u{FEFF}");
     assert_eq!(dump(inside.root()), r#"Document(Action(Text"a\u{feff}"))"#);
-    // A source that is only a BOM has no Gap (ruling R5).
+    // A source that is only a BOM has no Gap: the BOM is the root's only child.
     let only = parse_checked("\u{FEFF}");
     assert_eq!(dump(only.root()), r#"Document(Bom"\u{feff}")"#);
 }

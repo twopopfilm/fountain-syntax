@@ -25,7 +25,8 @@ pub(crate) enum LineShape {
     /// `.` followed by an alphanumeric character.
     ForcedHeading,
     /// A heading prefix and a period or space (SPEC 4.2). It is a heading only when framed by
-    /// blank lines; the block pass demotes it to [`LineShape::Plain`] otherwise.
+    /// blank lines; the framing pass (`frame` in parse.rs) demotes it to [`LineShape::Plain`]
+    /// otherwise.
     PrefixHeading,
     /// `>` first and `<` last.
     Centered,
@@ -121,9 +122,9 @@ pub(crate) fn to_trailing_space(text: &str) -> bool {
 /// The parts of a Character cue, as ranges into the text given to [`cue`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CueParts {
-    /// The name, without the whitespace after it. For a forced cue with malformed or empty parts the
-    /// range covers the whole text: malformed groups stay in it as name text, and an empty name
-    /// takes the whole text, caret included.
+    /// The name, without the whitespace after it. A forced cue with malformed groups keeps them as
+    /// name text, so the range runs to the end of the text before any caret. A forced cue with an
+    /// empty name takes the whole text, caret included, and has no caret.
     pub(crate) name: Range<usize>,
     /// Each extension group, `(` to `)`.
     pub(crate) extensions: Vec<Range<usize>>,

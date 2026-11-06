@@ -32,7 +32,8 @@ impl Span {
 pub enum NodeKind {
     /// The root.
     Document,
-    /// Line breaks and blank lines between two top-level nodes.
+    /// The line breaks and blank lines around top-level nodes: before the first, between two, and
+    /// after the last. An empty source has one empty Gap.
     Gap,
     /// The title page block.
     TitlePage,
@@ -40,7 +41,7 @@ pub enum NodeKind {
     TitleEntry,
     /// A title page key.
     TitleKey,
-    /// A title page value.
+    /// The text of one line of a title page value: after the colon, or one continuation line.
     TitleValue,
     /// A Scene Heading.
     SceneHeading,
@@ -48,7 +49,8 @@ pub enum NodeKind {
     SceneNumber,
     /// An Action paragraph.
     Action,
-    /// A Character cue with its Parentheticals and Dialogue.
+    /// A Character cue with its Parentheticals and Dialogue, and any Lyrics, Section, Synopsis, Page
+    /// Break, Note or Boneyard line between them.
     DialogueBlock,
     /// A Character cue line.
     CharacterCue,
@@ -66,7 +68,7 @@ pub enum NodeKind {
     Transition,
     /// Centered text.
     Centered,
-    /// A Lyrics line.
+    /// A run of consecutive Lyrics lines.
     Lyrics,
     /// A Section line.
     Section,
@@ -97,7 +99,8 @@ pub enum TokenKind {
     LineBreak,
     /// A forcing character such as `.` or `@`.
     Sigil,
-    /// A structural marker such as `#`, `=` or `[[`.
+    /// A structural marker such as `#`, `=`, `[[`, `^`, the `>` and `<` of centered text, or the
+    /// parentheses of an extension.
     Marker,
     /// The colon of a title page key.
     Colon,
@@ -160,7 +163,8 @@ impl<'a> Node<'a> {
         self.data().kind
     }
 
-    /// The bytes the node covers, from its first child's start to its last child's end.
+    /// The bytes the node covers, from its first child's start to its last child's end. An empty
+    /// source's Gap has no children and spans 0..0.
     pub fn span(&self) -> Span {
         self.data().span
     }

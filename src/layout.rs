@@ -1,5 +1,6 @@
 //! Line layout: turns a logical line's structure, given in visible offsets, into tree tokens and
-//! nodes, and places its hidden spans by the rule of the plan's "Hidden-node placement".
+//! nodes, and places its hidden spans by the rule on [`emit_line`] (called hidden-node placement in
+//! the tests).
 
 use std::ops::Range;
 
@@ -19,7 +20,8 @@ pub(crate) enum Part {
 /// Emits `line` as `parts`, which cover `0..line.visible.len()` in order with no empty range.
 ///
 /// A hidden piece at visible offset `v` splits a token that strictly contains `v`. Otherwise it goes
-/// at the level of the innermost node that strictly contains `v`, otherwise at the line's level.
+/// at the level of the innermost node that strictly contains `v`, otherwise at the line's level. So at
+/// a node's edge the hidden node goes at the level around the node, not inside it.
 pub(crate) fn emit_line(
     b: &mut TreeBuilder,
     src: &str,

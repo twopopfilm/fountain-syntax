@@ -20,7 +20,7 @@ enum Role {
     /// Only hidden spans and whitespace (SPEC 3.4, rule 3).
     Invisible,
     Shaped(LineShape),
-    /// An automatic Transition. This role and the ones after it are set by [`frame`].
+    /// An automatic Transition. This role and the three after it are set by [`frame`].
     Transition,
     /// An automatic Character cue; a forced one stays `Shaped(LineShape::ForcedCue)`.
     Cue,
