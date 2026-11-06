@@ -37,14 +37,11 @@ fn role(line: &Logical) -> Role {
     }
 }
 
-/// Lines that continue an Action paragraph. A forced `.` heading or `@` cue is plain text for now.
+/// Lines that continue an Action paragraph. A forced `@` cue is plain text for now.
 fn is_action_text(shape: LineShape) -> bool {
     matches!(
         shape,
-        LineShape::Plain
-            | LineShape::ForcedAction
-            | LineShape::ForcedCue
-            | LineShape::ForcedHeading
+        LineShape::Plain | LineShape::ForcedAction | LineShape::ForcedCue
     )
 }
 
@@ -54,6 +51,47 @@ fn is_outline(shape: LineShape) -> bool {
         shape,
         LineShape::Section(_) | LineShape::Synopsis | LineShape::PageBreak
     )
+}
+
+/// Whether a line counts when framing looks at its neighbours: invisible lines and Section, Synopsis
+/// and Page Break lines are transparent (SPEC 3.4, rule 3).
+fn is_significant(role: Role) -> bool {
+    match role {
+        Role::Invisible => false,
+        Role::Shaped(s) => !is_outline(s),
+        Role::Blank => true,
+    }
+}
+
+/// The nearest significant line before `i`; the start of the document counts as blank.
+fn prev_significant(roles: &[Role], i: usize) -> Role {
+    let before = roles[..i].iter().rev();
+    before
+        .copied()
+        .find(|&r| is_significant(r))
+        .unwrap_or(Role::Blank)
+}
+
+/// The nearest significant line after `i`; the end of the document counts as blank.
+fn next_significant(roles: &[Role], i: usize) -> Role {
+    let after = roles[i + 1..].iter();
+    after
+        .copied()
+        .find(|&r| is_significant(r))
+        .unwrap_or(Role::Blank)
+}
+
+/// Demotes the lines that are headings only by prefix to plain text unless a blank line comes before
+/// and after them (SPEC 4.2).
+fn frame(roles: &mut [Role]) {
+    for i in 0..roles.len() {
+        if matches!(roles[i], Role::Shaped(LineShape::PrefixHeading))
+            && !(matches!(prev_significant(roles, i), Role::Blank)
+                && matches!(next_significant(roles, i), Role::Blank))
+        {
+            roles[i] = Role::Shaped(LineShape::Plain);
+        }
+    }
 }
 
 /// Whether `role` continues the open `wrap` element.
@@ -184,6 +222,37 @@ fn centered_parts(visible: &str) -> Vec<Part> {
     parts
 }
 
+/// `[ws] Sigil"."? Text [ws] SceneNumber(Marker Text Marker)? [ws]`: the layout of a Scene Heading.
+fn heading_parts(visible: &str, forced: bool) -> Vec<Part> {
+    let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
+    let end = visible.trim_end_matches([' ', '\t']).len();
+    let text = lead + usize::from(forced);
+    let number = classify::scene_number(&visible[..end]);
+    let text_end = number.as_ref().map_or(end, |(r, _)| {
+        visible[..r.start].trim_end_matches([' ', '\t']).len()
+    });
+    let mut parts = vec![Part::Tok(TokenKind::Whitespace, 0..lead)];
+    if forced {
+        parts.push(Part::Tok(TokenKind::Sigil, lead..text));
+    }
+    parts.push(Part::Tok(TokenKind::Text, text..text_end));
+    if let Some((r, locked)) = number {
+        let open = r.start + if locked { 2 } else { 1 };
+        parts.push(Part::Tok(TokenKind::Whitespace, text_end..r.start));
+        parts.push(Part::Node(
+            NodeKind::SceneNumber,
+            vec![
+                Part::Tok(TokenKind::Marker, r.start..open),
+                Part::Tok(TokenKind::Text, open..r.end - 1),
+                Part::Tok(TokenKind::Marker, r.end - 1..r.end),
+            ],
+        ));
+    }
+    parts.push(Part::Tok(TokenKind::Whitespace, end..visible.len()));
+    parts.retain(|p| !matches!(p, Part::Tok(_, r) if r.is_empty()));
+    parts
+}
+
 /// The layout of one logical line.
 fn parts(visible: &str, role: Role) -> Vec<Part> {
     let sigil = |n| Some((TokenKind::Sigil, n));
@@ -192,9 +261,11 @@ fn parts(visible: &str, role: Role) -> Vec<Part> {
         return text_parts(visible, None);
     };
     match shape {
-        LineShape::Plain | LineShape::ForcedCue | LineShape::ForcedHeading => {
-            text_parts(visible, None)
-        }
+        LineShape::Plain | LineShape::ForcedCue => text_parts(visible, None),
+        LineShape::ForcedHeading | LineShape::PrefixHeading => node(
+            NodeKind::SceneHeading,
+            heading_parts(visible, shape == LineShape::ForcedHeading),
+        ),
         LineShape::Lyrics | LineShape::ForcedAction => text_parts(visible, sigil(1)),
         #[cfg(feature = "shot")]
         LineShape::Shot => node(NodeKind::Shot, text_parts(visible, sigil(2))),
@@ -221,7 +292,8 @@ pub(crate) fn document(src: &str) -> Document {
     let physical = lines::physical(src, from);
     let hidden = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
-    let roles: Vec<Role> = lines.iter().map(role).collect();
+    let mut roles: Vec<Role> = lines.iter().map(role).collect();
+    frame(&mut roles);
     for item in items(&roles) {
         if let Some(kind) = item.wrap {
             b.start_node(kind);

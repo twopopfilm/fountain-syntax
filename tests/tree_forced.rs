@@ -385,6 +385,29 @@ fn off_22g_double_bang() {
     assert_eq!(tree("!!text"), r#"Document(Shot(Sigil"!!" Text"text"))"#);
 }
 
+/// Hidden-node placement: a hidden span after a single-line node's text, at its end, goes at the
+/// line's level, outside the node.
+#[test]
+fn hidden_placement_at_the_end_of_a_node() {
+    assert_eq!(
+        tree("# s [[n]]"),
+        r###"Document(Section(Marker"#" Whitespace" " Text"s" Whitespace" ") Note(Marker"[[" Text"n" Marker"]]"))"###
+    );
+    assert_eq!(
+        tree("=== [[n]]"),
+        r#"Document(PageBreak(Marker"===" Whitespace" ") Note(Marker"[[" Text"n" Marker"]]"))"#
+    );
+}
+
+/// Hidden-node placement: a hidden span strictly inside a single-line node is its child.
+#[test]
+fn hidden_placement_inside_a_node() {
+    assert_eq!(
+        tree(">[[n]]FIN<"),
+        r#"Document(Centered(Marker">" Note(Marker"[[" Text"n" Marker"]]") Text"FIN" Marker"<"))"#
+    );
+}
+
 /// EXT-shot-1
 #[test]
 #[cfg(feature = "shot")]
