@@ -140,8 +140,10 @@ fn frame(roles: &mut [Role], lines: &[Logical]) {
     }
 }
 
-/// The framing rules for a line outside a block, in the order heading, transition, cue, after the
-/// `TO:` carve-out (SPEC 4.0, step 3). A line no rule takes is Action.
+/// The framing rules for a line outside a block, in the order heading, transition, cue (SPEC 4.0,
+/// step 3). A line no rule takes is Action. An unframed heading-by-prefix line is Action, never a
+/// cue (`OFF-6a`), and the `TO:` carve-out keeps a line from being a Transition or a cue, not a
+/// heading (`OFF-23a`, `OFF-23b`).
 fn framed(roles: &[Role], i: usize, shape: LineShape, visible: &str) -> Role {
     let blank_before = matches!(prev_significant(roles, i), Role::Blank);
     let after = next_significant(roles, i);
@@ -150,10 +152,10 @@ fn framed(roles: &[Role], i: usize, shape: LineShape, visible: &str) -> Role {
     // line that ends a block.
     let text_after = matches!(after, Role::Shaped(s) if !classify::ends_block(s));
     let trimmed = visible.trim_end_matches([' ', '\t']);
-    if classify::to_trailing_space(visible) {
+    if shape == LineShape::PrefixHeading {
+        Role::Shaped(if framed { shape } else { LineShape::Plain })
+    } else if classify::to_trailing_space(visible) {
         Role::Shaped(LineShape::Plain)
-    } else if framed && shape == LineShape::PrefixHeading {
-        Role::Shaped(shape)
     } else if framed && classify::transition(visible) {
         Role::Transition
     } else if blank_before && text_after && classify::cue(trimmed, false).is_some() {

@@ -646,13 +646,24 @@ fn hidden_placement_inside_name() {
 
 /// OFF-6a
 ///
-/// An unframed uppercase prefix line with a text line under it fits the cue rule (SPEC 4.0, step 3).
+/// An unframed uppercase heading-by-prefix line is Action, never a cue, even with a blank line
+/// before it and a text line under it.
 #[test]
-fn off_6a_unframed_uppercase_prefix_is_a_cue() {
+fn off_6a_unframed_uppercase_heading_is_action() {
     assert_eq!(
-        tree("INT. X\nb"),
-        r#"Document(DialogueBlock(CharacterCue(CharacterName(Text"INT. X")) LineBreak"\n" Dialogue(Text"b")))"#
+        tree("\nINT. X\nb"),
+        r#"Document(Gap(LineBreak"\n") Action(Text"INT. X" LineBreak"\n" Text"b"))"#
     );
-    let doc = parse_checked("INT. X\n[[n]]\nmore");
-    assert_eq!(top(&doc), [NodeKind::DialogueBlock]);
+    let doc = parse_checked("a\n\nINT. X\n[[n]]\nmore");
+    assert_eq!(top(&doc), [NodeKind::Action, NodeKind::Action]);
+    assert!(find(&doc, NodeKind::CharacterCue).is_empty());
+}
+
+/// OFF-23a
+#[test]
+fn off_23a_heading_ending_in_to_stays_heading() {
+    assert_eq!(
+        tree("a\n\nINT. WAY TO: \n\nb"),
+        r#"Document(Action(Text"a") Gap(LineBreak"\n" LineBreak"\n") SceneHeading(Text"INT. WAY TO:" Whitespace" ") Gap(LineBreak"\n" LineBreak"\n") Action(Text"b"))"#
+    );
 }

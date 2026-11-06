@@ -58,10 +58,9 @@ fn el_heading_4_needs_blank_lines() {
         tree("a\nINT. X\n\nb"),
         r#"Document(Action(Text"a" LineBreak"\n" Text"INT. X") Gap(LineBreak"\n" LineBreak"\n") Action(Text"b"))"#
     );
-    // Lowercase, so the cue rule cannot take it (an uppercase one is a cue: tree_dialogue.rs).
     assert_eq!(
-        tree("int. x\nb"),
-        r#"Document(Action(Text"int. x" LineBreak"\n" Text"b"))"#
+        tree("INT. X\nb"),
+        r#"Document(Action(Text"INT. X" LineBreak"\n" Text"b"))"#
     );
     // Framed: the end of the document counts as a blank line.
     let doc = parse_checked("a\n\nINT. X");
@@ -99,8 +98,8 @@ fn off_6a_framing_skips_invisible_and_transparent_lines() {
     );
     // A Note line below, with text below it: not framed.
     assert_eq!(
-        tree("int. x\n[[n]]\nmore"),
-        r#"Document(Action(Text"int. x" LineBreak"\n" Note(Marker"[[" Text"n" Marker"]]") LineBreak"\n" Text"more"))"#
+        tree("INT. X\n[[n]]\nmore"),
+        r#"Document(Action(Text"INT. X" LineBreak"\n" Note(Marker"[[" Text"n" Marker"]]") LineBreak"\n" Text"more"))"#
     );
 }
 
