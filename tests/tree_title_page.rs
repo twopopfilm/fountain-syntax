@@ -1,3 +1,5 @@
+//! Syntax tree tests: the title page.
+
 mod common;
 
 use common::{dump, find, parse_checked, top};

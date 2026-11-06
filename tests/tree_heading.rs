@@ -1,3 +1,5 @@
+//! Syntax tree tests: scene headings.
+
 mod common;
 
 use common::{dump, find, parse_checked, top};

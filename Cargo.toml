@@ -8,8 +8,16 @@ repository = "https://github.com/twopopfilm/fountain-syntax"
 
 [lints.rust]
 unsafe_code = "forbid"
+missing_docs = "warn"
 
 [features]
 default = []
 locked-scene-numbers = []
 shot = []
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"

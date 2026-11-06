@@ -30,7 +30,8 @@ assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 ```
 
 The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions.
-`serde` and `hash` do not exist yet.
+The `serde` feature exists too: a `Document` serialises as its source text and is parsed again when it is read back.
+`hash` does not exist yet.
 
 ## Goals
 
@@ -60,8 +61,8 @@ The Cargo features `locked-scene-numbers` and `shot` exist and change how the tr
   element changed. A second scheme, compatible with the Twopop importer, is also available, so hashes it stored can be
   checked and migrated.
 - **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
-  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features are planned. An
-  optional WASM build for a browser playground is being considered.
+  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). The `serde` feature exists; the
+  `hash` feature is planned. An optional WASM build for a browser playground is being considered.
 
 ## Correctness
 

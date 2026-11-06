@@ -7,8 +7,9 @@
 //! (and Shot with the `shot` feature). Notes and Boneyard are `Note` and `Boneyard` nodes, and a `Gap`
 //! holds the line breaks and blank lines around top-level nodes: before the first, between two, and
 //! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number. The typed
-//! view, the diagnostics, the writer, `serde` support and the hashes are not written yet. The design
-//! is in `SPEC.md`.
+//! view's builder, the diagnostics, the writer and the hashes are not written yet. The `serde`
+//! feature serialises a [`Document`] as its source and parses it again when it is read back. The
+//! design is in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};
@@ -32,8 +33,16 @@ mod layout;
 mod lines;
 mod parse;
 mod tree;
+mod view;
 
 pub use tree::{Child, Document, Node, NodeKind, Span, Token, TokenKind};
+#[cfg(feature = "shot")]
+pub use view::Shot;
+pub use view::{
+    Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension, Heading,
+    Lyrics, Note, NoteConvention, PageBreak, Preamble, Run, Scene, SceneNumber, Screenplay,
+    Section, Synopsis, Text, TitleEntry, TitlePage, Transition,
+};
 
 /// Parses any text. It never fails and never panics.
 /// The returned tree reproduces `source` exactly.
