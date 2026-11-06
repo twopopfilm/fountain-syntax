@@ -6,10 +6,13 @@
 //! dual-dialogue carets, transitions, centered text, lyrics, sections, synopses and page breaks
 //! (and Shot with the `shot` feature). Notes and Boneyard are `Note` and `Boneyard` nodes, and a `Gap`
 //! holds the line breaks and blank lines around top-level nodes: before the first, between two, and
-//! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number. The typed
-//! view's builder, the diagnostics, the writer and the hashes are not written yet. The `serde`
-//! feature serialises a [`Document`] as its source and parses it again when it is read back. The
-//! design is in `SPEC.md`.
+//! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number.
+//!
+//! [`Document::screenplay`] builds the typed view, a [`Screenplay`]: the title page, the preamble
+//! and the scenes, as plain owned data. Its Dialogue blocks hold only the cue so far; their lines
+//! and dual-dialogue pairs come next. The diagnostics, the writer and the hashes are not written
+//! yet. The `serde` feature serialises a [`Document`] as its source and parses it again when it
+//! is read back, and serialises the view as it is. The design is in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};

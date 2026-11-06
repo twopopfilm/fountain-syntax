@@ -3,14 +3,15 @@
 **A lossless, spec-complete parser and writer for [Fountain](https://fountain.io) screenplays, in Rust.**
 
 Fountain is the plain-text markup screenwriters use to write scripts in any text editor. `fountain-syntax` reads it
-into a syntax tree that keeps every byte of the source. A typed screenplay view on top and a writer that puts it
-back out unchanged are planned. That makes it a foundation for editors, linters, converters and production tools
+into a syntax tree that keeps every byte of the source, with a typed screenplay view on top. A writer that puts it
+back out unchanged is planned. That makes it a foundation for editors, linters, converters and production tools
 that need to change one detail of a script without disturbing the rest.
 
 > **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
-> The typed screenplay view, diagnostics, the writer and the hashes are still planned, and the crate is not on
-> crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below
+> `Document::screenplay()` builds the typed view: the title page, the scenes and their elements. Its Dialogue
+> blocks hold only the cue so far; their lines and dual-dialogue pairs come next. Diagnostics, the writer and the
+> hashes are still planned, and the crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below
 > describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
@@ -49,12 +50,12 @@ The `serde` feature exists too: a `Document` serialises as its source text and i
   conventions (an opt-in typed view) change no parse, so they are always on. Slugline's locked scene numbers (`##12A#`)
   and Beat's `!!` Shot change how some valid input reads, so each sits behind its own Cargo feature flag
   (`locked-scene-numbers` and `shot`). Everything else surveyed, such as brace directives, endnotes and stage-play
-  variants, is not supported in 0.1: the text is kept and written back as it is. The tree already handles them; the
-  typed accessors, including note conventions, are planned.
+  variants, is not supported in 0.1: the text is kept and written back as it is. The tree and the typed view already
+  handle them, with typed title-page accessors; the note-conventions view is planned.
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree.
   Reporting ambiguous cases as diagnostics instead of errors is planned.
-- **A typed view (planned).** Title page, scenes and elements as plain Rust types, with optional `serde` support
-  for both the tree and the view.
+- **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
+  the tree and the view. The lines of Dialogue blocks and dual-dialogue pairs are planned.
 - **Targeted edits (planned).** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
 - **Draft comparison (planned).** Self-describing hashes at three levels (element, scene and document) and over the
   exact bytes of any span, so tools can match scenes across drafts, tell real changes from whitespace and see which
@@ -73,7 +74,8 @@ crate treats correctness as something to measure:
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
-  name. The tests for the syntax tree are written; the rest are planned for F2 to F4.
+  name. The tests for the syntax tree and for the typed view's elements and scenes are written; the rest are
+  planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every
