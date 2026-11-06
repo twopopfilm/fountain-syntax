@@ -162,3 +162,13 @@ fn serde_round_trip_of_the_typed_view() {
     let back: Screenplay = serde_json::from_str(&json).unwrap();
     assert_eq!(back, view);
 }
+
+/// Data written by a build without `locked-scene-numbers` has no `locked` field.
+#[cfg(feature = "locked-scene-numbers")]
+#[test]
+fn a_scene_number_without_locked_reads_as_not_locked() {
+    let json = r#"{"text":"12A","span":{"start":0,"end":5}}"#;
+    let n: fountain_syntax::SceneNumber = serde_json::from_str(json).unwrap();
+    assert_eq!(n.text, "12A");
+    assert!(!n.locked);
+}

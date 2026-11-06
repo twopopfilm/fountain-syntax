@@ -11,6 +11,11 @@ mod inline;
 mod note;
 
 /// A whole screenplay: the title page, the elements before the first scene, and the scenes.
+///
+/// With the `serde` feature, a view reads back from JSON written by a build with other features,
+/// with two limits. A `SceneNumber` without a `locked` field reads as not locked. Data that holds
+/// an `Element::Shot` cannot be read by a build without the `shot` feature: the variant is unknown
+/// to it, so reading fails with an error.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Screenplay {
@@ -150,6 +155,7 @@ pub struct SceneNumber {
     pub text: String,
     /// True for a locked number (`##12A#`).
     #[cfg(feature = "locked-scene-numbers")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub locked: bool,
     /// The bytes the scene number covers.
     pub span: Option<Span>,
@@ -165,6 +171,9 @@ pub struct Preamble {
 }
 
 /// One block of a scene. New variants may be added.
+///
+/// `Shot` exists only with the `shot` feature: serialised data that holds one cannot be read by a
+/// build without that feature (the same caveat as the [`Document`](crate::Document) serde impl).
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -385,7 +394,10 @@ pub struct Boneyard {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Text {
-    /// The bytes the text covers.
+    /// The bytes the text covers: its runs and any Note or Boneyard attached to it. It can reach
+    /// beyond the span of its parent element and include bytes that are in none of its runs, such
+    /// as the line breaks around an attached atom. In `Title: a\n  [[n]]\n` the Note is a child of
+    /// the title page, not of the entry, yet it joins the value's text.
     pub span: Option<Span>,
     /// The runs, in source order.
     pub runs: Vec<Run>,

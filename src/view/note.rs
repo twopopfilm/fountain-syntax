@@ -23,7 +23,15 @@ impl Note {
     ///
     /// The colour names and the tag length are not determined by the sources (SPEC 13.5), so the
     /// words are returned as typed and their meaning is the caller's: `[[Tomorrow]]` is a
-    /// [`NoteConvention::Colour`] here because it is one word of letters. Never panics.
+    /// [`NoteConvention::Colour`] here because it is one word of letters. Some results are
+    /// surprising but intended, because the rules look at shape and never validate a word:
+    ///
+    /// - `color teal:` is `Colour("teal:")`: the word after `color` is kept as typed, colon and all.
+    /// - `marker 12:30` is a marker with colour `12` and text `30`: the colour is the space-free run
+    ///   before the first colon.
+    /// - `http://x` is `Tag { tag: "http", text: "//x" }`.
+    ///
+    /// Never panics. It allocates only for the words it returns.
     pub fn conventions(&self) -> Option<NoteConvention> {
         let t = self.text.trim();
         marker(t).or_else(|| colour(t)).or_else(|| tag(t))

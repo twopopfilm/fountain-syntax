@@ -24,7 +24,14 @@ impl Document {
     /// only Sections, Synopses, Page Breaks, Notes and Boneyards come between them; those lines
     /// end the left block's items. Otherwise it stays a block with `unpaired_caret` set. Sigils
     /// and structural marks are left out of every [`Text`]. Notes and Boneyard are kept: as
-    /// elements when they stand alone, and as runs of the text they sit in otherwise.
+    /// elements when they stand alone, and as runs of the text they sit in otherwise. The Notes and
+    /// Boneyards of a Page Break line (`=== [[n]]`, `/* x */===`) become Note and Boneyard
+    /// elements right after the Page Break, in source order (as interjections inside an Action or
+    /// a Dialogue block); those of a scene number become runs of the heading text.
+    ///
+    /// A [`Text::span`] covers its runs and any hidden span attached to it, so it can reach beyond
+    /// the span of its parent element (for example `Title: a\n  [[n]]\n`, whose Note belongs to the
+    /// title page, not to the entry) and include bytes that are in none of its runs.
     ///
     /// Like [`parse`](crate::parse), it never fails and never panics.
     ///
@@ -65,23 +72,23 @@ fn items(doc: &Document) -> (Option<TitlePage>, Vec<Item>) {
     let mut items = Vec::new();
     for child in doc.root().children() {
         let Child::Node(node) = child else { continue };
-        let block = match node.kind() {
+        let span = node.span();
+        match node.kind() {
             NodeKind::TitlePage => {
                 if title_page.is_none() {
                     title_page = Some(title(doc, node));
                 }
-                continue;
             }
-            NodeKind::SceneHeading => heading(doc, node),
-            _ => match element(doc, node) {
-                Some(e) => Block::Element(e),
-                None => continue,
-            },
-        };
-        items.push(Item {
-            block,
-            span: node.span(),
-        });
+            NodeKind::SceneHeading => items.push(Item {
+                block: heading(doc, node),
+                span,
+            }),
+            // A Page Break's own Notes and Boneyards are items of their own, over its bytes.
+            _ => items.extend(elements(doc, node).into_iter().map(|e| Item {
+                block: Block::Element(e),
+                span,
+            })),
+        }
     }
     (title_page, items)
 }
@@ -133,6 +140,21 @@ fn element(doc: &Document, node: Node<'_>) -> Option<Element> {
         | NodeKind::Parenthetical
         | NodeKind::Dialogue => return None,
     })
+}
+
+/// [`element`], and after a Page Break the Notes and Boneyards that sit in it (`=== [[n]]`,
+/// `/* x */===`), as siblings in source order.
+fn elements(doc: &Document, node: Node<'_>) -> Vec<Element> {
+    let mut out: Vec<Element> = element(doc, node).into_iter().collect();
+    if node.kind() == NodeKind::PageBreak {
+        out.extend(node.children().filter_map(|c| match c {
+            Child::Node(n) if matches!(n.kind(), NodeKind::Note | NodeKind::Boneyard) => {
+                element(doc, n)
+            }
+            _ => None,
+        }));
+    }
+    out
 }
 
 fn has_sigil(node: Node<'_>) -> bool {
@@ -209,6 +231,13 @@ fn pieces<'a>(doc: &Document, node: Node<'a>) -> Vec<Piece<'a>> {
                 }),
                 TokenKind::Bom | TokenKind::Sigil | TokenKind::Marker | TokenKind::Colon => {}
             },
+            // The hidden atoms of a scene number stay in the heading's text.
+            Child::Node(n) if n.kind() == NodeKind::SceneNumber => {
+                out.extend(n.children().filter_map(|c| match c {
+                    Child::Node(h) => hidden(doc, h),
+                    Child::Token(_) => None,
+                }));
+            }
             Child::Node(n) => out.extend(hidden(doc, n)),
         }
     }
@@ -288,9 +317,10 @@ fn action(doc: &Document, node: Node<'_>) -> Action {
                 if let Some(p) = hidden(doc, n) {
                     out.push(p);
                     marked = true;
-                } else if let Some(e) = element(doc, n) {
-                    interjections.push(e);
-                    marked = true;
+                } else {
+                    let found = elements(doc, n);
+                    marked |= !found.is_empty();
+                    interjections.extend(found);
                 }
             }
         }
@@ -496,7 +526,11 @@ fn dialogue(doc: &Document, node: Node<'_>) -> DialogueBlock {
             | NodeKind::PageBreak
             | NodeKind::Note
             | NodeKind::Boneyard => {
-                items.extend(element(doc, n).map(|e| DialogueItem::Interjection(Box::new(e))));
+                items.extend(
+                    elements(doc, n)
+                        .into_iter()
+                        .map(|e| DialogueItem::Interjection(Box::new(e))),
+                );
             }
             _ => {}
         }
