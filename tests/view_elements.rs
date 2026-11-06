@@ -134,6 +134,15 @@ fn el_action_3_only_the_first_line_sigil_forces() {
 }
 
 #[test]
+fn off_22a_indented_or_hidden_before_sigil_still_forces() {
+    let forced = |src: &str| action(&pre(src)[0]).forced;
+    for src in ["  !x\n", "\t!x\n", "[[n]] !x\n", "  !a\n  b\n", "[[n]]!x\n"] {
+        assert!(forced(src), "{src:?}");
+    }
+    assert!(!forced("a\n  !b\n"));
+}
+
+#[test]
 fn action_lines_of_only_hidden_spans_add_no_text() {
     // A forced one-line Action holding only a Note: its whitespace goes, the Note stays.
     let e = pre("! [[n]] \n");

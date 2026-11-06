@@ -253,25 +253,19 @@ fn action(doc: &Document, node: Node<'_>) -> Action {
     let mut line_start = 0;
     let mut visible = false;
     let mut marked = false;
-    // Only a `!` before any text, whitespace or line break forces the paragraph; one on a later
-    // line is left out of the text and forces nothing.
-    let mut started = false;
+    // Only the first line's `!` forces the paragraph, whatever indent or hidden span sits before
+    // it (OFF-22a); a `!` on a later line is left out of the text and forces nothing.
+    let mut first_line = true;
     for child in node.children() {
-        if let Child::Token(t) = child
-            && t.kind() == TokenKind::Sigil
-        {
-            forced |= !started;
-            continue;
-        }
-        started |= matches!(child, Child::Token(t) if matches!(t.kind(), TokenKind::Text | TokenKind::Whitespace | TokenKind::LineBreak));
         match child {
             Child::Token(t) => match t.kind() {
-                TokenKind::Sigil => {}
+                TokenKind::Sigil => forced |= first_line,
                 TokenKind::Text | TokenKind::Whitespace => {
                     visible |= !t.text().trim_matches([' ', '\t']).is_empty();
                     out.push(text_piece(t));
                 }
                 TokenKind::LineBreak => {
+                    first_line = false;
                     if marked && !visible {
                         keep_hidden(&mut out, line_start);
                     } else {
