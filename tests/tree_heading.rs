@@ -315,7 +315,7 @@ fn off_22e_dot_arrow() {
 fn off_16e_boneyard_then_heading() {
     assert_eq!(
         tree("/* x */INT. A"),
-        r#"Document(Boneyard(Marker"/*" Text" x " Marker"*/") SceneHeading(Text"INT. A"))"#
+        r#"Document(SceneHeading(Boneyard(Marker"/*" Text" x " Marker"*/") Text"INT. A"))"#
     );
     // A whole-line Boneyard is invisible, so the lines around it are adjacent.
     let doc = parse_checked("text\n\n/* c */\nINT. A\n\nmore");
@@ -423,4 +423,35 @@ fn ext_locked_scene_numbers_3() {
         assert_eq!(number(src), None, "{src:?}");
         assert_eq!(tree(src), format!(r#"Document(SceneHeading(Text"{src}"))"#));
     }
+}
+
+/// A trailing Note on a heading line is a child of the SceneHeading, after the whitespace before it.
+#[test]
+fn hidden_placement_trailing_note_in_heading() {
+    assert_eq!(
+        tree("INT. HOUSE - DAY [[note]]"),
+        r#"Document(SceneHeading(Text"INT. HOUSE - DAY" Whitespace" " Note(Marker"[[" Text"note" Marker"]]")))"#
+    );
+    assert_eq!(
+        tree("INT. A #1# [[n]]"),
+        r##"Document(SceneHeading(Text"INT. A" Whitespace" " SceneNumber(Marker"#" Text"1" Marker"#") Whitespace" " Note(Marker"[[" Text"n" Marker"]]")))"##
+    );
+}
+
+/// A leading Note on a heading line is a child of the SceneHeading, before its text.
+#[test]
+fn hidden_placement_leading_note_in_heading() {
+    assert_eq!(
+        tree("[[n]]INT. A"),
+        r#"Document(SceneHeading(Note(Marker"[[" Text"n" Marker"]]") Text"INT. A"))"#
+    );
+}
+
+/// A line that holds only a Note stays a top-level node next to a heading.
+#[test]
+fn hidden_placement_whole_line_note_beside_heading_is_top_level() {
+    assert_eq!(
+        tree("[[n]]\nINT. A"),
+        r#"Document(Note(Marker"[[" Text"n" Marker"]]") Gap(LineBreak"\n") SceneHeading(Text"INT. A"))"#
+    );
 }

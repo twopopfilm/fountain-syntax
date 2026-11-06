@@ -388,17 +388,31 @@ fn off_22g_double_bang() {
     assert_eq!(tree("!!text"), r#"Document(Shot(Sigil"!!" Text"text"))"#);
 }
 
-/// Hidden-node placement: a hidden span after a single-line node's text, at its end, goes at the
-/// line's level, outside the node.
+/// Hidden-node placement: a hidden span after a single-line node's text, at its end, is the node's
+/// last child.
 #[test]
 fn hidden_placement_at_the_end_of_a_node() {
     assert_eq!(
         tree("# s [[n]]"),
-        r###"Document(Section(Marker"#" Whitespace" " Text"s" Whitespace" ") Note(Marker"[[" Text"n" Marker"]]"))"###
+        r###"Document(Section(Marker"#" Whitespace" " Text"s" Whitespace" " Note(Marker"[[" Text"n" Marker"]]")))"###
     );
     assert_eq!(
         tree("=== [[n]]"),
-        r#"Document(PageBreak(Marker"===" Whitespace" ") Note(Marker"[[" Text"n" Marker"]]"))"#
+        r#"Document(PageBreak(Marker"===" Whitespace" " Note(Marker"[[" Text"n" Marker"]]")))"#
+    );
+    assert_eq!(
+        tree(">FIN<[[n]]"),
+        r#"Document(Centered(Marker">" Text"FIN" Marker"<" Note(Marker"[[" Text"n" Marker"]]")))"#
+    );
+}
+
+/// Hidden-node placement: a trailing Note on a shot line is a child of the Shot.
+#[test]
+#[cfg(feature = "shot")]
+fn hidden_placement_trailing_note_in_shot() {
+    assert_eq!(
+        tree("!!shot [[n]]"),
+        r#"Document(Shot(Sigil"!!" Text"shot" Whitespace" " Note(Marker"[[" Text"n" Marker"]]")))"#
     );
 }
 

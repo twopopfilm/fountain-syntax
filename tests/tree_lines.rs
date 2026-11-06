@@ -146,3 +146,12 @@ fn tree_invariants_exhaustive() {
         parse_checked(s);
     }
 }
+
+/// EL-action-2
+#[test]
+fn el_action_2_indentation_kept_in_tree() {
+    assert_eq!(
+        dump(parse_checked("  x").root()),
+        r#"Document(Action(Whitespace"  " Text"x"))"#
+    );
+}

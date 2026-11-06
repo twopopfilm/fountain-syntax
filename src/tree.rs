@@ -17,12 +17,12 @@ impl Span {
 
     /// The number of bytes in the range.
     pub fn len(&self) -> usize {
-        self.end - self.start
+        self.end.saturating_sub(self.start)
     }
 
     /// True when the range holds no bytes.
     pub fn is_empty(&self) -> bool {
-        self.start == self.end
+        self.end <= self.start
     }
 }
 
@@ -353,5 +353,18 @@ impl TreeBuilder {
             nodes: self.nodes,
             tokens: self.tokens,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Span;
+
+    #[test]
+    fn an_inverted_span_is_empty_and_does_not_panic() {
+        let s = Span { start: 5, end: 2 };
+        assert_eq!((s.len(), s.is_empty()), (0, true));
+        let ok = Span::new(2, 5);
+        assert_eq!((ok.len(), ok.is_empty()), (3, false));
     }
 }

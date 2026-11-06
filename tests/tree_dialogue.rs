@@ -667,3 +667,30 @@ fn off_23a_heading_ending_in_to_stays_heading() {
         r#"Document(Action(Text"a") Gap(LineBreak"\n" LineBreak"\n") SceneHeading(Text"INT. WAY TO:" Whitespace" ") Gap(LineBreak"\n" LineBreak"\n") Action(Text"b"))"#
     );
 }
+
+/// A trailing Note on a cue line is a child of the CharacterCue, after the name.
+#[test]
+fn hidden_placement_trailing_note_in_cue() {
+    assert_eq!(
+        tree("MARA [[n]]\nhi"),
+        r#"Document(DialogueBlock(CharacterCue(CharacterName(Text"MARA") Whitespace" " Note(Marker"[[" Text"n" Marker"]]")) LineBreak"\n" Dialogue(Text"hi")))"#
+    );
+}
+
+/// A trailing Note on a dialogue line is a child of the Dialogue.
+#[test]
+fn hidden_placement_trailing_note_in_dialogue() {
+    assert_eq!(
+        tree("MARA\nhi [[m]]"),
+        r#"Document(DialogueBlock(CharacterCue(CharacterName(Text"MARA")) LineBreak"\n" Dialogue(Text"hi" Whitespace" " Note(Marker"[[" Text"m" Marker"]]"))))"#
+    );
+}
+
+/// A trailing Note on a parenthetical line is a child of the Parenthetical.
+#[test]
+fn hidden_placement_trailing_note_in_parenthetical() {
+    assert_eq!(
+        tree("MARA\n(soft) [[n]]"),
+        r#"Document(DialogueBlock(CharacterCue(CharacterName(Text"MARA")) LineBreak"\n" Parenthetical(Text"(soft)" Whitespace" " Note(Marker"[[" Text"n" Marker"]]"))))"#
+    );
+}

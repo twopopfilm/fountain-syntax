@@ -430,7 +430,7 @@ fn cue_parts(visible: &str, forced: bool) -> Vec<Part> {
     let lead = visible.len() - visible.trim_start_matches([' ', '\t']).len();
     let at = lead + usize::from(forced);
     let end = visible.trim_end_matches([' ', '\t']).len();
-    let cue = classify::cue(&visible[at..end], forced).expect("the block pass read this cue");
+    let cue = classify::cue(&visible[at..end], forced).expect("the framing pass read this cue");
     let shift = |r: &Range<usize>| at + r.start..at + r.end;
     let mut parts = vec![Part::Tok(TokenKind::Whitespace, 0..lead)];
     if forced {
@@ -518,7 +518,14 @@ fn emit(b: &mut TreeBuilder, at: &Lines<'_>, item: &Item) {
         Item::Line(i) => {
             let line = &at.lines[*i];
             let parts = parts(&line.visible, at.roles[*i]);
-            layout::emit_line(b, at.src, line, &parts, at.hidden);
+            // A line that is one element node holds its edge hidden spans as children.
+            if let [Part::Node(kind, kids)] = parts.as_slice() {
+                b.start_node(*kind);
+                layout::emit_line(b, at.src, line, kids, at.hidden);
+                b.finish_node();
+            } else {
+                layout::emit_line(b, at.src, line, &parts, at.hidden);
+            }
         }
         Item::Wrap(kind, kids) => {
             b.start_node(*kind);
