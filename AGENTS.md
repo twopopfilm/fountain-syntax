@@ -57,16 +57,19 @@ beyond the maintainer's name.
 
 ## Develop
 
-The crate is at the repository root (`Cargo.toml`, `src/`). It is an empty skeleton so far: no features and no
-dependencies. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
-and `cargo test` on Linux, macOS and Windows. Run the same three commands locally. Rules:
+The crate is at the repository root (`Cargo.toml`, `src/`). `parse` builds the syntax tree, with no dependencies.
+The features `locked-scene-numbers` and `shot` exist; `serde` and `hash` are still planned. CI
+(`.github/workflows/ci.yml`) runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test`
+on Linux, macOS and Windows, then `cargo clippy --all-targets --all-features -- -D warnings` and
+`cargo test --all-features`. Run the same commands locally. Rules:
 
 - **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the planned optional Cargo
   features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and
-  `shot` (no dependency). None exists yet.
+  `shot` (no dependency). Only the last two exist so far.
 - **Every `SPEC.md` decision has a test** that names it.
 - **The writer must round-trip unchanged input byte-for-byte.**
-- **Before every PR:** `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check` and
+- **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
+  `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
   `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label

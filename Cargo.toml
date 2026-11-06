@@ -8,3 +8,8 @@ repository = "https://github.com/twopopfilm/fountain-syntax"
 
 [lints.rust]
 unsafe_code = "forbid"
+
+[features]
+default = []
+locked-scene-numbers = []
+shot = []
