@@ -61,11 +61,13 @@ The crate is at the repository root (`Cargo.toml`, `src/`). It is an empty skele
 dependencies. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
 and `cargo test` on Linux, macOS and Windows. Run the same three commands locally. Rules:
 
-- **Rust stable;** no `unsafe`; minimal dependencies: the core parser needs none beyond `serde`; hashing needs `sha2`
-  and `unicode-normalization`; each behind its own optional feature (`serde`, `hash`).
+- **Rust stable;** no `unsafe`; no required dependencies. The optional Cargo features are `serde` (adds `serde`),
+  `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and `shot` (no dependency). `SPEC.md`
+  section 8.1 lists them.
 - **Every `SPEC.md` decision has a test** that names it.
 - **The writer must round-trip unchanged input byte-for-byte.**
-- **Before every PR:** `cargo test`, `cargo clippy`, `cargo fmt --check` and `scripts/check-public.sh`.
+- **Before every PR:** `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check` and
+  `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
   planned features as planned; never describe something as working before it does.
