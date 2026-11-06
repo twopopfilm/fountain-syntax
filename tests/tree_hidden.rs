@@ -1,5 +1,3 @@
-//! Syntax tree tests: notes and boneyard.
-
 mod common;
 
 use common::{dump, find, parse_checked, top};

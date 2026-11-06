@@ -8,7 +8,6 @@ repository = "https://github.com/twopopfilm/fountain-syntax"
 
 [lints.rust]
 unsafe_code = "forbid"
-missing_docs = "warn"
 
 [features]
 default = []

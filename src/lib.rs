@@ -27,6 +27,8 @@
 //! assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 //! ```
 
+#![warn(missing_docs)]
+
 mod classify;
 mod hidden;
 mod layout;

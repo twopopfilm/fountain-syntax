@@ -1,5 +1,3 @@
-//! Syntax tree tests: line handling and block elements.
-
 mod common;
 
 use common::{dump, find, parse_checked, top};

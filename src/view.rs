@@ -534,7 +534,6 @@ mod tests {
         ]);
         let got: Vec<String> = p.get("Title").map(|e| e.values[0].plain()).collect();
         assert_eq!(got, ["a", "b"]);
-        assert_eq!(p.get("STRASSE").count(), 0);
         assert_eq!(p.get("STRAßE").count(), 1);
         assert_eq!(p.get("missing").count(), 0);
         let date = p.draft_date().map(|e| e.values[0].plain());

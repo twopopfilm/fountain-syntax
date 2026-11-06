@@ -1,5 +1,3 @@
-//! Syntax tree tests: dialogue blocks.
-
 mod common;
 
 use common::{dump, find, parse_checked, top};

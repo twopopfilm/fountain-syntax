@@ -1,4 +1,3 @@
-//! `serde` support: a `Document` round-trips through its source text.
 #![cfg(feature = "serde")]
 
 mod common;
