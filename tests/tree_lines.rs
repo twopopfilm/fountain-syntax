@@ -114,7 +114,9 @@ fn empty_document_is_one_gap() {
 /// Every string up to length 4 over a small alphabet satisfies the tree invariants (SPEC 8.3).
 #[test]
 fn tree_invariants_exhaustive() {
-    const ALPHABET: [char; 10] = ['\n', '\r', ' ', '\t', 'a', 'A', 'é', '.', '!', '@'];
+    const ALPHABET: [char; 14] = [
+        '\n', '\r', ' ', '\t', 'a', 'A', 'é', '.', '!', '@', '[', ']', '/', '*',
+    ];
     let mut layer = vec![String::new()];
     parse_checked("");
     for _ in 0..4 {
@@ -125,5 +127,17 @@ fn tree_invariants_exhaustive() {
         for s in &layer {
             parse_checked(s);
         }
+    }
+    // Hidden spans that fuse lines need five bytes or more, past the sweep.
+    for s in [
+        "/*\r\n*/",
+        "[[\r\n]]",
+        "a/*\r\n\r\n*/b",
+        "[[a\r\n  \r\nb]]",
+        "x[[a\rb]]y",
+        "a\r[[n]]\r\nb",
+        "[[\r\r]]",
+    ] {
+        parse_checked(s);
     }
 }

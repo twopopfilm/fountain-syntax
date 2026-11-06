@@ -1,6 +1,6 @@
 #![allow(dead_code)] // each test crate uses a subset of these helpers
 
-use fountain_syntax::{Child, Document, Node, NodeKind, Token, parse};
+use fountain_syntax::{Child, Document, Node, NodeKind, Token, TokenKind, parse};
 
 fn tokens<'a>(node: Node<'a>, out: &mut Vec<Token<'a>>) {
     for child in node.children() {
@@ -43,6 +43,22 @@ fn check_node(doc: &Document, node: Node<'_>) {
     }
 }
 
+/// Asserts that no line of `action` (split at its own `LineBreak` children) is blank.
+fn assert_no_blank_line(action: Node<'_>) {
+    let mut blank = true;
+    for child in action.children() {
+        match child {
+            Child::Token(t) if t.kind() == TokenKind::LineBreak => {
+                assert!(!blank, "blank line in {:?}", action.text());
+                blank = true;
+            }
+            Child::Token(t) if t.kind() == TokenKind::Whitespace => {}
+            _ => blank = false,
+        }
+    }
+    assert!(!blank, "blank line in {:?}", action.text());
+}
+
 /// Parses `src` and asserts the tree invariants of SPEC 8.3 (plus no zero-length tokens).
 pub fn parse_checked(src: &str) -> Document {
     let doc = parse(src);
@@ -60,6 +76,18 @@ pub fn parse_checked(src: &str) -> Document {
         assert_eq!(t.text(), &src[t.span().start..t.span().end]);
         at = t.span().end;
         joined.push_str(t.text());
+        match t.kind() {
+            TokenKind::LineBreak => {
+                assert!(matches!(t.text(), "\n" | "\r\n" | "\r"), "line break {t:?}")
+            }
+            TokenKind::Text | TokenKind::Whitespace => {
+                assert!(!t.text().contains(['\r', '\n']), "break inside {t:?}")
+            }
+            _ => {}
+        }
+    }
+    for action in find(&doc, NodeKind::Action) {
+        assert_no_blank_line(action);
     }
     assert_eq!(at, src.len());
     assert_eq!(joined, src);
