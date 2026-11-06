@@ -6,6 +6,7 @@
 
 use crate::Span;
 
+mod build;
 mod inline;
 
 /// A whole screenplay: the title page, the elements before the first scene, and the scenes.
