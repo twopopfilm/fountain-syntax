@@ -1,14 +1,15 @@
 //! Builds the typed view from the tree (SPEC 9).
 //!
-//! Two passes: [`items`] turns the root's nodes into a flat list of elements with their spans,
-//! then [`group`] sorts that list into the preamble and the scenes. The tree is flat (SPEC 8.4),
-//! so every walk below has a fixed depth, and both passes are linear in the size of the tree.
+//! Three passes: [`items`] turns the root's nodes into a flat list of elements with their spans,
+//! [`pair`] joins the dual-dialogue blocks, then [`group`] sorts the list into the preamble and the
+//! scenes. The tree is flat (SPEC 8.4), so every walk below has a fixed depth, and all three
+//! passes are linear in the size of the tree.
 
 use super::inline::{self, Piece, Trim};
 use super::{
-    Action, Boneyard, Cue, DialogueBlock, Element, Extension, Heading, Lyrics, Note, PageBreak,
-    Preamble, Scene, SceneNumber, Screenplay, Section, Synopsis, Text, TitleEntry, TitlePage,
-    Transition,
+    Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension, Heading,
+    Lyrics, Note, PageBreak, Preamble, Scene, SceneNumber, Screenplay, Section, Synopsis, Text,
+    TitleEntry, TitlePage, Transition,
 };
 use crate::{Child, Document, Node, NodeKind, Span, TokenKind};
 
@@ -18,9 +19,12 @@ impl Document {
     /// The first title page becomes [`Screenplay::title_page`]. Each Scene Heading starts a
     /// [`Scene`], which also takes the run of Sections and Synopses directly before the heading
     /// and the Synopses directly after it; blank lines do not break either run. What comes before
-    /// the first heading, apart from those, is the [`Preamble`]. Sigils and structural marks are
-    /// left out of every [`Text`]. Notes and Boneyard are kept: as elements when they stand alone,
-    /// and as runs of the text they sit in otherwise.
+    /// the first heading, apart from those, is the [`Preamble`]. A Dialogue block whose cue has a
+    /// caret joins the Dialogue block before it as a [`DualDialogue`](super::DualDialogue), when
+    /// only Sections, Synopses, Page Breaks, Notes and Boneyards come between them; those lines
+    /// end the left block's items. Otherwise it stays a block with `unpaired_caret` set. Sigils
+    /// and structural marks are left out of every [`Text`]. Notes and Boneyard are kept: as
+    /// elements when they stand alone, and as runs of the text they sit in otherwise.
     ///
     /// Like [`parse`](crate::parse), it never fails and never panics.
     ///
@@ -35,7 +39,7 @@ impl Document {
     /// ```
     pub fn screenplay(&self) -> Screenplay {
         let (title_page, items) = items(self);
-        let (preamble, scenes) = group(items);
+        let (preamble, scenes) = group(pair(items));
         Screenplay {
             title_page,
             preamble,
@@ -468,24 +472,119 @@ fn lyrics(doc: &Document, node: Node<'_>) -> Lyrics {
     }
 }
 
-/// A Dialogue block's cue. The dialogue items and dual-dialogue pairing are added next.
+/// A Dialogue block: its cue and its lines. `unpaired_caret` starts as "the cue has a caret";
+/// [`pair`] clears it for the blocks it joins.
 fn dialogue(doc: &Document, node: Node<'_>) -> DialogueBlock {
-    let cue = node
-        .children()
-        .find_map(|c| match c {
-            Child::Node(n) if n.kind() == NodeKind::CharacterCue => Some(cue(doc, n)),
-            _ => None,
-        })
-        .unwrap_or(Cue {
+    let mut head = None;
+    let mut caret = false;
+    let mut items = Vec::new();
+    // Stray Whitespace tokens and line breaks directly under the block carry nothing.
+    for child in node.children() {
+        let Child::Node(n) = child else { continue };
+        match n.kind() {
+            NodeKind::CharacterCue if head.is_none() => {
+                caret = n
+                    .children()
+                    .any(|c| matches!(c, Child::Node(k) if k.kind() == NodeKind::Caret));
+                head = Some(cue(doc, n));
+            }
+            NodeKind::Dialogue => items.push(DialogueItem::Line(leaf(doc, n))),
+            NodeKind::Parenthetical => items.push(DialogueItem::Parenthetical(leaf(doc, n))),
+            NodeKind::Lyrics
+            | NodeKind::Section
+            | NodeKind::Synopsis
+            | NodeKind::PageBreak
+            | NodeKind::Note
+            | NodeKind::Boneyard => {
+                items.extend(element(doc, n).map(|e| DialogueItem::Interjection(Box::new(e))));
+            }
+            _ => {}
+        }
+    }
+    DialogueBlock {
+        cue: head.unwrap_or(Cue {
             name: Text::default(),
             extensions: Vec::new(),
             forced: false,
             span: None,
-        });
-    DialogueBlock {
-        cue,
-        items: Vec::new(),
-        unpaired_caret: false,
+        }),
+        items,
+        unpaired_caret: caret,
+    }
+}
+
+/// Join each caret block to its partner (OFF-11): the nearest earlier Dialogue block, when only
+/// Sections, Synopses, Page Breaks, Notes and Boneyards come between and the partner is not
+/// already a right half. Those lines then end `left.items`. One forward scan: the only state is
+/// the index of the block that can still take a partner. A caret block that finds none stays
+/// unpaired, and can itself take the next one.
+fn pair(items: Vec<Item>) -> Vec<Item> {
+    let mut out: Vec<Item> = Vec::with_capacity(items.len());
+    let mut partner: Option<usize> = None;
+    for Item { block, span } in items {
+        let block = match block {
+            Block::Element(Element::Dialogue(right)) => {
+                let at = partner.take().filter(|_| right.unpaired_caret);
+                let joined = match at {
+                    Some(i) => join(&mut out, i, right, span),
+                    None => Item {
+                        block: Block::Element(Element::Dialogue(right)),
+                        span,
+                    },
+                };
+                if matches!(joined.block, Block::Element(Element::Dialogue(_))) {
+                    partner = Some(out.len());
+                }
+                out.push(joined);
+                continue;
+            }
+            Block::Element(
+                e @ (Element::Section(_)
+                | Element::Synopsis(_)
+                | Element::PageBreak(_)
+                | Element::Note(_)
+                | Element::Boneyard(_)),
+            ) => Block::Element(e),
+            other => {
+                partner = None;
+                other
+            }
+        };
+        out.push(Item { block, span });
+    }
+    out
+}
+
+/// Pair the block at `out[i]` with `right`, moving the lines after it into its items. The result
+/// is the pair; if `out[i]` is not a Dialogue block (it always is), `out` is left as it was and
+/// the result is `right` alone.
+fn join(out: &mut Vec<Item>, i: usize, mut right: DialogueBlock, span: Span) -> Item {
+    let skipped = out.split_off((i + 1).min(out.len()));
+    match out.pop() {
+        Some(Item {
+            block: Block::Element(Element::Dialogue(mut left)),
+            span: left_span,
+        }) => {
+            left.unpaired_caret = false;
+            right.unpaired_caret = false;
+            left.items
+                .extend(skipped.into_iter().filter_map(|s| match s.block {
+                    Block::Element(e) => Some(DialogueItem::Interjection(Box::new(e))),
+                    Block::Heading(..) => None,
+                }));
+            Item {
+                block: Block::Element(Element::DualDialogue(DualDialogue { left, right })),
+                span: Span::new(left_span.start, span.end),
+            }
+        }
+        other => {
+            out.extend(other);
+            out.extend(skipped);
+            Item {
+                block: Block::Element(Element::Dialogue(right)),
+                span,
+            }
+        }
     }
 }
 

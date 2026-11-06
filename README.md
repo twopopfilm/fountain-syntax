@@ -9,9 +9,9 @@ that need to change one detail of a script without disturbing the rest.
 
 > **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
-> `Document::screenplay()` builds the typed view: the title page, the scenes and their elements. Its Dialogue
-> blocks hold only the cue so far; their lines and dual-dialogue pairs come next. Diagnostics, the writer and the
-> hashes are still planned, and the crate is not on crates.io. Milestone F1, the standards study, is done
+> `Document::screenplay()` builds the typed view: the title page, the scenes and their elements, including
+> dialogue lines, parentheticals and dual-dialogue pairs. Diagnostics, the writer and the hashes are still
+> planned, and the crate is not on crates.io. Milestone F1, the standards study, is done
 > ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below describe the planned 0.1 release. See the
 > [roadmap](#roadmap).
 
@@ -56,7 +56,7 @@ The `serde` feature exists too: a `Document` serialises as its source text and i
 - **Never fails.** Fountain has no invalid input: any text is a screenplay. The parser always returns a tree.
   Reporting ambiguous cases as diagnostics instead of errors is planned.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
-  the tree and the view. The lines of Dialogue blocks and dual-dialogue pairs are planned.
+  the tree and the view.
 - **Targeted edits (planned).** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
 - **Draft comparison (planned).** Self-describing hashes at three levels (element, scene and document) and over the
   exact bytes of any span, so tools can match scenes across drafts, tell real changes from whitespace and see which
