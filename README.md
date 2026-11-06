@@ -11,8 +11,9 @@ that need to change one detail of a script without disturbing the rest.
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
 > `Document::screenplay()` builds the typed view: the title page, the scenes and their elements. Its Dialogue
 > blocks hold only the cue so far; their lines and dual-dialogue pairs come next. Diagnostics, the writer and the
-> hashes are still planned, and the crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below
-> describe the planned 0.1 release. See the [roadmap](#roadmap).
+> hashes are still planned, and the crate is not on crates.io. Milestone F1, the standards study, is done
+> ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below describe the planned 0.1 release. See the
+> [roadmap](#roadmap).
 
 ```rust
 use fountain_syntax::{Child, NodeKind, parse};

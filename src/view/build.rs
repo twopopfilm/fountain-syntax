@@ -253,10 +253,20 @@ fn action(doc: &Document, node: Node<'_>) -> Action {
     let mut line_start = 0;
     let mut visible = false;
     let mut marked = false;
+    // Only a `!` before any text, whitespace or line break forces the paragraph; one on a later
+    // line is left out of the text and forces nothing.
+    let mut started = false;
     for child in node.children() {
+        if let Child::Token(t) = child
+            && t.kind() == TokenKind::Sigil
+        {
+            forced |= !started;
+            continue;
+        }
+        started |= matches!(child, Child::Token(t) if matches!(t.kind(), TokenKind::Text | TokenKind::Whitespace | TokenKind::LineBreak));
         match child {
             Child::Token(t) => match t.kind() {
-                TokenKind::Sigil => forced = true,
+                TokenKind::Sigil => {}
                 TokenKind::Text | TokenKind::Whitespace => {
                     visible |= !t.text().trim_matches([' ', '\t']).is_empty();
                     out.push(text_piece(t));
@@ -287,14 +297,10 @@ fn action(doc: &Document, node: Node<'_>) -> Action {
             }
         }
     }
+    // Only a one-line Action such as `! [[n]]` ends here with no visible text: the parser ends an
+    // Action before a trailing hidden or interjection line, so no break comes before this one.
     if marked && !visible {
         keep_hidden(&mut out, line_start);
-        // The last line is gone, so is the break before it.
-        if let Some(i) = line_start.checked_sub(1)
-            && matches!(out.get(i), Some(Piece::Break { .. }))
-        {
-            out.remove(i);
-        }
     }
     Action {
         text: inline::text(out, Trim::ActionLines),

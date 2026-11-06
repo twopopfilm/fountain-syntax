@@ -122,6 +122,31 @@ fn el_action_3_forced_and_joined_lines() {
 }
 
 #[test]
+fn el_action_3_only_the_first_line_sigil_forces() {
+    let forced_and_text = |src: &str| {
+        let e = pre(src);
+        let a = action(&e[0]);
+        (a.forced, a.text.plain())
+    };
+    assert_eq!(forced_and_text("a\n!b\n"), (false, "a\nb".to_owned()));
+    assert_eq!(forced_and_text("!a\n!b\n"), (true, "a\nb".to_owned()));
+    assert_eq!(forced_and_text("!a\nb\n"), (true, "a\nb".to_owned()));
+}
+
+#[test]
+fn action_lines_of_only_hidden_spans_add_no_text() {
+    // A forced one-line Action holding only a Note: its whitespace goes, the Note stays.
+    let e = pre("! [[n]] \n");
+    let a = action(&e[0]);
+    assert!(a.forced);
+    assert_eq!(a.text.plain(), "");
+    assert_eq!(a.text.runs, [note_run("n", 2, 7)]);
+    // Two hidden-only lines in a row leave no blank line.
+    let e = pre("a\n[[n]]\n[[m]]\nb\n");
+    assert_eq!(action(&e[0]).text.plain(), "a\nb");
+}
+
+#[test]
 fn off_18b_indent_kept_only_in_action() {
     let src =
         "Title:  x  \n\n  INT. A  \n\n  > CUT  \n\n  # Sec  \n\n  = syn  \n\n  ~ la  \n\n  Act  \n";
