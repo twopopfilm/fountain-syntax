@@ -1,11 +1,28 @@
 //! A lossless, spec-complete parser and writer for [Fountain](https://fountain.io) screenplays.
 //!
-//! Pre-alpha. [`parse`] returns a [`Document`]: the source text and a flat syntax tree over it whose
-//! tokens, in order, reproduce the source exactly. So far the tree has Action, Lyrics, Centered,
-//! forced Transition, Section, Synopsis and Page Break nodes (and Shot with the `shot` feature),
-//! Notes and Boneyard as `Note` and `Boneyard` nodes, and a `Gap` for everything between two
-//! top-level nodes; headings, cues, dialogue and the title page arrive in later milestones. The
-//! typed view, the diagnostics and the writer are not written yet. The design is in `SPEC.md`.
+//! Pre-alpha. [`parse`] returns a [`Document`]: the source text and a syntax tree over it whose
+//! tokens, in order, reproduce the source exactly. The tree covers every block element: the title
+//! page, scene headings with their scene numbers, action, cues, dialogue and parentheticals,
+//! dual-dialogue carets, transitions, centered text, lyrics, sections, synopses and page breaks
+//! (and Shot with the `shot` feature). Notes and Boneyard are `Note` and `Boneyard` nodes, and a `Gap`
+//! holds everything between two top-level nodes. The typed view, the diagnostics and the writer are
+//! not written yet. The design is in `SPEC.md`.
+//!
+//! ```
+//! use fountain_syntax::{Child, NodeKind, parse};
+//!
+//! let doc = parse("Title: Big Fish\n\nINT. HOUSE - DAY\n");
+//! let kinds: Vec<NodeKind> = doc
+//!     .root()
+//!     .children()
+//!     .filter_map(|child| match child {
+//!         Child::Node(node) if node.kind() != NodeKind::Gap => Some(node.kind()),
+//!         _ => None,
+//!     })
+//!     .collect();
+//! assert_eq!(kinds, [NodeKind::TitlePage, NodeKind::SceneHeading]);
+//! assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
+//! ```
 
 mod classify;
 mod hidden;

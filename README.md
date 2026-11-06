@@ -7,9 +7,30 @@ into a syntax tree that keeps every byte of the source, gives you a typed screen
 back out unchanged. That makes it a foundation for editors, linters, converters and production tools that need to
 change one detail of a script without disturbing the rest.
 
-> **Status: pre-alpha.** The crate skeleton and CI exist, but there is no parser yet, and the crate is not on
-> crates.io. Milestone F1, the standards study, is done: [`SPEC.md`](SPEC.md) is written, and parser work (F2) starts
-> from it. Everything below describes the planned 0.1 release. See the [roadmap](#roadmap).
+> **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
+> node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
+> The typed screenplay view, diagnostics, the writer and the hashes are still planned, and the crate is not on
+> crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below
+> describe the planned 0.1 release. See the [roadmap](#roadmap).
+
+```rust
+use fountain_syntax::{Child, NodeKind, parse};
+
+let doc = parse("Title: Big Fish\n\nINT. HOUSE - DAY\n");
+let kinds: Vec<NodeKind> = doc
+    .root()
+    .children()
+    .filter_map(|child| match child {
+        Child::Node(node) if node.kind() != NodeKind::Gap => Some(node.kind()),
+        _ => None,
+    })
+    .collect();
+assert_eq!(kinds, [NodeKind::TitlePage, NodeKind::SceneHeading]);
+assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
+```
+
+The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions.
+`serde` and `hash` do not exist yet.
 
 ## Goals
 
@@ -50,7 +71,7 @@ crate treats correctness as something to measure:
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
-  name. The tests themselves are planned for F2 to F4.
+  name. The tests for the syntax tree are written; the rest are planned for F2 to F4.
 - **A conformance corpus.** It holds original examples modelled on the spec's own (the spec's text has no licence, so
   it is not copied) and edge cases from the study, each with its source and licence recorded. The spec's examples
   and sample scripts are used only with written permission. Every script must round-trip byte-for-byte.
