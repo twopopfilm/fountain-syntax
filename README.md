@@ -7,9 +7,9 @@ into a syntax tree that keeps every byte of the source, gives you a typed screen
 back out unchanged. That makes it a foundation for editors, linters, converters and production tools that need to
 change one detail of a script without disturbing the rest.
 
-> **Status: pre-alpha.** There is no code yet, and the crate is not on crates.io. Milestone F1, the standards study,
-> is done: [`SPEC.md`](SPEC.md) is written, and parser work (F2) starts from it. Everything below describes the
-> planned 0.1 release. See the [roadmap](#roadmap).
+> **Status: pre-alpha.** The crate skeleton and CI exist, but there is no parser yet, and the crate is not on
+> crates.io. Milestone F1, the standards study, is done: [`SPEC.md`](SPEC.md) is written, and parser work (F2) starts
+> from it. Everything below describes the planned 0.1 release. See the [roadmap](#roadmap).
 
 ## Goals
 
@@ -65,7 +65,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 | Milestone | Scope                                                       | State           |
 |-----------|-------------------------------------------------------------|-----------------|
 | F1        | Standards study: the official syntax, extensions, `SPEC.md` | **Done**        |
-| F2        | Lossless parser, typed view, diagnostics, scene hashes      | Planned         |
+| F2        | Lossless parser, typed view, diagnostics, scene hashes      | In progress     |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API     | Planned         |
 | F4        | Conformance corpus and differential testing                 | Planned         |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io   | Planned         |

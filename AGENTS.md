@@ -57,7 +57,9 @@ beyond the maintainer's name.
 
 ## Develop
 
-Fill this section in when the crate exists (F2). Rules that already apply:
+The crate is at the repository root (`Cargo.toml`, `src/`). It is an empty skeleton so far: no features and no
+dependencies. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
+and `cargo test` on Linux, macOS and Windows. Run the same three commands locally. Rules:
 
 - **Rust stable;** no `unsafe`; minimal dependencies: the core parser needs none beyond `serde`; hashing needs `sha2`
   and `unicode-normalization`; each behind its own optional feature (`serde`, `hash`).
