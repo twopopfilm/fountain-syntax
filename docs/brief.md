@@ -63,7 +63,7 @@ project's test files before reusing them.
 ## Milestones
 
 - **F1:** standards study → `SPEC.md`.
-- **F2:** lossless parser and typed view.
+- **F2:** lossless parser, typed view, diagnostics and hashes.
 - **F3:** writer and round-trip.
 - **F4:** conformance corpus and `screenplay-tools` diff.
 - **F5:** publish 0.1 to crates.io (on the maintainer's OK).

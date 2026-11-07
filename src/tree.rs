@@ -2,6 +2,7 @@
 
 /// Half-open byte range into [`Document::source`], on character boundaries.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Span {
     /// First byte of the range.
     pub start: usize,
@@ -29,6 +30,7 @@ impl Span {
 /// What a node is. New kinds may be added.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum NodeKind {
     /// The root.
     Document,
@@ -88,6 +90,7 @@ pub enum NodeKind {
 /// What a token is. New kinds may be added.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TokenKind {
     /// A leading byte-order mark.
     Bom,
@@ -143,6 +146,35 @@ impl Document {
     /// The root node, of kind [`NodeKind::Document`].
     pub fn root(&self) -> Node<'_> {
         Node { doc: self, id: 0 }
+    }
+}
+
+/// Serialises as `{ "source": "..." }` and deserialises by calling [`parse`](crate::parse) on that
+/// source, so a deserialised tree is always a valid one (SPEC 8.6). The arena itself is not
+/// written. The tree is rebuilt by the reading build, so a reader compiled with different `shot`
+/// or `locked-scene-numbers` features than the writer gets that build's tree for the same source.
+#[cfg(feature = "serde")]
+impl serde::Serialize for Document {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        #[derive(serde::Serialize)]
+        struct Repr<'a> {
+            source: &'a str,
+        }
+        Repr {
+            source: &self.source,
+        }
+        .serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Document {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(serde::Deserialize)]
+        struct Repr {
+            source: String,
+        }
+        Repr::deserialize(deserializer).map(|repr| crate::parse(&repr.source))
     }
 }
 
