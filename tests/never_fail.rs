@@ -4,10 +4,51 @@ use common::parse_checked;
 use fountain_syntax::{DiagnosticCode, Element, parse};
 
 const FRAGMENTS: &[&str] = &[
-    "\n", "\r\n", "\r", " ", "  ", "\t", "\u{FEFF}", "INT. ", "EXT ", ".", "!", "!!", "@", "~",
-    ">", "<", "#", "=", "==", "===", "^", "(", ")", "[[", "]]", "/*", "*/", "*", "**", "_", "\\",
-    ":", "TO:", "CUT TO:", "FADE IN:", "Title: ", "MARA", "Mara", "李明", "é", "23", "#1#", "x",
+    "\n",
+    "\r\n",
+    "\r",
+    " ",
+    "  ",
+    "\t",
+    "\u{FEFF}",
+    "INT. ",
+    "EXT ",
+    ".",
+    "!",
+    "!!",
+    "@",
+    "~",
+    ">",
+    "<",
+    "#",
+    "=",
+    "==",
+    "===",
+    "^",
+    "(",
+    ")",
+    "[[",
+    "]]",
+    "/*",
+    "*/",
+    "*",
+    "**",
+    "_",
+    "\\",
+    ":",
+    "TO:",
+    "CUT TO:",
+    "FADE IN:",
+    "Title: ",
+    "MARA",
+    "Mara",
+    "李明",
+    "é",
+    "23",
+    "#1#",
+    "x",
     " text ",
+    "MARA\nhi\n\nOTTO ^\nyo",
 ];
 
 fn xorshift(state: &mut u64) -> u64 {
@@ -21,6 +62,7 @@ fn xorshift(state: &mut u64) -> u64 {
 fn never_fail_random_inputs() {
     let mut state = 0x9E37_79B9_7F4A_7C15_u64;
     let mut lone_seen = 0;
+    let mut paired_seen = 0;
     for _ in 0..5_000 {
         let count = xorshift(&mut state) % 49;
         let src: String = (0..count)
@@ -34,12 +76,18 @@ fn never_fail_random_inputs() {
             .iter()
             .filter(|d| d.code == DiagnosticCode::LoneCaret)
             .count();
-        let unpaired = play
-            .preamble
-            .elements
-            .iter()
-            .chain(play.scenes.iter().flat_map(|s| &s.elements))
+        // A flat walk is complete today: an Interjection never holds a Dialogue block.
+        let elements = || {
+            play.preamble
+                .elements
+                .iter()
+                .chain(play.scenes.iter().flat_map(|s| &s.elements))
+        };
+        let unpaired = elements()
             .filter(|e| matches!(e, Element::Dialogue(b) if b.unpaired_caret))
+            .count();
+        paired_seen += elements()
+            .filter(|e| matches!(e, Element::DualDialogue(_)))
             .count();
         assert_eq!(lone, unpaired, "lone-caret count for {src:?}");
         lone_seen += lone;
@@ -60,4 +108,23 @@ fn never_fail_random_inputs() {
         }
     }
     assert!(lone_seen > 0, "no input had a lone caret");
+    assert!(paired_seen > 0, "no input had a dual-dialogue pair");
+}
+
+#[test]
+fn never_fail_large_inputs() {
+    let inputs = [
+        // One paragraph whose every line opens or closes an emphasis mark.
+        (0..50_000)
+            .map(|i| if i % 2 == 0 { "*a" } else { "a*" })
+            .collect::<Vec<_>>()
+            .join("\n"),
+        "[[".repeat(100_000),
+        "/*".repeat(100_000),
+        format!("{}MARA ^\nhi", "# x\n".repeat(50_000)),
+    ];
+    for src in &inputs {
+        let doc = parse_checked(src);
+        assert_eq!(doc.diagnostics(), parse(src).diagnostics());
+    }
 }

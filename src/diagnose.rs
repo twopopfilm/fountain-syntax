@@ -8,6 +8,7 @@ use crate::hidden::{Hidden, Logical};
 use crate::lines::Line;
 use crate::parse::{self, Role};
 use crate::tree::{NodeKind, Span};
+use crate::view::inline;
 
 /// What the parse knows about the document, shared by every pass.
 pub(crate) struct Input<'a> {
@@ -30,6 +31,7 @@ pub(crate) fn run(input: &Input<'_>) -> Vec<Diagnostic> {
     look_alikes(input, &mut out);
     blocks_and_layout(input, &mut out);
     hidden_marks(input, &mut out);
+    emphasis(input, &mut out);
     out.sort_by_key(|d| (d.span.start, d.span.end, d.code as u8));
     out
 }
@@ -240,6 +242,49 @@ fn marks(src: &str, within: Span, mark: &str, mut found: impl FnMut(Span)) {
         let start = at + j;
         at = start + mark.len();
         found(Span::new(start, at));
+    }
+}
+
+/// `emphasis-line-break`: an emphasis opener with no closer on its line, and a matching closer on
+/// a later line of the same paragraph. The walk goes backwards through the lines, keeping the
+/// closer kinds seen after the current line (at most four: `*`, `**`, `***`, `_`).
+fn emphasis(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
+    let mut closers: Vec<(char, usize)> = Vec::new();
+    let mut group = None;
+    for (line, &role) in input.lines.iter().zip(input.roles).rev() {
+        let (this, forced) = match role {
+            Role::Shaped(LineShape::Plain) => (Some(0), false),
+            Role::Shaped(LineShape::ForcedAction) => (Some(0), true),
+            Role::Dialogue => (Some(1), false),
+            _ => (None, false),
+        };
+        if this != group {
+            closers.clear();
+            group = this;
+        }
+        if this.is_none() {
+            continue;
+        }
+        let t = line.visible.trim_start_matches([' ', '\t']);
+        // The view drops the sigil (OFF-22d); left in, a `*` right after it could close.
+        let t = if forced {
+            t.strip_prefix('!').unwrap_or(t)
+        } else {
+            t
+        };
+        // shortcut: hidden spans are dropped from the visible text, not treated as solid atoms as the view does; upgrade if a diagnostic disagrees with the view next to an inline Note
+        let (open, closing) = inline::unmatched_marks(t);
+        if open.iter().any(|m| closers.contains(m)) {
+            out.push(Diagnostic::new(
+                DiagnosticCode::EmphasisLineBreak,
+                line.span,
+            ));
+        }
+        for m in closing {
+            if !closers.contains(&m) {
+                closers.push(m);
+            }
+        }
     }
 }
 

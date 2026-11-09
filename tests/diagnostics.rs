@@ -358,3 +358,250 @@ fn diag_stray_closer() {
     // Non-overlapping: `]]]` holds one pair.
     assert_eq!(offsets("x ]]]", C::StrayCloser), [(2, 4)]);
 }
+
+#[test]
+fn diag_emphasis_line_break() {
+    fires(
+        "She *walks\nslowly* away.",
+        C::EmphasisLineBreak,
+        "She *walks",
+    );
+    fires(
+        "MARA\nI *never\nsaid* that.",
+        C::EmphasisLineBreak,
+        "I *never",
+    );
+    quiet("She *walks* slowly.", C::EmphasisLineBreak);
+    quiet("She *walks\n\nslowly* away.", C::EmphasisLineBreak);
+    quiet("She *walks\nslowly away.", C::EmphasisLineBreak);
+    quiet("She *walks\nslowly _away_.", C::EmphasisLineBreak);
+    quiet("MARA\n*a\n(beat)\nb*", C::EmphasisLineBreak);
+    quiet("She *walks\n!*slowly away", C::EmphasisLineBreak);
+}
+
+#[test]
+fn diag_remembered_failures() {
+    assert_eq!(offsets("[[a [[b\n\nc", C::UnclosedNote), [(0, 2), (4, 6)]);
+    // The BOM is three bytes, so `]]` starts at byte 5.
+    assert_eq!(offsets("\u{FEFF}a ]]", C::StrayCloser), [(5, 7)]);
+    assert_eq!(offsets("/* a /* b */", C::NestedOpener), [(5, 7)]);
+    // OFF-16b: the tail of `/* outer /* inner */ still outer? */` is outside the span.
+    let src = "/* outer /* inner */ still outer? */";
+    assert_eq!(offsets(src, C::NestedOpener), [(9, 11)]);
+    assert_eq!(offsets(src, C::StrayCloser), [(34, 36)]);
+}
+
+/// One `none` row of SPEC 6.2: its ID, an input built from the row, and the codes expected on it
+/// (empty unless the input is also another row's example).
+type QuietRow = (&'static str, &'static str, &'static [C]);
+
+const QUIET_ROWS: &[QuietRow] = &[
+    ("OFF-1b", "MARA\nhi\n  \nyo", &[]),
+    ("OFF-1c", "a [[note\n  \nstill]] b", &[]),
+    ("OFF-1d", "\n  INT. HOUSE\n\nx", &[]),
+    ("OFF-2b", "a\n\nb\n", &[]),
+    (
+        "OFF-3a",
+        "NELL (V.O.)\nhi\n\nMARA (cont'd)\nhi\n\nMARA (on the radio, softly)\nhi",
+        &[],
+    ),
+    ("OFF-3b", "OTTO (V.O.) (CONT'D)\nhi", &[]),
+    (
+        "OFF-3c",
+        "OTTO (V.O.) hi\nyo\n\nOTTO (V.O.\nyo\n\nOTTO ((x))\nyo",
+        &[],
+    ),
+    ("OFF-3d", "@deLaCruz (V.O.)\nhi", &[]),
+    ("OFF-3e", "MARA (CONT'D)\nhi", &[]),
+    (
+        "OFF-4a",
+        "JOS\u{C9}\nhi\n\n\u{415}\u{41B}\u{415}\u{41D}\u{410}\nhi\n\nelena\nhi",
+        &[],
+    ),
+    ("OFF-4d", "R2D2\nhi\n\nMR. O'BRIEN\nhi", &[]),
+    ("OFF-5a", "a\n\nMARA", &[]),
+    ("OFF-5b", "MARA\n\nhi", &[]),
+    ("OFF-5b-whitespace", "MARA\n  \nhi", &[C::BlankLookalike]),
+    (
+        "OFF-6b",
+        "INT HOUSE\n\nx\n\nINT\tHOUSE\n\nx\n\nINT-HOUSE\n\nx\n\nINTERIOR\n\nx",
+        &[],
+    ),
+    ("OFF-6c", "Ext. 12 is busy.\n\nx", &[]),
+    ("OFF-6e", "INT. A\n\nx", &[]),
+    ("OFF-6e-title", "Title: X\n\nINT. A\n\nx", &[]),
+    (
+        "OFF-7a",
+        ".LAMP ROOM\n\nx\n\n.5 HOURS LATER\n\nx\n\n.\u{C9}PILOGUE",
+        &[],
+    ),
+    ("OFF-7c", "..DOUBLE\n\n...trailing off", &[]),
+    ("OFF-7d", ".OLD HOUSE\nShe waits.", &[]),
+    (
+        "OFF-8a",
+        "INT. A #12#\n\nx\n\nINT. B #4B#\n\nx\n\nINT. C #\u{C9}1#\n\nx\n\nINT. D #2-A.1#\n\nx",
+        &[],
+    ),
+    ("OFF-8d", ".TITLE CARD #3#\n\nx", &[]),
+    ("OFF-8f", "INT. A #5#\n\nx", &[]),
+    ("OFF-9d", "a\n\nCUT TO:\n\nb\n\nCut to:\n\nx", &[]),
+    ("OFF-9e", ">Cut to\n\nx\n\n> any thing\nx", &[]),
+    ("OFF-10a", ">FIN<\n\n> FIN\n\nx", &[]),
+    ("OFF-10b", ">FIN< \n\nx", &[]),
+    ("OFF-10c", ">> FIN <<\n\nx", &[]),
+    ("OFF-10d", "> FIN\n\n>FIN< and more\n\nx", &[]),
+    ("OFF-10e", "> FIN <\n\nx", &[]),
+    ("OFF-11b", "MARA\nhi\n\nOTTO^\nyo", &[]),
+    ("OFF-11e", "MARA\nhi\n\n[[note]]\n\nOTTO ^\nyo", &[]),
+    (
+        "OFF-11e-broken",
+        "MARA\nhi\n\nShe waits.\n\nOTTO ^\nyo",
+        &[C::LoneCaret],
+    ),
+    ("OFF-12a", "MARA\n(softly)\nhi", &[]),
+    ("OFF-12c", "(softly)\nhi", &[]),
+    ("OFF-13a", "MARA\nhi\n~la la\nmore", &[]),
+    ("OFF-13b", "~la la", &[]),
+    ("OFF-13c", " ~ indented lyric", &[]),
+    ("OFF-13d", "~a\n~b\n\n~c", &[]),
+    (
+        "OFF-14a",
+        "She *walks* slowly, **bold**, ***both*** and _under_.",
+        &[],
+    ),
+    ("OFF-14c", "snake_case_name", &[]),
+    (
+        "OFF-14d",
+        "*start _nest* end_\n\n***triple*\n\n*bold **inside** italic*",
+        &[],
+    ),
+    ("OFF-14e", "\\_literal\\_ \\\\ \\# trailing\\", &[]),
+    (
+        "OFF-14f",
+        "Mara [[*note*]] and /* _ */ **INT. X**\n\nx",
+        &[],
+    ),
+    ("OFF-15d", "a [[two\nlines]] b", &[]),
+    ("OFF-15e", "MARA\nhi\n[[note]]\nmore", &[]),
+    ("OFF-15f", "a [[x /* y]] z", &[]),
+    ("OFF-15f-title", "Title: X\n[[n]]\n   v\n\nx", &[]),
+    (
+        "OFF-15g",
+        "a [[b\n\nc]]",
+        &[C::UnclosedNote, C::StrayCloser],
+    ),
+    ("OFF-16a", "Mara /* aside */ waits.", &[]),
+    ("OFF-16e", "/* x */INT. A\n\nx", &[]),
+    (
+        "OFF-16e-layout",
+        "a\n\nCUT TO:\n/* x */\nINT. A\n\nb",
+        &[C::UnframedTransition, C::UnframedHeading],
+    ),
+    ("OFF-17a", "Title: X\n\nINT. A\n\nx", &[]),
+    ("OFF-17a-prose", "Some prose: with a colon\n\nx", &[]),
+    ("OFF-17b", "Title: X\nAuthor: Y\n\nx", &[]),
+    ("OFF-17c", "TITLE: A\ntitle: B\nCustom Key: C\n\nx", &[]),
+    (
+        "OFF-17e",
+        "Title: X\n   more\nAuthor:\n   Me\nDraft date: 5:30 pm\nEmpty:\n\nx",
+        &[],
+    ),
+    ("OFF-17f", "\n\nTitle: X\n\nINT. A\n\nx", &[]),
+    (
+        "OFF-18a",
+        "   INT. HOUSE\n\n   MARA\n   hi\n\n  CUT TO:\n\nx",
+        &[],
+    ),
+    ("OFF-18b", "  indented action\n\nx", &[]),
+    ("OFF-18c", "\ttab action\n\nx", &[]),
+    ("OFF-18d", "    MARA\n\t\thi\n\n          CUT TO:\n\nx", &[]),
+    ("OFF-19a", "===\n\n=====\n\nx", &[]),
+    ("OFF-19c", "=\n\n= text\n\n= = =\n\nx", &[]),
+    ("OFF-19d", "  ===\n\n===  \n\nx", &[]),
+    ("OFF-20a", "#Section\n\n#1 priority item\n\nx", &[]),
+    ("OFF-20b", "#\n\n# \n\nx", &[]),
+    ("OFF-20c", "# a\n\n#### b\n\n############ c\n\nx", &[]),
+    ("OFF-20d", "INT. HOUSE - DAY #5#\n\n# 12 #\n\nx", &[]),
+    ("OFF-21a", "MARA\nhi\n# x\nyo", &[C::AdjacentOutlineLine]),
+    (
+        "OFF-21b",
+        "She walks\n# x\nthen runs",
+        &[C::AdjacentOutlineLine],
+    ),
+    ("OFF-22a", "  !indented action\n\nx", &[]),
+    ("OFF-22b", "!.dot\n\n@!after at\n\n!>x\n\nx", &[]),
+    ("OFF-22c", ">>> a line of arrows\n\nx", &[]),
+    ("OFF-22d", ".h\n\n!a\n\n@NAME\nhi\n\n~l\n\n>t\n\n>c<", &[]),
+    ("OFF-22f", "!\n\n~\n\n@\n\n!   \n\nx", &[]),
+    ("OFF-22g", "!!x\n\nx", &[]),
+    ("OFF-23c", "MARA\nhi\n\nOTTO ^ \nyo", &[]),
+    (
+        "OFF-23d",
+        "MARA\nhi\n\nOTTO ^  \nyo\n\nShe waits.  \nthen goes.",
+        &[],
+    ),
+    ("OFF-23e", "MARA\r\nhi\r\n\r\nOTTO ^\r\nyo", &[]),
+    ("OFF-24a", "MARA\n(softly)\nhi\nmore\n\nx", &[]),
+    // The text line right after the Page Break is `adjacent-outline-line` (OFF-21c).
+    (
+        "OFF-24c",
+        "MARA\nhi\n~la\n# s\n= syn\n===\nmore",
+        &[C::AdjacentOutlineLine],
+    ),
+    ("OFF-24d", "MARA\nhi\n[[n]] /* b */\nmore", &[]),
+];
+
+#[test]
+fn diag_quiet_rows() {
+    let mut failures = Vec::new();
+    for (id, src, expected) in QUIET_ROWS {
+        let got: Vec<C> = parse_checked(src)
+            .diagnostics()
+            .iter()
+            .map(|d| d.code)
+            .collect();
+        if got != *expected {
+            failures.push(format!("{id} {src:?}: expected {expected:?}, got {got:?}"));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn diag_clean_screenplay_is_quiet() {
+    let src = "\
+Title: The Long Wait
+Author: A. Writer
+Notes: First line of the notes
+    and a second line.
+
+# Act One
+
+= The boat is finished.
+
+INT. WORKSHOP - NIGHT #1#
+
+Mara sands a *small* boat. The **old** radio hums.
+She waits [[check the tide]] by the door.
+
+[[Whole-line note.]]
+
+/* A cut whole-line boneyard. */
+
+MARA (V.O.)
+(softly)
+I never told him.
+
+OTTO ^
+Nor did I.
+
+~Row, row, row the boat.
+
+CUT TO:
+
+EXT. HARBOR - DAY #2#
+
+>THE END<
+";
+    assert_eq!(diags(src), []);
+}
