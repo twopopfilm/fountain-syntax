@@ -10,11 +10,10 @@ that need to change one detail of a script without disturbing the rest.
 > **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
 > `Document::screenplay()` builds the typed view: the title page, the scenes and their elements, including
-> dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 ambiguous
-> cases `SPEC.md` section 7 defines. The writer and the hashes are still
-> planned, and the crate is not on crates.io. Milestone F1, the standards study, is done
-> ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below describe the planned 0.1 release. See the
-> [roadmap](#roadmap).
+> dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 diagnostic
+> codes `SPEC.md` §7 defines. The writer and the hashes are still planned, and the crate is not on crates.io.
+> Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below describe
+> the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
 use fountain_syntax::{Child, NodeKind, parse};
@@ -78,8 +77,8 @@ crate treats correctness as something to measure:
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
-  name. The tests for the syntax tree and for the typed view (elements, scenes, dialogue and `serde`) are written;
-  the rest are planned for F2 to F4.
+  name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`) and the diagnostics
+  are written; the rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every

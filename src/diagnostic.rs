@@ -44,11 +44,12 @@ pub enum DiagnosticCode {
     UnframedHeading,
     /// A heading that is only a prefix and its period or space.
     EmptyHeading,
-    /// A line that starts with a single `.` followed by a character that does not force a heading.
+    /// A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`.
     PeriodNotForcing,
     /// A heading ends with something shaped like `#...#` that is not a scene number.
     SceneNumberRejected,
-    /// A framed uppercase line such as `FADE IN:` that is not a Transition.
+    /// A framed, uppercase, one-line paragraph that is exactly `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.`
+    /// or `CUT TO BLACK.`.
     TransitionLookalike,
     /// An uppercase line ending in `TO:` that is not a Transition because a blank line is missing.
     UnframedTransition,
@@ -72,7 +73,8 @@ pub enum DiagnosticCode {
     StrayCloser,
     /// A line in the title page block that is neither a key line nor a valid continuation.
     TitlePageStrayLine,
-    /// A text line directly after a Section, Synopsis or Page Break line, with no blank between.
+    /// A text line directly after a Section, Synopsis or Page Break line, with no blank between, where
+    /// the text line is not itself a Section, Synopsis or Page Break.
     AdjacentOutlineLine,
     /// A line that starts with `==` and is not a Page Break.
     AmbiguousEquals,

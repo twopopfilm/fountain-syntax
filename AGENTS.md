@@ -58,8 +58,8 @@ beyond the maintainer's name.
 ## Develop
 
 The crate is at the repository root (`Cargo.toml`, `src/`). `parse` builds the syntax tree,
-`Document::screenplay()` the typed view, and `Document::diagnostics()` the diagnostics of `SPEC.md` §7, with no required dependencies. The features `locked-scene-numbers`, `shot` and
-`serde` exist; `hash` is still planned. CI
+`Document::screenplay()` the typed view, and `Document::diagnostics()` the diagnostics of `SPEC.md` §7, with no
+required dependencies. The features `locked-scene-numbers`, `shot` and `serde` exist; `hash` is still planned. CI
 (`.github/workflows/ci.yml`) runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test`
 on Linux, macOS and Windows, then `cargo clippy --all-targets --all-features -- -D warnings` and
 `cargo test --all-features`. Run the same commands locally. Rules:

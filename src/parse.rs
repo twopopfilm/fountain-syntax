@@ -1,6 +1,7 @@
 //! The parse driver. The title page is read first, then a forward pass gives each logical line its
 //! role, a block pass groups the lines into items, and each item is emitted into the tree line by
-//! line. Notes and Boneyard are hidden nodes placed by the layout layer.
+//! line. Notes and Boneyard are hidden nodes placed by the layout layer. Last, `diagnose::run` reads the
+//! roles, hidden spans and unclosed openers and gives the document its diagnostics.
 
 use std::ops::Range;
 
@@ -201,9 +202,9 @@ pub(crate) struct Framing {
     pub(crate) text_after: bool,
 }
 
-/// How line `i` is framed. [`frame`] calls it while the later lines are still unframed, so on final
-/// roles it gives the same answer only for `blank_before` and for lines whose final role is
-/// `Shaped(Plain)`.
+/// How line `i` is framed. [`framed`] calls it (through [`frame`]) while the later lines are still
+/// unframed, so on final roles it gives the same answer only for `blank_before` and for lines whose
+/// final role is `Shaped(Plain)`.
 pub(crate) fn framing(roles: &[Role], i: usize) -> Framing {
     let blank_before = matches!(prev_significant(roles, i), Role::Blank);
     let after = next_significant(roles, i);

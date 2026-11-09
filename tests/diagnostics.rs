@@ -88,6 +88,7 @@ fn diag_codes_match_section_7() {
     }
 }
 
+/// DIAG-mixed-line-endings
 #[test]
 fn diag_mixed_line_endings() {
     fires("a\r\nb\nc", C::MixedLineEndings, "\n");
@@ -97,6 +98,7 @@ fn diag_mixed_line_endings() {
     quiet("abc", C::MixedLineEndings);
 }
 
+/// DIAG-title-page-stray-line
 #[test]
 fn diag_title_page_stray_line() {
     fires(
@@ -120,6 +122,7 @@ fn diag_order_is_by_span_start() {
     );
 }
 
+/// DIAG-unframed-heading
 #[test]
 fn diag_unframed_heading() {
     fires("Walk.\nINT. HOUSE\n\nb", C::UnframedHeading, "INT. HOUSE");
@@ -129,6 +132,7 @@ fn diag_unframed_heading() {
     quiet(".INT. HOUSE\nx", C::UnframedHeading);
 }
 
+/// DIAG-empty-heading
 #[test]
 fn diag_empty_heading() {
     fires("INT.\n\nx", C::EmptyHeading, "INT.");
@@ -139,6 +143,7 @@ fn diag_empty_heading() {
     quiet("INT. #1#\n\nx", C::EmptyHeading);
 }
 
+/// DIAG-period-not-forcing
 #[test]
 fn diag_period_not_forcing() {
     fires(". SPACE AFTER", C::PeriodNotForcing, ". SPACE AFTER");
@@ -150,6 +155,7 @@ fn diag_period_not_forcing() {
     quiet(".", C::PeriodNotForcing);
 }
 
+/// DIAG-scene-number-rejected
 #[test]
 fn diag_scene_number_rejected() {
     fires("INT. A #1 A#\n\nx", C::SceneNumberRejected, "INT. A #1 A#");
@@ -168,6 +174,7 @@ fn diag_scene_number_rejected() {
     quiet("INT. A ##12A#\n\nx", C::SceneNumberRejected);
 }
 
+/// DIAG-transition-lookalike
 #[test]
 fn diag_transition_lookalike() {
     fires("a\n\nFADE OUT.\n\nb", C::TransitionLookalike, "FADE OUT.");
@@ -188,6 +195,7 @@ fn diag_transition_lookalike() {
     quiet("a\n\nCUT TO:\n\nb", C::TransitionLookalike);
 }
 
+/// DIAG-unframed-transition
 #[test]
 fn diag_unframed_transition() {
     fires("a\nCUT TO:\n\nb", C::UnframedTransition, "CUT TO:");
@@ -197,6 +205,7 @@ fn diag_unframed_transition() {
     quiet("@CUT TO:\nhi", C::UnframedTransition);
 }
 
+/// DIAG-to-trailing-space
 #[test]
 fn diag_to_trailing_space() {
     fires("a\n\nCUT TO: \n\nb", C::ToTrailingSpace, "CUT TO: ");
@@ -208,6 +217,7 @@ fn diag_to_trailing_space() {
     quiet("CUT TO: \n   x", C::ToTrailingSpace);
 }
 
+/// DIAG-cue-needs-force
 #[test]
 fn diag_cue_needs_force() {
     fires(
@@ -223,6 +233,7 @@ fn diag_cue_needs_force() {
     quiet("@\u{674E}\u{660E}\nHello.", C::CueNeedsForce);
 }
 
+/// DIAG-sigil-in-dialogue
 #[test]
 fn diag_sigil_in_dialogue() {
     fires("MARA\nhi\n!Action now", C::SigilInDialogue, "!Action now");
@@ -232,6 +243,7 @@ fn diag_sigil_in_dialogue() {
     quiet("MARA\nhi\n~la la", C::SigilInDialogue);
 }
 
+/// DIAG-caret-not-last
 #[test]
 fn diag_caret_not_last() {
     fires("NAME ^ (V.O.)\nhi", C::CaretNotLast, "NAME ^ (V.O.)");
@@ -240,6 +252,7 @@ fn diag_caret_not_last() {
     quiet("OTTO^\nhi", C::CaretNotLast);
 }
 
+/// DIAG-partial-parenthetical
 #[test]
 fn diag_partial_parenthetical() {
     fires(
@@ -257,6 +270,7 @@ fn diag_partial_parenthetical() {
     quiet("(not closed\nx", C::PartialParenthetical);
 }
 
+/// DIAG-blank-lookalike
 #[test]
 fn diag_blank_lookalike() {
     fires("a\n \nb", C::BlankLookalike, " ");
@@ -268,6 +282,7 @@ fn diag_blank_lookalike() {
     quiet(" \na", C::BlankLookalike);
 }
 
+/// DIAG-adjacent-outline-line
 #[test]
 fn diag_adjacent_outline_line() {
     fires("# Act\nShe waits.", C::AdjacentOutlineLine, "She waits.");
@@ -279,6 +294,7 @@ fn diag_adjacent_outline_line() {
     quiet("# Act\n[[n]]", C::AdjacentOutlineLine);
 }
 
+/// DIAG-ambiguous-equals
 #[test]
 fn diag_ambiguous_equals() {
     fires("==", C::AmbiguousEquals, "==");
@@ -288,6 +304,7 @@ fn diag_ambiguous_equals() {
     quiet("  ===  ", C::AmbiguousEquals);
 }
 
+/// DIAG-lone-caret
 #[test]
 fn diag_lone_caret() {
     fires("OTTO ^\nyo", C::LoneCaret, "OTTO ^");
@@ -315,6 +332,7 @@ fn offsets(src: &str, code: C) -> Vec<(usize, usize)> {
         .collect()
 }
 
+/// DIAG-nested-opener
 #[test]
 fn diag_nested_opener() {
     fires("[[outer [[inner]] outer]]", C::NestedOpener, "[[");
@@ -330,6 +348,7 @@ fn diag_nested_opener() {
     quiet("/* a [[ b */", C::NestedOpener);
 }
 
+/// DIAG-unclosed-note
 #[test]
 fn diag_unclosed_note() {
     fires("a [[b\n\nc", C::UnclosedNote, "[[");
@@ -337,6 +356,7 @@ fn diag_unclosed_note() {
     quiet("a [[b\n  \nc]]", C::UnclosedNote);
 }
 
+/// DIAG-unclosed-boneyard
 #[test]
 fn diag_unclosed_boneyard() {
     fires("a /* b", C::UnclosedBoneyard, "/*");
@@ -344,6 +364,7 @@ fn diag_unclosed_boneyard() {
     quiet("a /* b\n\nc */", C::UnclosedBoneyard);
 }
 
+/// DIAG-stray-closer
 #[test]
 fn diag_stray_closer() {
     fires("a ]] b", C::StrayCloser, "]]");
@@ -359,6 +380,7 @@ fn diag_stray_closer() {
     assert_eq!(offsets("x ]]]", C::StrayCloser), [(2, 4)]);
 }
 
+/// DIAG-emphasis-line-break
 #[test]
 fn diag_emphasis_line_break() {
     fires(
