@@ -22,6 +22,7 @@ pub(crate) fn run(input: &Input<'_>) -> Vec<Diagnostic> {
     line_endings(input, &mut out);
     title_page(input, &mut out);
     look_alikes(input, &mut out);
+    blocks_and_layout(input, &mut out);
     out.sort_by_key(|d| (d.span.start, d.span.end, d.code as u8));
     out
 }
@@ -104,6 +105,93 @@ fn look_alikes(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         }
         out.extend(codes.into_iter().map(|c| Diagnostic::new(c, line.span)));
     }
+}
+
+/// The dialogue-block and layout codes, in one forward pass that tracks whether a Dialogue block
+/// is open, as `frame` (parse.rs) did. `left` and `lone` mirror `pair` in the view: `left` is the
+/// cue line of the block that can still take a partner, and `lone` the caret blocks with none.
+fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
+    use DiagnosticCode as C;
+    let roles = input.roles;
+    let outline = |r: Role| matches!(r, Role::Shaped(s) if parse::is_outline(s));
+    let mut in_block = false;
+    let mut left: Option<usize> = None;
+    let mut lone: Vec<usize> = Vec::new();
+    for (i, (line, &role)) in input.lines.iter().zip(roles).enumerate() {
+        let t = line.visible.trim_start_matches([' ', '\t']);
+        let mut push = |code| out.push(Diagnostic::new(code, line.span));
+        if t.starts_with("==") && classify::shape(t) != LineShape::PageBreak {
+            push(C::AmbiguousEquals);
+        }
+        if i > 0
+            && outline(roles[i - 1])
+            && !line.visible.trim_matches([' ', '\t']).is_empty()
+            && !outline(role)
+        {
+            push(C::AdjacentOutlineLine);
+        }
+        match role {
+            Role::Blank => {
+                let blank = |j| matches!(roles[j], Role::Blank);
+                if !line.visible.is_empty()
+                    && 0 < i
+                    && i + 1 < roles.len()
+                    && !blank(i - 1)
+                    && !blank(i + 1)
+                {
+                    push(C::BlankLookalike);
+                }
+                in_block = false;
+            }
+            Role::Cue | Role::Shaped(LineShape::ForcedCue) => {
+                let forced = matches!(role, Role::Shaped(_));
+                let text = t.trim_end_matches([' ', '\t']);
+                let text = if forced { &text[1..] } else { text };
+                if text.strip_suffix('^').unwrap_or(text).contains('^') {
+                    push(C::CaretNotLast);
+                }
+                if in_block && forced {
+                    push(C::SigilInDialogue);
+                }
+                if classify::cue(text, forced).is_some_and(|c| c.caret.is_some()) {
+                    if let Some(j) = left.take() {
+                        if lone.last() == Some(&j) {
+                            lone.pop();
+                        }
+                    } else {
+                        lone.push(i);
+                        left = Some(i);
+                    }
+                } else {
+                    left = Some(i);
+                }
+                in_block = true;
+            }
+            Role::Dialogue => {
+                let text = t.trim_end_matches([' ', '\t']);
+                if text.starts_with('(') != text.ends_with(')') {
+                    push(C::PartialParenthetical);
+                }
+            }
+            Role::Shaped(s) if classify::ends_block(s) => {
+                if in_block {
+                    push(C::SigilInDialogue);
+                }
+                in_block = false;
+                left = None;
+            }
+            Role::Shaped(LineShape::Lyrics) => left = left.filter(|_| in_block),
+            Role::Shaped(LineShape::Plain | LineShape::PrefixHeading) | Role::Transition => {
+                in_block = false;
+                left = None;
+            }
+            _ => {}
+        }
+    }
+    out.extend(
+        lone.into_iter()
+            .map(|i| Diagnostic::new(C::LoneCaret, input.lines[i].span)),
+    );
 }
 
 /// No letter with case, but a digit or a caseless letter (SPEC 7, `cue-needs-force`).

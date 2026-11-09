@@ -222,3 +222,85 @@ fn diag_cue_needs_force() {
     quiet("\u{674E}\u{660E} Bob\nHi", C::CueNeedsForce);
     quiet("@\u{674E}\u{660E}\nHello.", C::CueNeedsForce);
 }
+
+#[test]
+fn diag_sigil_in_dialogue() {
+    fires("MARA\nhi\n!Action now", C::SigilInDialogue, "!Action now");
+    fires("MARA\nhi\n@OTTO\nyo", C::SigilInDialogue, "@OTTO");
+    fires("MARA\nhi\n.INT. X", C::SigilInDialogue, ".INT. X");
+    quiet("MARA\nhi\n\n!Action", C::SigilInDialogue);
+    quiet("MARA\nhi\n~la la", C::SigilInDialogue);
+}
+
+#[test]
+fn diag_caret_not_last() {
+    fires("NAME ^ (V.O.)\nhi", C::CaretNotLast, "NAME ^ (V.O.)");
+    fires("@NAME ^ x\nhi", C::CaretNotLast, "@NAME ^ x");
+    quiet("MARA (V.O.) ^\nhi", C::CaretNotLast);
+    quiet("OTTO^\nhi", C::CaretNotLast);
+}
+
+#[test]
+fn diag_partial_parenthetical() {
+    fires(
+        "MARA\n(whispering) and then speaks",
+        C::PartialParenthetical,
+        "(whispering) and then speaks",
+    );
+    fires("MARA\n(not closed", C::PartialParenthetical, "(not closed");
+    fires(
+        "MARA\nhi\nparagraph)",
+        C::PartialParenthetical,
+        "paragraph)",
+    );
+    quiet("MARA\n(softly)\nhi", C::PartialParenthetical);
+    quiet("(not closed\nx", C::PartialParenthetical);
+}
+
+#[test]
+fn diag_blank_lookalike() {
+    fires("a\n \nb", C::BlankLookalike, " ");
+    fires("a\n  \nb", C::BlankLookalike, "  ");
+    fires("a\r\n \r\nb", C::BlankLookalike, " ");
+    quiet("a\n\nb", C::BlankLookalike);
+    quiet("MARA\nhi\n  \nyo", C::BlankLookalike);
+    quiet("a\n \n\nb", C::BlankLookalike);
+    quiet(" \na", C::BlankLookalike);
+}
+
+#[test]
+fn diag_adjacent_outline_line() {
+    fires("# Act\nShe waits.", C::AdjacentOutlineLine, "She waits.");
+    fires("===\nx", C::AdjacentOutlineLine, "x");
+    fires("= syn\nx", C::AdjacentOutlineLine, "x");
+    fires("MARA\n# x\nhi", C::AdjacentOutlineLine, "hi");
+    quiet("# Act\n\nShe waits.", C::AdjacentOutlineLine);
+    quiet("# Act\n## Two", C::AdjacentOutlineLine);
+    quiet("# Act\n[[n]]", C::AdjacentOutlineLine);
+}
+
+#[test]
+fn diag_ambiguous_equals() {
+    fires("==", C::AmbiguousEquals, "==");
+    fires("=== text", C::AmbiguousEquals, "=== text");
+    quiet("===", C::AmbiguousEquals);
+    quiet("= syn", C::AmbiguousEquals);
+    quiet("  ===  ", C::AmbiguousEquals);
+}
+
+#[test]
+fn diag_lone_caret() {
+    fires("OTTO ^\nyo", C::LoneCaret, "OTTO ^");
+    fires(
+        "MARA\nhi\n\nOTTO ^\nyo\n\nNELL ^\nhey",
+        C::LoneCaret,
+        "NELL ^",
+    );
+    quiet("MARA\nhi\n\nOTTO ^\nyo", C::LoneCaret);
+    quiet("MARA\nhi\n\n# Act\n\nOTTO ^\nyo", C::LoneCaret);
+    // An unpaired block can be the left half of the next pair (the #40 ruling).
+    quiet(
+        "MARA\nhi\n\nOTTO ^\nyo\n\nNELL ^\nhey\n\nIVAN ^\nyes",
+        C::LoneCaret,
+    );
+}
