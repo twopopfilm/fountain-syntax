@@ -172,3 +172,16 @@ fn a_scene_number_without_locked_reads_as_not_locked() {
     assert_eq!(n.text, "12A");
     assert!(!n.locked);
 }
+
+#[test]
+fn diagnostics_round_trip_and_survive_a_document_round_trip() {
+    use fountain_syntax::Diagnostic;
+    let doc = parse("Title: X\n  stray\n\na\r\nb\nc");
+    assert_eq!(doc.diagnostics().len(), 2);
+    for d in doc.diagnostics() {
+        let back: Diagnostic = serde_json::from_str(&serde_json::to_string(d).unwrap()).unwrap();
+        assert_eq!(&back, d);
+    }
+    let back: Document = serde_json::from_str(&serde_json::to_string(&doc).unwrap()).unwrap();
+    assert_eq!(back.diagnostics(), doc.diagnostics());
+}

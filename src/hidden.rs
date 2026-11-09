@@ -94,6 +94,8 @@ pub(crate) struct Logical {
     pub(crate) pieces: Vec<Piece>,
     /// The visible pieces joined: the text recognition reads (SPEC 3.4, rule 2).
     pub(crate) visible: String,
+    /// From the text start of its first physical line to the text end of its last; no line break.
+    pub(crate) span: Span,
 }
 
 impl Logical {
@@ -126,7 +128,8 @@ pub(crate) fn logical(src: &str, lines: &[Line], hidden: &[Hidden]) -> Vec<Logic
                 visible.push_str(&src[s.start..s.end]);
             }
         };
-        let mut at = lines[k].text.start;
+        let first = lines[k].text.start;
+        let mut at = first;
         while let Some(span) = hidden
             .get(h)
             .map(|hd| hd.span)
@@ -146,6 +149,7 @@ pub(crate) fn logical(src: &str, lines: &[Line], hidden: &[Hidden]) -> Vec<Logic
             brk: lines[k].brk,
             pieces,
             visible,
+            span: Span::new(first, lines[k].text.end),
         });
         k += 1;
     }

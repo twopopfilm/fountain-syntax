@@ -142,7 +142,7 @@ mod tests {
         b.start_node(NodeKind::Action);
         emit_line(&mut b, src, &logical[0], parts, &hidden);
         b.finish_node();
-        dump(b.finish(src).root())
+        dump(b.finish(src, Vec::new()).root())
     }
 
     fn name(parts: Vec<Part>) -> Part {

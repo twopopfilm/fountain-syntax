@@ -34,6 +34,8 @@
 #![warn(missing_docs)]
 
 mod classify;
+mod diagnose;
+mod diagnostic;
 mod hidden;
 mod layout;
 mod lines;
@@ -41,6 +43,7 @@ mod parse;
 mod tree;
 mod view;
 
+pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
 pub use tree::{Child, Document, Node, NodeKind, Span, Token, TokenKind};
 #[cfg(feature = "shot")]
 pub use view::Shot;

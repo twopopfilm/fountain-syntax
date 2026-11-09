@@ -5,6 +5,7 @@
 use std::ops::Range;
 
 use crate::classify::{self, LineShape};
+use crate::diagnose;
 use crate::hidden::{self, Hidden, Logical};
 use crate::layout::{self, Part};
 use crate::lines;
@@ -12,7 +13,7 @@ use crate::tree::{Document, NodeKind, Span, TokenKind, TreeBuilder};
 
 /// What a logical line is, for grouping.
 #[derive(Clone, Copy, Debug)]
-enum Role {
+pub(crate) enum Role {
     Blank,
     /// Exactly two spaces: a Dialogue line inside a block, blank elsewhere (`OFF-1b`). [`frame`]
     /// resolves it.
@@ -70,7 +71,7 @@ fn is_action_text(shape: LineShape) -> bool {
 }
 
 /// Section, Synopsis and Page Break lines are transparent (SPEC 3.4, rule 3).
-fn is_outline(shape: LineShape) -> bool {
+pub(crate) fn is_outline(shape: LineShape) -> bool {
     matches!(
         shape,
         LineShape::Section(_) | LineShape::Synopsis | LineShape::PageBreak
@@ -88,7 +89,7 @@ fn is_significant(role: Role) -> bool {
 }
 
 /// The nearest significant line before `i`; the start of the document counts as blank.
-fn prev_significant(roles: &[Role], i: usize) -> Role {
+pub(crate) fn prev_significant(roles: &[Role], i: usize) -> Role {
     let before = roles[..i].iter().rev();
     before
         .copied()
@@ -97,7 +98,7 @@ fn prev_significant(roles: &[Role], i: usize) -> Role {
 }
 
 /// The nearest significant line after `i`; the end of the document counts as blank.
-fn next_significant(roles: &[Role], i: usize) -> Role {
+pub(crate) fn next_significant(roles: &[Role], i: usize) -> Role {
     let after = roles[i + 1..].iter();
     after
         .copied()
@@ -583,5 +584,11 @@ pub(crate) fn document(src: &str) -> Document {
         // The break after an element's last line belongs to the Gap, not to the element.
         line_break(&mut b, &lines[item.last_line()]);
     }
-    b.finish(src)
+    let diagnostics = diagnose::run(&diagnose::Input {
+        src,
+        physical: &physical,
+        lines: &lines,
+        roles: &roles,
+    });
+    b.finish(src, diagnostics)
 }
