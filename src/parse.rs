@@ -582,7 +582,7 @@ pub(crate) fn document(src: &str) -> Document {
         0
     };
     let physical = lines::physical(src, from);
-    let hidden = hidden::scan(src, from, &physical);
+    let (hidden, unclosed) = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
     let mut roles: Vec<Role> = lines.iter().map(role).collect();
     let page = title_page(&mut roles, &lines);
@@ -610,9 +610,12 @@ pub(crate) fn document(src: &str) -> Document {
     }
     let diagnostics = diagnose::run(&diagnose::Input {
         src,
+        from,
         physical: &physical,
         lines: &lines,
         roles: &roles,
+        hidden: &hidden,
+        unclosed: &unclosed,
     });
     b.finish(src, diagnostics)
 }

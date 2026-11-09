@@ -135,7 +135,7 @@ mod tests {
     /// Emits `src` as one Action line laid out as `parts`.
     fn emit(src: &str, parts: &[Part]) -> String {
         let lines = lines::physical(src, 0);
-        let hidden = hidden::scan(src, 0, &lines);
+        let (hidden, _) = hidden::scan(src, 0, &lines);
         let logical = hidden::logical(src, &lines, &hidden);
         assert_eq!(logical.len(), 1);
         let mut b = TreeBuilder::new();

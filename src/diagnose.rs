@@ -4,16 +4,22 @@
 
 use crate::classify::{self, LineShape};
 use crate::diagnostic::{Diagnostic, DiagnosticCode};
-use crate::hidden::Logical;
+use crate::hidden::{Hidden, Logical};
 use crate::lines::Line;
 use crate::parse::{self, Role};
+use crate::tree::{NodeKind, Span};
 
 /// What the parse knows about the document, shared by every pass.
 pub(crate) struct Input<'a> {
     pub(crate) src: &'a str,
+    /// Where the text starts: after the BOM, if there is one.
+    pub(crate) from: usize,
     pub(crate) physical: &'a [Line],
     pub(crate) lines: &'a [Logical],
     pub(crate) roles: &'a [Role],
+    pub(crate) hidden: &'a [Hidden],
+    /// The `[[` and `/*` that opened no span (the second result of `hidden::scan`).
+    pub(crate) unclosed: &'a [Hidden],
 }
 
 /// Every diagnostic of the document, ordered by span start (then end, then SPEC 7 table order).
@@ -23,6 +29,7 @@ pub(crate) fn run(input: &Input<'_>) -> Vec<Diagnostic> {
     title_page(input, &mut out);
     look_alikes(input, &mut out);
     blocks_and_layout(input, &mut out);
+    hidden_marks(input, &mut out);
     out.sort_by_key(|d| (d.span.start, d.span.end, d.code as u8));
     out
 }
@@ -192,6 +199,48 @@ fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         lone.into_iter()
             .map(|i| Diagnostic::new(C::LoneCaret, input.lines[i].span)),
     );
+}
+
+/// The Note and Boneyard codes: unclosed openers, an opener inside a span of its own kind, and a
+/// closer outside every span. Each is a single left-to-right walk over the text it covers.
+fn hidden_marks(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
+    use DiagnosticCode as C;
+    let src = input.src;
+    for u in input.unclosed {
+        let code = match u.kind {
+            NodeKind::Note => C::UnclosedNote,
+            _ => C::UnclosedBoneyard,
+        };
+        out.push(Diagnostic::new(code, u.span));
+    }
+    for h in input.hidden {
+        let opener = if h.kind == NodeKind::Note { "[[" } else { "/*" };
+        let inner = Span::new(h.span.start + 2, h.span.end - 2);
+        marks(src, inner, opener, |s| {
+            out.push(Diagnostic::new(C::NestedOpener, s));
+        });
+    }
+    // The gaps between hidden spans are the text outside every span.
+    let mut at = input.from;
+    let ends = input.hidden.iter().map(|h| (h.span.start, h.span.end));
+    for (start, end) in ends.chain([(src.len(), src.len())]) {
+        for closer in ["]]", "*/"] {
+            marks(src, Span::new(at, start), closer, |s| {
+                out.push(Diagnostic::new(C::StrayCloser, s));
+            });
+        }
+        at = end;
+    }
+}
+
+/// Calls `found` with the span of each non-overlapping `mark` in `src[within]`, left to right.
+fn marks(src: &str, within: Span, mark: &str, mut found: impl FnMut(Span)) {
+    let mut at = within.start;
+    while let Some(j) = src[at..within.end].find(mark) {
+        let start = at + j;
+        at = start + mark.len();
+        found(Span::new(start, at));
+    }
 }
 
 /// No letter with case, but a digit or a caseless letter (SPEC 7, `cue-needs-force`).

@@ -304,3 +304,57 @@ fn diag_lone_caret() {
         C::LoneCaret,
     );
 }
+
+/// The `(start, end)` of each diagnostic of `code` in `src`.
+fn offsets(src: &str, code: C) -> Vec<(usize, usize)> {
+    parse_checked(src)
+        .diagnostics()
+        .iter()
+        .filter(|d| d.code == code)
+        .map(|d| (d.span.start, d.span.end))
+        .collect()
+}
+
+#[test]
+fn diag_nested_opener() {
+    fires("[[outer [[inner]] outer]]", C::NestedOpener, "[[");
+    assert_eq!(
+        offsets("[[outer [[inner]] outer]]", C::NestedOpener),
+        [(8, 10)]
+    );
+    fires("/* a /* b */", C::NestedOpener, "/*");
+    quiet("[[a]] [[b]]", C::NestedOpener);
+    quiet("/* a */ /* b */", C::NestedOpener);
+    // A Note's inner text is searched for `[[` only, and a Boneyard's for `/*` only.
+    quiet("[[a /* b]]", C::NestedOpener);
+    quiet("/* a [[ b */", C::NestedOpener);
+}
+
+#[test]
+fn diag_unclosed_note() {
+    fires("a [[b\n\nc", C::UnclosedNote, "[[");
+    quiet("a [[b\nc]]", C::UnclosedNote);
+    quiet("a [[b\n  \nc]]", C::UnclosedNote);
+}
+
+#[test]
+fn diag_unclosed_boneyard() {
+    fires("a /* b", C::UnclosedBoneyard, "/*");
+    assert_eq!(offsets("/* a /* b", C::UnclosedBoneyard), [(0, 2), (5, 7)]);
+    quiet("a /* b\n\nc */", C::UnclosedBoneyard);
+}
+
+#[test]
+fn diag_stray_closer() {
+    fires("a ]] b", C::StrayCloser, "]]");
+    fires("text before */", C::StrayCloser, "*/");
+    assert_eq!(
+        offsets("[[outer [[inner]] outer]] world.", C::StrayCloser),
+        [(23, 25)]
+    );
+    quiet("[[a]]", C::StrayCloser);
+    quiet("/* a */", C::StrayCloser);
+    quiet("\u{FEFF}[[a]]", C::StrayCloser);
+    // Non-overlapping: `]]]` holds one pair.
+    assert_eq!(offsets("x ]]]", C::StrayCloser), [(2, 4)]);
+}
