@@ -272,7 +272,8 @@ fn emphasis(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         } else {
             t
         };
-        // shortcut: hidden spans are dropped from the visible text, not treated as solid atoms as the view does; upgrade if a diagnostic disagrees with the view next to an inline Note
+        // shortcut: hidden spans are dropped from the visible text, not treated as solid atoms as
+        // the view does; upgrade if a diagnostic disagrees with the view next to an inline Note
         let (open, closing) = inline::unmatched_marks(t);
         if open.iter().any(|m| closers.contains(m)) {
             out.push(Diagnostic::new(

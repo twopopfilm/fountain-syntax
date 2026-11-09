@@ -111,6 +111,8 @@ fn never_fail_random_inputs() {
     assert!(paired_seen > 0, "no input had a dual-dialogue pair");
 }
 
+// Large inputs must parse and report deterministically; a quadratic pass shows up as a slow
+// test rather than a failure.
 #[test]
 fn never_fail_large_inputs() {
     let inputs = [

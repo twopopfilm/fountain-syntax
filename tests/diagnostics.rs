@@ -127,6 +127,7 @@ fn diag_order_is_by_span_start() {
 fn diag_unframed_heading() {
     fires("Walk.\nINT. HOUSE\n\nb", C::UnframedHeading, "INT. HOUSE");
     fires("INT. HOUSE\nShe waits.", C::UnframedHeading, "INT. HOUSE");
+    fires("MARA\nExt. 4 please.", C::UnframedHeading, "Ext. 4 please.");
     quiet("INT. HOUSE\n\nShe waits.", C::UnframedHeading);
     quiet("INTERIOR\nx", C::UnframedHeading);
     quiet(".INT. HOUSE\nx", C::UnframedHeading);
@@ -200,6 +201,7 @@ fn diag_transition_lookalike() {
 fn diag_unframed_transition() {
     fires("a\nCUT TO:\n\nb", C::UnframedTransition, "CUT TO:");
     fires("a\n\nCUT TO:\nINT. HOUSE", C::UnframedTransition, "CUT TO:");
+    fires("MARA\nWELCOME TO:", C::UnframedTransition, "WELCOME TO:");
     quiet("a\n\nCUT TO:\n\nb", C::UnframedTransition);
     quiet("a\nCut to:\nb", C::UnframedTransition);
     quiet("@CUT TO:\nhi", C::UnframedTransition);
@@ -422,6 +424,8 @@ const QUIET_ROWS: &[QuietRow] = &[
     ("OFF-1c", "a [[note\n  \nstill]] b", &[]),
     ("OFF-1d", "\n  INT. HOUSE\n\nx", &[]),
     ("OFF-2b", "a\n\nb\n", &[]),
+    ("OFF-2c", "\u{FEFF}Title: X\n\nx", &[]),
+    ("OFF-2d", "a\u{2028}b\u{85}c\u{B}d\u{C}e\n\nx", &[]),
     (
         "OFF-3a",
         "NELL (V.O.)\nhi\n\nMARA (cont'd)\nhi\n\nMARA (on the radio, softly)\nhi",
@@ -464,6 +468,7 @@ const QUIET_ROWS: &[QuietRow] = &[
         "INT. A #12#\n\nx\n\nINT. B #4B#\n\nx\n\nINT. C #\u{C9}1#\n\nx\n\nINT. D #2-A.1#\n\nx",
         &[],
     ),
+    ("OFF-8g", "INT. A ##12A#\n\nx", &[]),
     ("OFF-8d", ".TITLE CARD #3#\n\nx", &[]),
     ("OFF-8f", "INT. A #5#\n\nx", &[]),
     ("OFF-9d", "a\n\nCUT TO:\n\nb\n\nCut to:\n\nx", &[]),
