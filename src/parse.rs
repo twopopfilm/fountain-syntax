@@ -191,17 +191,41 @@ fn frame(roles: &mut [Role], lines: &[Logical]) {
     }
 }
 
+/// How the significant neighbours of a line frame it.
+pub(crate) struct Framing {
+    /// A blank line, or the start of the document, comes before it.
+    pub(crate) blank_before: bool,
+    /// A blank line before and a blank line after (the end of the document counts as blank).
+    pub(crate) framed: bool,
+    /// A text line follows: not blank, not a two-space line, not a forced line that ends a block.
+    pub(crate) text_after: bool,
+}
+
+/// How line `i` is framed. [`frame`] calls it while the later lines are still unframed, so on final
+/// roles it gives the same answer only for `blank_before` and for lines whose final role is
+/// `Shaped(Plain)`.
+pub(crate) fn framing(roles: &[Role], i: usize) -> Framing {
+    let blank_before = matches!(prev_significant(roles, i), Role::Blank);
+    let after = next_significant(roles, i);
+    Framing {
+        blank_before,
+        framed: blank_before && matches!(after, Role::Blank | Role::TwoSpaces),
+        // The line after a cue must be a text line: not blank, not a two-space line, not a forced
+        // line that ends a block.
+        text_after: matches!(after, Role::Shaped(s) if !classify::ends_block(s)),
+    }
+}
+
 /// The framing rules for a line outside a block, in the order heading, transition, cue (SPEC 4.0,
 /// step 3). A line no rule takes is Action. An unframed heading-by-prefix line is Action, never a
 /// cue (`OFF-6a`), and the `TO:` carve-out keeps a line from being a Transition or a cue, not a
 /// heading (`OFF-23a`, `OFF-23b`).
 fn framed(roles: &[Role], i: usize, shape: LineShape, visible: &str) -> Role {
-    let blank_before = matches!(prev_significant(roles, i), Role::Blank);
-    let after = next_significant(roles, i);
-    let framed = blank_before && matches!(after, Role::Blank | Role::TwoSpaces);
-    // The line after a cue must be a text line: not blank, not a two-space line, not a forced
-    // line that ends a block.
-    let text_after = matches!(after, Role::Shaped(s) if !classify::ends_block(s));
+    let Framing {
+        blank_before,
+        framed,
+        text_after,
+    } = framing(roles, i);
     let trimmed = visible.trim_end_matches([' ', '\t']);
     if shape == LineShape::PrefixHeading {
         Role::Shaped(if framed { shape } else { LineShape::Plain })

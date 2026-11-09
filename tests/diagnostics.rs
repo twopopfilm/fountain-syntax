@@ -81,7 +81,8 @@ fn diag_codes_match_section_7() {
         (C::SigilInDialogue, "sigil-in-dialogue", Severity::Info),
     ];
     assert_eq!(rows.len(), 22);
-    for (code, name, severity) in rows {
+    for (index, (code, name, severity)) in rows.into_iter().enumerate() {
+        assert_eq!(code as usize, index, "{name}: variant order is table order");
         assert_eq!(code.as_str(), name);
         assert_eq!(code.severity(), severity, "{name}");
     }
@@ -117,4 +118,107 @@ fn diag_order_is_by_span_start() {
             (C::MixedLineEndings, "\r\n".to_owned()),
         ]
     );
+}
+
+#[test]
+fn diag_unframed_heading() {
+    fires("Walk.\nINT. HOUSE\n\nb", C::UnframedHeading, "INT. HOUSE");
+    fires("INT. HOUSE\nShe waits.", C::UnframedHeading, "INT. HOUSE");
+    quiet("INT. HOUSE\n\nShe waits.", C::UnframedHeading);
+    quiet("INTERIOR\nx", C::UnframedHeading);
+    quiet(".INT. HOUSE\nx", C::UnframedHeading);
+}
+
+#[test]
+fn diag_empty_heading() {
+    fires("INT.\n\nx", C::EmptyHeading, "INT.");
+    fires("int \n\nx", C::EmptyHeading, "int ");
+    fires("INT.[[a\nb]]\n\nx", C::EmptyHeading, "INT.[[a\nb]]");
+    quiet("INT. HOUSE\n\nx", C::EmptyHeading);
+    quiet(".INT.\n\nx", C::EmptyHeading);
+    quiet("INT. #1#\n\nx", C::EmptyHeading);
+}
+
+#[test]
+fn diag_period_not_forcing() {
+    fires(". SPACE AFTER", C::PeriodNotForcing, ". SPACE AFTER");
+    fires(".>HEADING", C::PeriodNotForcing, ".>HEADING");
+    fires("\u{FEFF}. x", C::PeriodNotForcing, ". x");
+    quiet(".HOUSE", C::PeriodNotForcing);
+    quiet("..DOUBLE", C::PeriodNotForcing);
+    quiet("...trailing off", C::PeriodNotForcing);
+    quiet(".", C::PeriodNotForcing);
+}
+
+#[test]
+fn diag_scene_number_rejected() {
+    fires("INT. A #1 A#\n\nx", C::SceneNumberRejected, "INT. A #1 A#");
+    fires("INT. A #1_A#\n\nx", C::SceneNumberRejected, "INT. A #1_A#");
+    fires(
+        "INT. A #7# trailing words\n\nx",
+        C::SceneNumberRejected,
+        "INT. A #7# trailing words",
+    );
+    fires("INT. A ##\n\nx", C::SceneNumberRejected, "INT. A ##");
+    fires(".TITLE #1 A#", C::SceneNumberRejected, ".TITLE #1 A#");
+    quiet("INT. A #12A#\n\nx", C::SceneNumberRejected);
+    quiet("INT. A\n\nx", C::SceneNumberRejected);
+    quiet("She waits #1 A#.", C::SceneNumberRejected);
+    // The locked form is a scene number with the feature and quiet without it.
+    quiet("INT. A ##12A#\n\nx", C::SceneNumberRejected);
+}
+
+#[test]
+fn diag_transition_lookalike() {
+    fires("a\n\nFADE OUT.\n\nb", C::TransitionLookalike, "FADE OUT.");
+    fires("FADE IN:\n\nb", C::TransitionLookalike, "FADE IN:");
+    fires(
+        "a\n\nFADE TO BLACK.\n\nb",
+        C::TransitionLookalike,
+        "FADE TO BLACK.",
+    );
+    fires(
+        "a\n\nCUT TO BLACK.",
+        C::TransitionLookalike,
+        "CUT TO BLACK.",
+    );
+    quiet("FADE IN: on her face\n\nx", C::TransitionLookalike);
+    quiet("Fade in:\n\nx", C::TransitionLookalike);
+    quiet("a\n\nFADE OUT.\nb", C::TransitionLookalike);
+    quiet("a\n\nCUT TO:\n\nb", C::TransitionLookalike);
+}
+
+#[test]
+fn diag_unframed_transition() {
+    fires("a\nCUT TO:\n\nb", C::UnframedTransition, "CUT TO:");
+    fires("a\n\nCUT TO:\nINT. HOUSE", C::UnframedTransition, "CUT TO:");
+    quiet("a\n\nCUT TO:\n\nb", C::UnframedTransition);
+    quiet("a\nCut to:\nb", C::UnframedTransition);
+    quiet("@CUT TO:\nhi", C::UnframedTransition);
+}
+
+#[test]
+fn diag_to_trailing_space() {
+    fires("a\n\nCUT TO: \n\nb", C::ToTrailingSpace, "CUT TO: ");
+    fires("a\n\nCUT TO: \nb", C::ToTrailingSpace, "CUT TO: ");
+    quiet("a\nCUT TO: \nb", C::ToTrailingSpace);
+    quiet("a\n\nCUT TO:\n\nb", C::ToTrailingSpace);
+    // A forced line or a title-page key is not the look-alike.
+    quiet("a\n\n!CUT TO: \n\nb", C::ToTrailingSpace);
+    quiet("CUT TO: \n   x", C::ToTrailingSpace);
+}
+
+#[test]
+fn diag_cue_needs_force() {
+    fires(
+        "\u{674E}\u{660E}\nHello.",
+        C::CueNeedsForce,
+        "\u{674E}\u{660E}",
+    );
+    fires("a\n\n23\nHello.", C::CueNeedsForce, "23");
+    quiet("MARA\nHello.", C::CueNeedsForce);
+    quiet("\u{674E}\u{660E}", C::CueNeedsForce);
+    quiet("...\nHello.", C::CueNeedsForce);
+    quiet("\u{674E}\u{660E} Bob\nHi", C::CueNeedsForce);
+    quiet("@\u{674E}\u{660E}\nHello.", C::CueNeedsForce);
 }

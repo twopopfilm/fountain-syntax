@@ -37,8 +37,8 @@ pub enum DiagnosticCode {
     BlankLookalike,
     /// The document uses more than one of `\n`, `\r\n` and `\r`.
     MixedLineEndings,
-    /// An all-caps-looking line with a digit or caseless letter but no letter with case, which
-    /// needs `@` to be a cue.
+    /// A line with a blank line before and a text line after, with no lowercase and no uppercase
+    /// letter but a digit or a caseless letter: it needs `@` to be a cue.
     CueNeedsForce,
     /// A line with a heading prefix that is not a heading because a blank line is missing.
     UnframedHeading,
