@@ -709,7 +709,7 @@ The six candidates listed in issue #9 are covered as follows.
 | `to-trailing-space` | Warning | An uppercase line ending in `TO:` followed by spaces or tabs, with a blank line before it. | OFF-23a, OFF-23b | `DIAG-to-trailing-space` |
 | `lone-caret` | Warning | A Character cue with a caret that has no partner: no directly preceding Dialogue block, or one that is already a right half. | OFF-11a, OFF-11d | `DIAG-lone-caret` |
 | `caret-not-last` | Info | A cue line that has a `^` followed by more text, such as `NAME ^ (V.O.)`. | OFF-11c | `DIAG-caret-not-last` |
-| `partial-parenthetical` | Info | A line inside a Dialogue block that starts with `(` and does not end with `)`, or the reverse. | OFF-12b | `DIAG-partial-parenthetical` |
+| `partial-parenthetical` | Info | A line inside a Dialogue block that starts with `(` and does not end with `)`, or that ends with `)` and contains no `(`. | OFF-12b | `DIAG-partial-parenthetical` |
 | `emphasis-line-break` | Info | An emphasis opener with no closer on its line, and a matching closer on a later line of the same paragraph. | OFF-14b | `DIAG-emphasis-line-break` |
 | `nested-opener` | Info | A `[[` inside a Note, or a `/*` inside a Boneyard. | OFF-15a, OFF-16b | `DIAG-nested-opener` |
 | `unclosed-note` | Warning | A `[[` with no `]]` before the next blank line. | OFF-15b | `DIAG-unclosed-note` |

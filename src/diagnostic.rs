@@ -59,7 +59,7 @@ pub enum DiagnosticCode {
     LoneCaret,
     /// A cue line with a `^` followed by more text.
     CaretNotLast,
-    /// A Dialogue line that starts with `(` and does not end with `)`, or the reverse.
+    /// A Dialogue line that starts with `(` and does not end with `)`, or that ends with `)` and contains no `(`.
     PartialParenthetical,
     /// An emphasis opener with no closer on its line and a closer on a later line.
     EmphasisLineBreak,

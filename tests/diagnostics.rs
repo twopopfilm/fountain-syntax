@@ -270,6 +270,28 @@ fn diag_partial_parenthetical() {
     );
     quiet("MARA\n(softly)\nhi", C::PartialParenthetical);
     quiet("(not closed\nx", C::PartialParenthetical);
+    // The reverse half needs a line that ends with `)` and has no `(` at all (#49).
+    quiet("MARA\nCall me (later)", C::PartialParenthetical);
+    quiet("MARA\nIt's 5 (or 6).", C::PartialParenthetical); // ends with `.`, not `)`
+    quiet("MARA\nCall me (later)  ", C::PartialParenthetical);
+    quiet("MARA\nIl dit (non)", C::PartialParenthetical);
+    quiet("MARA\nWait... (what?)", C::PartialParenthetical);
+    fires(
+        "MARA\n(looking at the\ndoor)",
+        C::PartialParenthetical,
+        "(looking at the",
+    );
+    fires(
+        "MARA\n(looking at the\ndoor)",
+        C::PartialParenthetical,
+        "door)",
+    );
+    fires("MARA\nhi\n)", C::PartialParenthetical, ")");
+    fires(
+        "MARA\nhi\ndoor) [[ (note ]]",
+        C::PartialParenthetical,
+        "door) [[ (note ]]",
+    );
 }
 
 /// DIAG-blank-lookalike
@@ -618,6 +640,7 @@ She waits [[check the tide]] by the door.
 MARA (V.O.)
 (softly)
 I never told him.
+Call me (later)
 
 OTTO ^
 Nor did I.
