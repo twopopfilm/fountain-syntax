@@ -37,6 +37,7 @@
 mod classify;
 mod diagnose;
 mod diagnostic;
+mod digest;
 mod hidden;
 mod layout;
 mod lines;
@@ -45,6 +46,7 @@ mod tree;
 mod view;
 
 pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
+pub use digest::{Digest, HASH_SCHEME_CURRENT, HashScheme, ParseDigestError};
 pub use tree::{Child, Document, Node, NodeKind, Span, Token, TokenKind};
 #[cfg(feature = "shot")]
 pub use view::Shot;
