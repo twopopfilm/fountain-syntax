@@ -14,9 +14,12 @@ default = []
 locked-scene-numbers = []
 shot = []
 serde = ["dep:serde"]
+hash = ["dep:sha2", "dep:unicode-normalization"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"], optional = true }
+sha2 = { version = "0.10", optional = true }
+unicode-normalization = { version = "0.1", optional = true }
 
 [dev-dependencies]
 serde_json = "1"

@@ -12,9 +12,14 @@
 //! and the scenes, as plain owned data. Its Dialogue blocks hold the cue, the dialogue lines, the
 //! parentheticals and the lines that interrupt them, and a caret cue is paired with its partner
 //! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7 without
-//! changing the tree or the view. The writer and the hashes are not written yet. The `serde` feature
-//! serialises a [`Document`] as its source and parses it again when it is read back, and serialises
-//! the view as it is. The design is in `SPEC.md`.
+//! changing the tree or the view. The writer is not written yet. The `serde` feature serialises a
+//! [`Document`] as its source and parses it again when it is read back, and serialises the view as
+//! it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64
+//! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
+//! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
+//! the preamble, the title page, the whole screenplay and the exact bytes of any span (for example
+//! `Screenplay::hash`). Scheme 1, the importer-compatible scheme, is planned
+//! (issue #35). The design is in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};
@@ -37,6 +42,9 @@
 mod classify;
 mod diagnose;
 mod diagnostic;
+mod digest;
+#[cfg(feature = "hash")]
+mod hash;
 mod hidden;
 mod layout;
 mod lines;
@@ -45,6 +53,7 @@ mod tree;
 mod view;
 
 pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
+pub use digest::{Digest, HASH_SCHEME_CURRENT, HashScheme, ParseDigestError};
 pub use tree::{Child, Document, Node, NodeKind, Span, Token, TokenKind};
 #[cfg(feature = "shot")]
 pub use view::Shot;
