@@ -65,7 +65,7 @@ required dependencies. The features `locked-scene-numbers`, `shot`, `serde` and 
 `cargo clippy --all-targets --all-features -- -D warnings` and `cargo test --all-features`. Run the same commands
 locally. Rules:
 
-- **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the planned optional Cargo
+- **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the optional Cargo
   features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and
   `shot` (no dependency). All four exist.
 - **Every `SPEC.md` decision has a test** that names it.

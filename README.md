@@ -44,7 +44,7 @@ let doc = parse("INT. HOUSE - DAY\n\nBob walks in.\n");
 let screenplay = doc.screenplay();
 // A self-describing digest: `fs2:` plus 64 hexadecimal digits.
 assert!(screenplay.hash().to_string().starts_with("fs2:"));
-// One hash per scene, and one per element, to see which element changed.
+// A scene has one hash per element, to see which element changed.
 assert_eq!(screenplay.scenes.len(), 1);
 assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
 ```
@@ -92,7 +92,8 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  the scheme 2 hashes are written; the rest are planned for F2 to F4.
+  the scheme 2 hashes are written, except HASH2-46 and the scheme 1 parts of HASH2-39 and HASH2-47, which wait for
+  scheme 1 (#35). The rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every
@@ -105,13 +106,13 @@ crate treats correctness as something to measure:
 Work is tracked on the [Twopop Studio project board](https://github.com/orgs/twopopfilm/projects/2). Goals and the
 "done when" checks are in [docs/brief.md](docs/brief.md).
 
-| Milestone | Scope                                                       | State           |
-|-----------|-------------------------------------------------------------|-----------------|
-| F1        | Standards study: the official syntax, extensions, `SPEC.md` | **Done**        |
-| F2        | Lossless parser, typed view, diagnostics, scene hashes      | In progress     |
-| F3        | Writer with byte-for-byte round-trip; targeted edit API     | Planned         |
-| F4        | Conformance corpus and differential testing                 | Planned         |
-| F5        | Docs, compiled examples, and the 0.1 release on crates.io   | Planned         |
+| Milestone | Scope                                                                              | State       |
+|-----------|------------------------------------------------------------------------------------|-------------|
+| F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
+| F2        | Lossless parser, typed view, diagnostics, hashes (scheme 2 done, scheme 1 planned) | In progress |
+| F3        | Writer with byte-for-byte round-trip; targeted edit API                            | Planned     |
+| F4        | Conformance corpus and differential testing                                        | Planned     |
+| F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
 

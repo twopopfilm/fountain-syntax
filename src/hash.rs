@@ -340,7 +340,8 @@ impl Document {
     ///
     /// # Panics
     ///
-    /// If `span` is out of range or not on character boundaries of [`Document::source`].
+    /// If `span` is out of range, not on character boundaries of [`Document::source`], or has
+    /// `start > end`.
     pub fn source_hash(&self, span: Span) -> Digest {
         let text = self
             .source()

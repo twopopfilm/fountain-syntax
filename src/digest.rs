@@ -5,7 +5,8 @@ use core::str::FromStr;
 
 /// The hash scheme a [`Digest`] was made by.
 ///
-/// Scheme 2 is the default; scheme 1 is the frozen compatibility scheme.
+/// Scheme 2 is the default; scheme 1 is the frozen compatibility scheme. No method of this crate
+/// makes a `V1` digest yet (issue #35), but parsing and printing one is supported.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum HashScheme {
