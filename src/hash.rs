@@ -1,7 +1,11 @@
 //! Scheme 2 hashing (`SPEC.md` 11.3 and 11.4). Compiled only with the `hash` feature.
 
 use crate::digest::{Digest, HashScheme};
-use crate::view::{Cue, DialogueBlock, DialogueItem, Element, Run, Synopsis, Text};
+use crate::tree::{Document, Node, Span};
+use crate::view::{
+    Cue, DialogueBlock, DialogueItem, Element, Preamble, Run, Scene, Screenplay, Synopsis, Text,
+    TitleEntry,
+};
 use sha2::{Digest as _, Sha256};
 use unicode_normalization::UnicodeNormalization;
 
@@ -226,10 +230,130 @@ impl Element {
     pub fn hashes(&self) -> Vec<Digest> {
         let mut recs = Vec::new();
         records(self, &mut recs);
-        let domain = domain("element");
-        recs.iter()
-            .map(|r| digest(&[domain.as_slice(), r].concat()))
-            .collect()
+        record_hashes(&recs)
+    }
+}
+
+/// `domain(name)`, then `parts` in order, hashed.
+fn hash_of(name: &str, parts: &[&[u8]]) -> Digest {
+    digest(&[domain(name).as_slice(), &parts.concat()].concat())
+}
+
+/// The element hash of each record.
+fn record_hashes(recs: &[Vec<u8>]) -> Vec<Digest> {
+    let domain = domain("element");
+    recs.iter()
+        .map(|r| digest(&[domain.as_slice(), r].concat()))
+        .collect()
+}
+
+/// `u32(n)` and then the raw bytes of each digest.
+fn counted(digests: &[Digest]) -> Vec<u8> {
+    let mut p = Pre(Vec::new());
+    p.u32(digests.len());
+    for d in digests {
+        p.0.extend_from_slice(&d.bytes);
+    }
+    p.0
+}
+
+impl Scene {
+    /// The scheme 2 hash of each kept record of the scene, in order: its Synopses before and
+    /// right after the heading, then its elements (`SPEC.md` 11.3). Sections are not hashed.
+    pub fn element_hashes(&self) -> Vec<Digest> {
+        let mut recs = Vec::new();
+        for s in &self.synopses {
+            synopsis_record(s, &mut recs);
+        }
+        for el in &self.elements {
+            records(el, &mut recs);
+        }
+        record_hashes(&recs)
+    }
+
+    /// The scheme 2 scene hash: the heading (without its forcing `.` and scene number,
+    /// normalised and upper-cased) and the element hashes of [`Scene::element_hashes`]. It does
+    /// not depend on the scene's position, number or span.
+    pub fn hash(&self) -> Digest {
+        let heading = normalise(&typed(&self.heading.text), true);
+        let mut p = Pre(Vec::new());
+        p.string(&heading);
+        hash_of("scene", &[&p.0, &counted(&self.element_hashes())])
+    }
+
+    /// The source-facet hash of the scene's span in `document`, or `None` for a scene built in
+    /// memory, which has no span. `document` must be the one the scene was read from.
+    pub fn source_hash(&self, document: &Document) -> Option<Digest> {
+        self.span.map(|span| document.source_hash(span))
+    }
+}
+
+impl Preamble {
+    /// The scheme 2 preamble hash: the element hashes of its elements, in order.
+    pub fn hash(&self) -> Digest {
+        let mut recs = Vec::new();
+        for el in &self.elements {
+            records(el, &mut recs);
+        }
+        hash_of("preamble", &[&counted(&record_hashes(&recs))])
+    }
+}
+
+impl Screenplay {
+    /// The scheme 2 document hash: the preamble hash and the scene hashes, in order. The title
+    /// page is not part of it.
+    pub fn hash(&self) -> Digest {
+        let scenes: Vec<Digest> = self.scenes.iter().map(Scene::hash).collect();
+        hash_of(
+            "document",
+            &[&self.preamble.hash().bytes, &counted(&scenes)],
+        )
+    }
+
+    /// The scheme 2 title-page hash: each entry's key (normalised, upper-cased) and value lines
+    /// (normalised, case kept, empty lines dropped). Stray lines are not hashed, and a
+    /// screenplay with no title page hashes as a title page with no entries.
+    pub fn title_page_hash(&self) -> Digest {
+        let entries = self.title_page.as_ref().map_or(&[][..], |t| &t.entries[..]);
+        let mut p = Pre(Vec::new());
+        p.u32(entries.len());
+        for TitleEntry { key, values, .. } in entries {
+            let lines: Vec<String> = values
+                .iter()
+                .map(|v| normalise(&typed(v), false))
+                .filter(|v| !v.is_empty())
+                .collect();
+            p.string(&normalise(&typed(key), true)).list(&lines);
+        }
+        hash_of("title-page", &[&p.0])
+    }
+
+    /// The source-facet hash of the whole input of `document`, which must be the one this
+    /// screenplay was read from.
+    pub fn source_hash(&self, document: &Document) -> Digest {
+        document.source_hash(Span::new(0, document.source().len()))
+    }
+}
+
+impl Document {
+    /// The source-facet hash of the exact bytes of `span`: it changes on any edit to them.
+    ///
+    /// # Panics
+    ///
+    /// If `span` is out of range or not on character boundaries of [`Document::source`].
+    pub fn source_hash(&self, span: Span) -> Digest {
+        let text = self
+            .source()
+            .get(span.start..span.end)
+            .expect("a span inside the source, on character boundaries");
+        hash_of("source", &[text.as_bytes()])
+    }
+}
+
+impl Node<'_> {
+    /// The source-facet hash of the bytes the node covers.
+    pub fn source_hash(&self) -> Digest {
+        hash_of("source", &[self.text().as_bytes()])
     }
 }
 
