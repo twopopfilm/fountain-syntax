@@ -17,9 +17,12 @@ pub(crate) struct Hidden {
 /// The first opener wins and there is no nesting. A Boneyard closes at the first `*/` after its
 /// two opener bytes. A Note closes at the first `]]`, searched no further than the next blank line
 /// that is not exactly two spaces. An unclosed opener is text and the scan resumes after it.
-pub(crate) fn scan(src: &str, from: usize, lines: &[Line]) -> Vec<Hidden> {
+///
+/// The second result lists those unclosed openers, in order, each as its kind and two-byte span.
+pub(crate) fn scan(src: &str, from: usize, lines: &[Line]) -> (Vec<Hidden>, Vec<Hidden>) {
     let bytes = src.as_bytes();
     let mut out = Vec::new();
+    let mut unclosed = Vec::new();
     // Once a search fails, later openers fail too; remembering that keeps the scan linear.
     let mut boneyard_can_close = true;
     let mut note_fails_before = 0;
@@ -52,10 +55,21 @@ pub(crate) fn scan(src: &str, from: usize, lines: &[Line]) -> Vec<Hidden> {
                 });
                 i = end;
             }
-            None => i += 2,
+            None => {
+                let kind = if &bytes[i..i + 2] == b"[[" {
+                    NodeKind::Note
+                } else {
+                    NodeKind::Boneyard
+                };
+                unclosed.push(Hidden {
+                    kind,
+                    span: Span::new(i, i + 2),
+                });
+                i += 2;
+            }
         }
     }
-    out
+    (out, unclosed)
 }
 
 /// The end of the Note opened at `open`, or `Err` with the offset its search stopped at.
@@ -94,6 +108,8 @@ pub(crate) struct Logical {
     pub(crate) pieces: Vec<Piece>,
     /// The visible pieces joined: the text recognition reads (SPEC 3.4, rule 2).
     pub(crate) visible: String,
+    /// From the text start of its first physical line to the text end of its last; no line break.
+    pub(crate) span: Span,
 }
 
 impl Logical {
@@ -126,7 +142,8 @@ pub(crate) fn logical(src: &str, lines: &[Line], hidden: &[Hidden]) -> Vec<Logic
                 visible.push_str(&src[s.start..s.end]);
             }
         };
-        let mut at = lines[k].text.start;
+        let first = lines[k].text.start;
+        let mut at = first;
         while let Some(span) = hidden
             .get(h)
             .map(|hd| hd.span)
@@ -146,6 +163,7 @@ pub(crate) fn logical(src: &str, lines: &[Line], hidden: &[Hidden]) -> Vec<Logic
             brk: lines[k].brk,
             pieces,
             visible,
+            span: Span::new(first, lines[k].text.end),
         });
         k += 1;
     }

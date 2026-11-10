@@ -1,10 +1,12 @@
 //! The parse driver. The title page is read first, then a forward pass gives each logical line its
 //! role, a block pass groups the lines into items, and each item is emitted into the tree line by
-//! line. Notes and Boneyard are hidden nodes placed by the layout layer.
+//! line. Notes and Boneyard are hidden nodes placed by the layout layer. Last, `diagnose::run` reads the
+//! roles, hidden spans and unclosed openers and gives the document its diagnostics.
 
 use std::ops::Range;
 
 use crate::classify::{self, LineShape};
+use crate::diagnose;
 use crate::hidden::{self, Hidden, Logical};
 use crate::layout::{self, Part};
 use crate::lines;
@@ -12,7 +14,7 @@ use crate::tree::{Document, NodeKind, Span, TokenKind, TreeBuilder};
 
 /// What a logical line is, for grouping.
 #[derive(Clone, Copy, Debug)]
-enum Role {
+pub(crate) enum Role {
     Blank,
     /// Exactly two spaces: a Dialogue line inside a block, blank elsewhere (`OFF-1b`). [`frame`]
     /// resolves it.
@@ -70,7 +72,7 @@ fn is_action_text(shape: LineShape) -> bool {
 }
 
 /// Section, Synopsis and Page Break lines are transparent (SPEC 3.4, rule 3).
-fn is_outline(shape: LineShape) -> bool {
+pub(crate) fn is_outline(shape: LineShape) -> bool {
     matches!(
         shape,
         LineShape::Section(_) | LineShape::Synopsis | LineShape::PageBreak
@@ -88,7 +90,7 @@ fn is_significant(role: Role) -> bool {
 }
 
 /// The nearest significant line before `i`; the start of the document counts as blank.
-fn prev_significant(roles: &[Role], i: usize) -> Role {
+pub(crate) fn prev_significant(roles: &[Role], i: usize) -> Role {
     let before = roles[..i].iter().rev();
     before
         .copied()
@@ -97,7 +99,7 @@ fn prev_significant(roles: &[Role], i: usize) -> Role {
 }
 
 /// The nearest significant line after `i`; the end of the document counts as blank.
-fn next_significant(roles: &[Role], i: usize) -> Role {
+pub(crate) fn next_significant(roles: &[Role], i: usize) -> Role {
     let after = roles[i + 1..].iter();
     after
         .copied()
@@ -190,17 +192,41 @@ fn frame(roles: &mut [Role], lines: &[Logical]) {
     }
 }
 
+/// How the significant neighbours of a line frame it.
+pub(crate) struct Framing {
+    /// A blank line, or the start of the document, comes before it.
+    pub(crate) blank_before: bool,
+    /// A blank line before and a blank line after (the end of the document counts as blank).
+    pub(crate) framed: bool,
+    /// A text line follows: not blank, not a two-space line, not a forced line that ends a block.
+    pub(crate) text_after: bool,
+}
+
+/// How line `i` is framed. [`framed`] calls it (through [`frame`]) while the later lines are still
+/// unframed, so on final roles it gives the same answer only for `blank_before` and for lines whose
+/// final role is `Shaped(Plain)`.
+pub(crate) fn framing(roles: &[Role], i: usize) -> Framing {
+    let blank_before = matches!(prev_significant(roles, i), Role::Blank);
+    let after = next_significant(roles, i);
+    Framing {
+        blank_before,
+        framed: blank_before && matches!(after, Role::Blank | Role::TwoSpaces),
+        // The line after a cue must be a text line: not blank, not a two-space line, not a forced
+        // line that ends a block.
+        text_after: matches!(after, Role::Shaped(s) if !classify::ends_block(s)),
+    }
+}
+
 /// The framing rules for a line outside a block, in the order heading, transition, cue (SPEC 4.0,
 /// step 3). A line no rule takes is Action. An unframed heading-by-prefix line is Action, never a
 /// cue (`OFF-6a`), and the `TO:` carve-out keeps a line from being a Transition or a cue, not a
 /// heading (`OFF-23a`, `OFF-23b`).
 fn framed(roles: &[Role], i: usize, shape: LineShape, visible: &str) -> Role {
-    let blank_before = matches!(prev_significant(roles, i), Role::Blank);
-    let after = next_significant(roles, i);
-    let framed = blank_before && matches!(after, Role::Blank | Role::TwoSpaces);
-    // The line after a cue must be a text line: not blank, not a two-space line, not a forced
-    // line that ends a block.
-    let text_after = matches!(after, Role::Shaped(s) if !classify::ends_block(s));
+    let Framing {
+        blank_before,
+        framed,
+        text_after,
+    } = framing(roles, i);
     let trimmed = visible.trim_end_matches([' ', '\t']);
     if shape == LineShape::PrefixHeading {
         Role::Shaped(if framed { shape } else { LineShape::Plain })
@@ -557,7 +583,7 @@ pub(crate) fn document(src: &str) -> Document {
         0
     };
     let physical = lines::physical(src, from);
-    let hidden = hidden::scan(src, from, &physical);
+    let (hidden, unclosed) = hidden::scan(src, from, &physical);
     let lines = hidden::logical(src, &physical, &hidden);
     let mut roles: Vec<Role> = lines.iter().map(role).collect();
     let page = title_page(&mut roles, &lines);
@@ -583,5 +609,14 @@ pub(crate) fn document(src: &str) -> Document {
         // The break after an element's last line belongs to the Gap, not to the element.
         line_break(&mut b, &lines[item.last_line()]);
     }
-    b.finish(src)
+    let diagnostics = diagnose::run(&diagnose::Input {
+        src,
+        from,
+        physical: &physical,
+        lines: &lines,
+        roles: &roles,
+        hidden: &hidden,
+        unclosed: &unclosed,
+    });
+    b.finish(src, diagnostics)
 }

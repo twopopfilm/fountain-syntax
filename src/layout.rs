@@ -135,14 +135,14 @@ mod tests {
     /// Emits `src` as one Action line laid out as `parts`.
     fn emit(src: &str, parts: &[Part]) -> String {
         let lines = lines::physical(src, 0);
-        let hidden = hidden::scan(src, 0, &lines);
+        let (hidden, _) = hidden::scan(src, 0, &lines);
         let logical = hidden::logical(src, &lines, &hidden);
         assert_eq!(logical.len(), 1);
         let mut b = TreeBuilder::new();
         b.start_node(NodeKind::Action);
         emit_line(&mut b, src, &logical[0], parts, &hidden);
         b.finish_node();
-        dump(b.finish(src).root())
+        dump(b.finish(src, Vec::new()).root())
     }
 
     fn name(parts: Vec<Part>) -> Part {

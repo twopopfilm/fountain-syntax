@@ -202,8 +202,30 @@ fn scan(items: Vec<Item<'_>>) -> Vec<Run> {
         }
     }
     let toks = escape(toks);
-    let marks = pair(&toks);
+    let marks = pair(&toks).marks;
     build(toks, &marks)
+}
+
+/// The `(mark, run length)` of the openers left unclosed at the end of the line, and of the marks
+/// that could close but found no opener. Each is in line order. For the diagnostics (SPEC 7,
+/// `emphasis-line-break`).
+pub(crate) fn unmatched_marks(line: &str) -> (MarkRuns, MarkRuns) {
+    let toks = escape(line.chars().map(Tok::Ch).collect());
+    let paired = pair(&toks);
+    let open = paired.open.iter().map(|o| (o.ch, o.len)).collect();
+    (open, paired.stray)
+}
+
+/// Marks as `(mark, run length)`.
+type MarkRuns = Vec<(char, usize)>;
+
+/// What [`pair`] found.
+struct Paired {
+    marks: Vec<Option<Mark>>,
+    /// The openers still waiting at the end of the line.
+    open: Vec<Opener>,
+    /// The marks that could close but found no opener, as `(mark, run length)`.
+    stray: MarkRuns,
 }
 
 /// Turn a backslash and the `*` or `_` after it into [`Tok::Esc`]. `\\` stays two literal
@@ -228,10 +250,12 @@ fn escape(toks: Vec<Tok>) -> Vec<Tok> {
 }
 
 /// Find the matching marks. Runs of `*` of length 1 to 3 and single `_` are marks; every other
-/// run is literal.
-fn pair(toks: &[Tok]) -> Vec<Option<Mark>> {
+/// run is literal. Also returns the openers still waiting at the end, and the marks that could
+/// close but found no opener (`(mark, run length)`).
+fn pair(toks: &[Tok]) -> Paired {
     let mut marks = vec![None; toks.len()];
     let mut stack: Vec<Opener> = Vec::new();
+    let mut stray = Vec::new();
     let mut i = 0;
     while i < toks.len() {
         let Tok::Ch(ch @ ('*' | '_')) = toks[i] else {
@@ -259,13 +283,22 @@ fn pair(toks: &[Tok]) -> Vec<Option<Mark>> {
                 marks[stack[p].at] = Some(Mark::Open(ch, len));
                 marks[i] = Some(Mark::Close);
                 stack.truncate(p);
-            } else if can_open && stack.len() < MAX_EMPHASIS_DEPTH {
-                stack.push(Opener { at: i, ch, len });
+            } else {
+                if can_close {
+                    stray.push((ch, len));
+                }
+                if can_open && stack.len() < MAX_EMPHASIS_DEPTH {
+                    stack.push(Opener { at: i, ch, len });
+                }
             }
         }
         i = end;
     }
-    marks
+    Paired {
+        marks,
+        open: stack,
+        stray,
+    }
 }
 
 /// Fold the tokens into runs, nesting the matched pairs.
@@ -746,5 +779,13 @@ mod tests {
         );
         assert_eq!(t.runs, [plain("a\n\n  b")]);
         assert_eq!(t.span, Some(Span::new(0, 11)));
+    }
+
+    #[test]
+    fn unmatched_marks_lists_open_and_closing_marks_left_over() {
+        assert_eq!(unmatched_marks("*a"), (vec![('*', 1)], vec![]));
+        assert_eq!(unmatched_marks("a* b"), (vec![], vec![('*', 1)]));
+        assert_eq!(unmatched_marks("*a* _b_"), (vec![], vec![]));
+        assert_eq!(unmatched_marks("\\*a"), (vec![], vec![]));
     }
 }

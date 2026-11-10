@@ -1,5 +1,7 @@
 //! The lossless syntax tree (SPEC 8.2 to 8.4): public types, the arena behind them and the builder.
 
+use crate::diagnostic::Diagnostic;
+
 /// Half-open byte range into [`Document::source`], on character boundaries.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -135,12 +137,28 @@ pub struct Document {
     source: String,
     nodes: Vec<NodeData>,
     tokens: Vec<TokenData>,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl Document {
     /// The text that was parsed.
     pub fn source(&self) -> &str {
         &self.source
+    }
+
+    /// The diagnostics (SPEC 7): notes about places the parser read one way and an author or
+    /// another tool may read differently. They are ordered by start of span, are the same for the
+    /// same input, and never change the tree or the typed view.
+    ///
+    /// ```
+    /// use fountain_syntax::{DiagnosticCode, parse};
+    ///
+    /// let doc = parse("a\r\nb\nc");
+    /// let codes: Vec<_> = doc.diagnostics().iter().map(|d| d.code).collect();
+    /// assert_eq!(codes, [DiagnosticCode::MixedLineEndings]);
+    /// ```
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        &self.diagnostics
     }
 
     /// The root node, of kind [`NodeKind::Document`].
@@ -372,7 +390,7 @@ impl TreeBuilder {
     }
 
     /// Closes everything and returns the document. A completely empty source gets one empty Gap.
-    pub(crate) fn finish(mut self, source: &str) -> Document {
+    pub(crate) fn finish(mut self, source: &str, diagnostics: Vec<Diagnostic>) -> Document {
         if source.is_empty() {
             self.open(NodeKind::Gap);
             self.close();
@@ -384,6 +402,7 @@ impl TreeBuilder {
             source: source.to_owned(),
             nodes: self.nodes,
             tokens: self.tokens,
+            diagnostics,
         }
     }
 }

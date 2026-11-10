@@ -76,14 +76,20 @@ pub(crate) fn shape(trimmed_start: &str) -> LineShape {
 /// Whether a line, with its leading whitespace removed and its trailing whitespace kept, starts with
 /// a heading prefix in any case and a period or space (`OFF-6b`, `OFF-6d`).
 pub(crate) fn heading_prefix(trimmed_start: &str) -> bool {
+    heading_prefix_len(trimmed_start).is_some()
+}
+
+/// The byte length of the heading prefix and its period or space, when the line starts with one.
+pub(crate) fn heading_prefix_len(trimmed_start: &str) -> Option<usize> {
     let bytes = trimmed_start.as_bytes();
     ["INT./EXT", "INT/EXT", "I/E", "INT", "EXT", "EST"]
         .iter()
-        .any(|p| {
+        .find(|p| {
             bytes.len() > p.len()
                 && bytes[..p.len()].eq_ignore_ascii_case(p.as_bytes())
                 && matches!(bytes[p.len()], b'.' | b' ')
         })
+        .map(|p| p.len() + 1)
 }
 
 /// Uppercase text (SPEC 3.5): at least one uppercase letter and no lowercase one.
@@ -242,6 +248,45 @@ pub(crate) fn scene_number(text: &str) -> Option<(Range<usize>, bool)> {
     spaced(open).then_some((open..body.len(), false))
 }
 
+/// Whether a heading line ends with something shaped like a scene number that `scene_number` does
+/// not take (`OFF-8b`, `OFF-8c`, `OFF-8e`): a `#` after an earlier `#` at the end, or a `#…#` after a
+/// space or tab with text following. The locked form `##<run>#` after a space or tab is not one
+/// (`OFF-8g`); it is a number or plain text, as the feature decides.
+pub(crate) fn rejected_scene_number(text: &str) -> bool {
+    if scene_number(text).is_some() {
+        return false;
+    }
+    let body = text.trim_end_matches([' ', '\t']);
+    let number_char = |c: &char| is_alnum(*c) || *c == '-' || *c == '.';
+    let locked = body.strip_suffix('#').is_some_and(|inner| {
+        let run: usize = inner
+            .chars()
+            .rev()
+            .take_while(number_char)
+            .map(char::len_utf8)
+            .sum();
+        inner[..inner.len() - run]
+            .strip_suffix("##")
+            .is_some_and(|b| run > 0 && b.ends_with([' ', '\t']))
+    });
+    if !locked && body.ends_with('#') && body[..body.len() - 1].contains('#') {
+        return true;
+    }
+    body.match_indices('#').any(|(at, _)| {
+        let rest = &body[at + 1..];
+        let run: usize = rest
+            .chars()
+            .take_while(number_char)
+            .map(char::len_utf8)
+            .sum();
+        body[..at].ends_with([' ', '\t'])
+            && run > 0
+            && rest[run..]
+                .strip_prefix('#')
+                .is_some_and(|after| !after.is_empty())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,6 +354,38 @@ mod tests {
         ] {
             assert_eq!(scene_number(none), None, "{none:?}");
         }
+    }
+
+    #[test]
+    fn rejected_scene_numbers() {
+        for yes in [
+            "X #1 A#", "X #1_A#", "X #7# y", "X ##", "X #1# #", ".T #1 A#",
+        ] {
+            assert!(rejected_scene_number(yes), "{yes:?}");
+        }
+        for no in [
+            "X #12A#",
+            "X #1#  ",
+            "X",
+            "X #",
+            "X #1",
+            "X#1# y",
+            "Fine #1 A",
+            "",
+            "X #a",
+        ] {
+            assert!(!rejected_scene_number(no), "{no:?}");
+        }
+        // The locked form is not rejected, with or without the feature.
+        assert!(!rejected_scene_number("X ##12A#"));
+    }
+
+    #[test]
+    fn heading_prefix_lens() {
+        assert_eq!(heading_prefix_len("INT. X"), Some(4));
+        assert_eq!(heading_prefix_len("int/ext x"), Some(8));
+        assert_eq!(heading_prefix_len("INT./EXT. X"), Some(9));
+        assert_eq!(heading_prefix_len("INTERIOR"), None);
     }
 
     #[test]
