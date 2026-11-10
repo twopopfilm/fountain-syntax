@@ -32,6 +32,15 @@ pub const HASH_SCHEME_CURRENT: u32 = 2;
 ///
 /// Equality compares the scheme as well as the bytes. The text form is `fs2:` plus 64 lowercase
 /// hexadecimal digits for scheme 2, and the bare 64 digits for scheme 1.
+///
+/// `HASH2-47`: the methods that compute a digest exist only with the `hash` feature. This example
+/// fails to compile without it and runs with it.
+///
+#[cfg_attr(not(feature = "hash"), doc = "```compile_fail")]
+#[cfg_attr(feature = "hash", doc = "```")]
+/// let s = fountain_syntax::parse("INT. X\n").screenplay();
+/// let _ = s.hash();
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Digest {
     /// The scheme that made `bytes`.
