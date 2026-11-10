@@ -11,9 +11,10 @@ that need to change one detail of a script without disturbing the rest.
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
 > `Document::screenplay()` builds the typed view: the title page, the scenes and their elements, including
 > dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 diagnostic
-> codes `SPEC.md` §7 defines. The writer and the hashes are still planned, and the crate is not on crates.io.
-> Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress. The goals below describe
-> the planned 0.1 release. See the [roadmap](#roadmap).
+> codes `SPEC.md` §7 defines. With the `hash` feature, the scheme 2 hashes work: element, scene, document, title page
+> and source spans. The importer-compatible scheme 1 hashes (issue #35) and the writer are still planned, and the
+> crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress.
+> The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
 use fountain_syntax::{Child, NodeKind, parse};
@@ -33,7 +34,20 @@ assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 
 The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions.
 The `serde` feature exists too: a `Document` serialises as its source text and is parsed again when it is read back.
-`hash` does not exist yet.
+The `hash` feature adds the scheme 2 hashes (and `sha2` and `unicode-normalization`):
+
+```rust
+// needs the `hash` feature
+use fountain_syntax::parse;
+
+let doc = parse("INT. HOUSE - DAY\n\nBob walks in.\n");
+let screenplay = doc.screenplay();
+// A self-describing digest: `fs2:` plus 64 hexadecimal digits.
+assert!(screenplay.hash().to_string().starts_with("fs2:"));
+// One hash per scene, and one per element, to see which element changed.
+assert_eq!(screenplay.scenes.len(), 1);
+assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
+```
 
 ## Goals
 
@@ -60,13 +74,13 @@ The `serde` feature exists too: a `Document` serialises as its source text and i
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
   the tree and the view.
 - **Targeted edits (planned).** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
-- **Draft comparison (planned).** Self-describing hashes at three levels (element, scene and document) and over the
-  exact bytes of any span, so tools can match scenes across drafts, tell real changes from whitespace and see which
-  element changed. A second scheme, compatible with the Twopop importer, is also available, so hashes it stored can be
-  checked and migrated.
+- **Draft comparison.** With the `hash` feature, self-describing scheme 2 hashes at three levels (element, scene and
+  document) and over the exact bytes of any span, so tools can match scenes across drafts, tell real changes from
+  whitespace and see which element changed. A second scheme, compatible with the Twopop importer, is planned (issue
+  #35), so hashes it stored can be checked and migrated.
 - **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
-  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). The `serde` feature exists; the
-  `hash` feature is planned. An optional WASM build for a browser playground is being considered.
+  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features exist. An optional
+  WASM build for a browser playground is being considered.
 
 ## Correctness
 
@@ -77,8 +91,8 @@ crate treats correctness as something to measure:
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
-  name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`) and the diagnostics
-  are written; the rest are planned for F2 to F4.
+  name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
+  the scheme 2 hashes are written; the rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every

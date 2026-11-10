@@ -12,9 +12,12 @@
 //! and the scenes, as plain owned data. Its Dialogue blocks hold the cue, the dialogue lines, the
 //! parentheticals and the lines that interrupt them, and a caret cue is paired with its partner
 //! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7 without
-//! changing the tree or the view. The writer and the hashes are not written yet. The `serde` feature
-//! serialises a [`Document`] as its source and parses it again when it is read back, and serialises
-//! the view as it is. The design is in `SPEC.md`.
+//! changing the tree or the view. The writer is not written yet. The `serde` feature serialises a
+//! [`Document`] as its source and parses it again when it is read back, and serialises the view as
+//! it is. The `hash` feature adds the scheme 2 hashes of `SPEC.md` section 11: [`Digest`] values for
+//! elements, scenes, the title page, the whole screenplay and the exact bytes of any span (for
+//! example `Screenplay::hash`). Scheme 1, the importer-compatible scheme, is planned. The design is
+//! in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};
