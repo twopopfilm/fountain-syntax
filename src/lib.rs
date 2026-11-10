@@ -38,6 +38,8 @@ mod classify;
 mod diagnose;
 mod diagnostic;
 mod digest;
+#[cfg(feature = "hash")]
+mod hash;
 mod hidden;
 mod layout;
 mod lines;
