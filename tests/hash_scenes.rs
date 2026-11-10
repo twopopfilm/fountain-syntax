@@ -257,6 +257,10 @@ fn hash2_5_hidden_text() {
         "Mara waits.\n/* cut */\nShe sits.",
     );
     // A Boneyard over two lines, inside an Action paragraph: `Mara waits.`
+    same(
+        "Mara waits.\nShe sits.",
+        "Mara waits.\n/* two\nlines */\nShe sits.",
+    );
     same("Mara waits.", "Mara /* aside\nmore */ waits.");
     same("Mara waits.", "Mara [[an aside\nmore]] waits.");
     // A Section and a Page Break between elements.
@@ -450,6 +454,7 @@ fn hash2_13_word_change_changes_only_hashes_above() {
     let c = scene(&parts("INT. GARDEN - DAY", BASE));
     assert_eq!(b.element_hashes(), c.element_hashes());
     assert_ne!(b.hash(), c.hash());
+    assert_ne!(dh(&base), dh(&parts("INT. GARDEN - DAY", BASE)));
 }
 
 #[cfg(feature = "shot")]
@@ -521,9 +526,14 @@ fn hash2_18_dual_flag() {
     differ(single, dual);
     // A caret with no partner changes nothing.
     same("OTTO ^\nHey", "OTTO\nHey");
-    // Unpairing changes it back.
-    same(single, "MARA\nHi\n\nOTTO\nHey");
-    assert_eq!(eh("MARA\nHi\n\nOTTO ^\nHey"), d);
+    // Unpairing changes it back: an Action between the blocks leaves the caret cue with no
+    // partner, so both cues hash as in the single form and differ from the paired form.
+    let unpaired = eh(&dual.replace("\n\nOTTO", "\n\nA beat.\n\nOTTO"));
+    assert_eq!(unpaired.len(), 5);
+    assert_eq!(unpaired[0], s[0], "the left cue falls back");
+    assert_eq!(unpaired[3], s[2], "the right cue falls back");
+    assert_ne!(unpaired[0], d[0]);
+    assert_ne!(unpaired[3], d[2]);
 }
 
 #[test]
@@ -888,8 +898,10 @@ fn hash2_37_source_hashes() {
     assert_eq!(doc.root().source_hash(), again.root().source_hash());
     assert_eq!(sp.source_hash(&doc), again.screenplay().source_hash(&again));
     // Any node, and any span.
+    let mut visited = 0;
     for child in doc.root().children() {
         if let fountain_syntax::Child::Node(n) = child {
+            visited += 1;
             assert_eq!(n.source_hash(), doc.source_hash(n.span()));
             assert_eq!(
                 n.source_hash().to_string(),
@@ -897,6 +909,7 @@ fn hash2_37_source_hashes() {
             );
         }
     }
+    assert!(visited > 0, "no node was visited");
     assert_eq!(
         doc.source_hash(Span::new(0, 0)).to_string(),
         sha("source", b"")

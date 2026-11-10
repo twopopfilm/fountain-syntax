@@ -283,6 +283,11 @@ impl Scene {
 
     /// The source-facet hash of the scene's span in `document`, or `None` for a scene built in
     /// memory, which has no span. `document` must be the one the scene was read from.
+    ///
+    /// # Panics
+    ///
+    /// If the scene's span is not a valid span of `document`, as [`Document::source_hash`]
+    /// does. Passing a document other than the one the scene was read from is a caller error.
     pub fn source_hash(&self, document: &Document) -> Option<Digest> {
         self.span.map(|span| document.source_hash(span))
     }
@@ -428,6 +433,10 @@ mod tests {
                 assert_ne!(a, b);
             }
         }
+        // A scene with no elements and a preamble with no elements differ.
+        let empty_scene = parse("INT. A - DAY\n").screenplay().scenes.remove(0);
+        assert!(empty_scene.elements.is_empty());
+        assert_ne!(empty_scene.hash(), Preamble::default().hash());
     }
 
     #[test]

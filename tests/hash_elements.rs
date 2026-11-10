@@ -156,6 +156,13 @@ fn hash2_26_dropped_records() {
     );
     let kept: Vec<String> = kept.hashes().iter().map(|d| d.to_string()).collect();
     assert_eq!(kept, h("MARA\nTea?"));
+    // Parsed, the dropped lines leave the scene hash as it is without them.
+    let scene_hash = |body: &str| {
+        let src = format!("INT. KITCHEN - DAY\n\n{body}\n");
+        parse(&src).screenplay().scenes[0].hash()
+    };
+    assert_eq!(scene_hash("MARA\n()\nTea?"), scene_hash("MARA\nTea?"));
+    assert_eq!(scene_hash("x\n\n=\n\ny"), scene_hash("x\n\ny"));
     // An empty extension group is kept, so the cue differs from the bare cue.
     let empty_ext = block(cue("MARA", &[""]), Vec::new()).hashes();
     let bare = block(cue("MARA", &[]), Vec::new()).hashes();
@@ -226,6 +233,28 @@ fn hash2_29_shot() {
     assert_eq!(h("!!  CLOSE ON   THE KETTLE"), shot);
     // The marks are not part of the text, and a Shot is not an Action.
     assert_ne!(shot, h("CLOSE ON THE KETTLE"));
+}
+
+#[cfg(not(feature = "shot"))]
+#[test]
+fn hash2_29_no_shot_is_action() {
+    // Without `shot`, `!!CLOSE` is a forced Action whose text is `!CLOSE`.
+    let action = Element::Action(Action {
+        text: plain("!CLOSE"),
+        centered: false,
+        forced: true,
+        interjections: Vec::new(),
+    });
+    let got = h("!!CLOSE");
+    assert_eq!(got.len(), 1);
+    assert_eq!(
+        got,
+        action
+            .hashes()
+            .iter()
+            .map(|d| d.to_string())
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]

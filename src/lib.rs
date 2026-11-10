@@ -14,10 +14,11 @@
 //! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7 without
 //! changing the tree or the view. The writer is not written yet. The `serde` feature serialises a
 //! [`Document`] as its source and parses it again when it is read back, and serialises the view as
-//! it is. The [`Digest`] type, which prints as `fs2:` and 64 hexadecimal digits, exists in every
-//! build. The `hash` feature adds the methods that compute scheme 2 digests (`SPEC.md` section 11):
-//! for elements, scenes, the preamble, the title page, the whole screenplay and the exact bytes of
-//! any span (for example `Screenplay::hash`). Scheme 1, the importer-compatible scheme, is planned
+//! it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64
+//! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
+//! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
+//! the preamble, the title page, the whole screenplay and the exact bytes of any span (for example
+//! `Screenplay::hash`). Scheme 1, the importer-compatible scheme, is planned
 //! (issue #35). The design is in `SPEC.md`.
 //!
 //! ```
