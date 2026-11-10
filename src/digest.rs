@@ -86,8 +86,8 @@ impl FromStr for Digest {
             }),
         };
         let mut bytes = [0u8; 32];
-        for (byte, pair) in bytes.iter_mut().zip(hex.chunks_exact(2)) {
-            *byte = nibble(pair[0])? << 4 | nibble(pair[1])?;
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte = (nibble(hex[2 * i])? << 4) | nibble(hex[2 * i + 1])?;
         }
         Ok(Digest { scheme, bytes })
     }
