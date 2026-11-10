@@ -178,7 +178,10 @@ fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
             }
             Role::Dialogue => {
                 let text = t.trim_end_matches([' ', '\t']);
-                if text.starts_with('(') != text.ends_with(')') {
+                // A trailing aside (`Call me (later)`) is ordinary dialogue: the reverse half needs no `(` at all.
+                if (text.starts_with('(') && !text.ends_with(')'))
+                    || (text.ends_with(')') && !text.contains('('))
+                {
                     push(C::PartialParenthetical);
                 }
             }
