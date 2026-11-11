@@ -356,7 +356,9 @@ impl Document {
     }
 
     /// Replaces the bytes of `span` with `text`, re-parses, and leaves every other byte
-    /// untouched. The named edits are built on this primitive.
+    /// untouched. The named edits are built on this primitive. The result is a new document:
+    /// after an edit, take spans from it, not from the old document or its view, whose spans
+    /// refer to the old source and can match a different element of the new one.
     ///
     /// ```
     /// use fountain_syntax::{Span, parse};

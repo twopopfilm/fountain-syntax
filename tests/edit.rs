@@ -96,9 +96,21 @@ fn wr_7_identity_replacement_on_the_corpus() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "out of range for slice of length 3")]
 fn wr_7_bad_span_panics() {
     parse("abc").with_replaced(Span::new(2, 9), "x");
+}
+
+#[test]
+#[should_panic(expected = "slice index starts at 2 but ends at 1")]
+fn wr_7_inverted_span_panics() {
+    parse("abc").with_replaced(Span::new(2, 1), "x");
+}
+
+#[test]
+#[should_panic(expected = "should be a character boundary")]
+fn wr_7_non_boundary_span_panics() {
+    parse("é").with_replaced(Span::new(1, 1), "");
 }
 
 fn heading_span(doc: &Document, scene: usize) -> Span {
@@ -412,7 +424,16 @@ fn wr_13_cue_refusals() {
         );
     }
     // Each would not read back as a cue with exactly this name.
-    for name in ["june", "JUNE ", "JUNE\nX", "JUNE\r\nX", "", "JUNE (V.O.)"] {
+    for name in [
+        "june",
+        "JUNE ",
+        "JUNE\nX",
+        "JUNE\r\nX",
+        "",
+        "JUNE (V.O.)",
+        "JUNE ^",
+        "@JUNE",
+    ] {
         assert_eq!(
             doc.with_cue_renamed(cue, name).err(),
             Some(EditError::Invalid),

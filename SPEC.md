@@ -1098,7 +1098,10 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   `locked-scene-numbers`), `with_synopsis`, `with_note` and `with_cue_renamed` are named wrappers around it, and
   `EditError` is the error they return.
 - `with_replaced` checks nothing: it panics if the span is out of range, inverted or not on character boundaries
-  (test `wr_7_bad_span_panics`). Only the named edits return an `EditError`.
+  (tests `wr_7_bad_span_panics`, `wr_7_inverted_span_panics` and `wr_7_non_boundary_span_panics`). Only the named
+  edits return an `EditError`.
+- An edit returns a new document. After an edit, take spans from it, not from the old document or its view: their spans
+  refer to the old source and can match a different element of the new one.
 - New lines use the first line break found in the document (`\n` if there is none).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be.
