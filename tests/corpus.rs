@@ -44,11 +44,16 @@ fn corpus_every_file_has_source_and_licence() {
 }
 
 /// The lines of the first block: after any leading blank lines (and a BOM), up to the next blank line.
-fn first_block(src: &str) -> Vec<&str> {
-    src.trim_start_matches('\u{FEFF}')
-        .split(['\r', '\n'])
+fn first_block(src: &str) -> Vec<String> {
+    // CRLF, CR and LF each count as one line break.
+    let src = src
+        .trim_start_matches('\u{FEFF}')
+        .replace("\r\n", "\n")
+        .replace('\r', "\n");
+    src.lines()
         .skip_while(|l| l.trim().is_empty())
         .take_while(|l| !l.trim().is_empty())
+        .map(str::to_owned)
         .collect()
 }
 
