@@ -26,9 +26,11 @@ or `ours-wrong`.
 
 Each change makes our output match screenplay-tools' representation. A difference hidden by one of them is not seen.
 
-- **Stripped ends, tabs.** Only the two ends of a text are stripped, with Rust's `trim`; the indentation inside it stays
-  visible (`OFF-18`). An Action's tabs become four spaces first (`Action::display`, `OFF-18c`, which screenplay-tools
-  also does). Only a title value is stripped line by line, with its empty lines dropped, as the script does. Rust's
+- **Stripped ends, tabs.** Only the two ends of a text line are stripped, with Rust's `trim`, once per line: for a
+  run of merged Actions, the ends of the whole merged line, so every later paragraph keeps its leading indentation
+  (`OFF-18`) and a text keeps the indentation of its inner lines. The one indentation not shown is what lies at the
+  start or end of the line itself. An Action's tabs become four spaces first (`Action::display`, `OFF-18c`, which
+  screenplay-tools also does). Only a title value is stripped line by line, with its empty lines dropped, as the script does. Rust's
   `trim` and Python's `strip` agree on U+0085 and U+2028 and differ on U+001C to U+001F; no corpus file has one today.
 - **Parentheticals.** A `PAREN` line holds the text inside the parentheses, trimmed, because screenplay-tools gives that
   (the library's `DialogueItem::Parenthetical` keeps the parentheses). This hides only the parentheses.
@@ -187,17 +189,6 @@ Unclassified.
 +ACTION The kettle clicks off and nobody moves.⏎⏎The door is locked.  The handle turns.⏎⏎The window is shut. ⏎ends at the blank line.]] The curtain stirs.⏎⏎The floor creaks.  The step is gone.
 ````
 
-### off/off-16b.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--ACTION The kettle clicks off and nobody moves.⏎⏎still outer? */
-+ACTION The kettle clicks off and nobody moves.⏎⏎ still outer? */
-````
-
 ### off/off-16c.fountain
 
 **Class:** todo · **Ruling:** ? · **Reference parser:** ?
@@ -276,28 +267,6 @@ Unclassified.
 +ACTION Title: The Kettle⏎Author: A. Writer⏎⏎The kettle clicks off and nobody moves.⏎⏎The lights hold.
 ````
 
-### off/off-18b.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--ACTION The kettle clicks off and nobody moves.⏎⏎Mara stands at the sink.
-+ACTION The kettle clicks off and nobody moves.⏎⏎   Mara stands at the sink.
-````
-
-### off/off-18c.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--ACTION The kettle clicks off and nobody moves.⏎⏎Mara crosses    the room.⏎⏎She stops at the window.
-+ACTION The kettle clicks off and nobody moves.⏎⏎    Mara crosses    the room.⏎⏎        She stops at the window.
-````
-
 ### off/off-1a.fountain
 
 **Class:** todo · **Ruling:** ? · **Reference parser:** ?
@@ -307,17 +276,6 @@ Unclassified.
 ````diff
 -ACTION The kettle clicks off and nobody moves.⏎⏎Rain taps the glass.⏎⏎The lamp flickers twice.⏎⏎The room goes still.⏎⏎The door shuts.
 +ACTION The kettle clicks off and nobody moves.⏎⏎Rain taps the glass.⏎ ⏎The lamp flickers twice.⏎    ⏎The room goes still.⏎  ⏎The door shuts.
-````
-
-### off/off-1b.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--DIALOGUE Wait.⏎Do not go yet.
-+DIALOGUE Wait.⏎⏎Do not go yet.
 ````
 
 ### off/off-1b.fountain
@@ -450,6 +408,17 @@ Unclassified.
 
 ````diff
 +ACTION She opens it at last.
+````
+
+### off/off-22a.fountain
+
+**Class:** todo · **Ruling:** ? · **Reference parser:** ?
+
+Unclassified.
+
+````diff
+-ACTION The kettle clicks off and nobody moves.⏎⏎  indented action
++ACTION The kettle clicks off and nobody moves.⏎⏎indented action
 ````
 
 ### off/off-22f.fountain

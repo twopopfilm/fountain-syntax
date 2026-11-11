@@ -89,15 +89,16 @@ fn raw(text: &Text) -> String {
 
 /// The text on one line: only its ends are stripped, and each line break is the break mark.
 fn shown(text: &Text) -> String {
-    raw(text).trim().replace('\n', &BREAK.to_string())
+    flat(&raw(text))
 }
 
-/// An Action's text as `shown` gives it, with each tab four spaces (`Action::display`, OFF-18c).
-fn action_shown(text: &Text) -> String {
-    raw(text)
-        .replace('\t', "    ")
-        .trim()
-        .replace('\n', &BREAK.to_string())
+fn flat(s: &str) -> String {
+    s.trim().replace('\n', &BREAK.to_string())
+}
+
+/// An Action's marked text, not stripped, with each tab four spaces (`Action::display`, OFF-18c).
+fn action_raw(text: &Text) -> String {
+    raw(text).replace('\t', "    ")
 }
 
 /// The importer's `HASH_V1` of a scene: the first 12 hex digits of the SHA-256 of its scheme 1 text.
@@ -126,11 +127,10 @@ impl Out {
     }
 
     fn flush(&mut self) {
-        if !self.actions.is_empty() {
-            let merged = self.actions.join(&format!("{BREAK}{BREAK}"));
-            self.lines.push(format!("ACTION {merged}"));
-            self.actions.clear();
-        }
+        // Like screenplay-tools, strip the ends of the merged text once, not of each paragraph.
+        let merged = flat(&self.actions.join("\n\n"));
+        self.actions.clear();
+        self.push_shown("ACTION", merged);
     }
 
     fn element(&mut self, el: &Element) {
@@ -138,8 +138,8 @@ impl Out {
             // A whole-line Note or Boneyard is left out and does not end a run of Actions.
             Element::Note(_) | Element::Boneyard(_) => {}
             Element::Action(a) if !a.centered => {
-                let t = action_shown(&a.text);
-                if !t.is_empty() {
+                let t = action_raw(&a.text);
+                if !t.trim().is_empty() {
                     self.actions.push(t);
                 }
                 a.interjections.iter().for_each(|i| self.element(i));
@@ -148,7 +148,7 @@ impl Out {
                 self.flush();
                 match other {
                     Element::Action(a) => {
-                        self.push_shown("CENTERED", action_shown(&a.text));
+                        self.push_shown("CENTERED", flat(&action_raw(&a.text)));
                         a.interjections.iter().for_each(|i| self.element(i));
                     }
                     Element::Dialogue(b) => self.block(b, false),
@@ -179,7 +179,7 @@ impl Out {
         let mut run = Vec::new();
         for item in &b.items {
             match item {
-                DialogueItem::Line(t) => run.push(shown(t)),
+                DialogueItem::Line(t) => run.push(raw(t)),
                 DialogueItem::Parenthetical(t) => {
                     self.dialogue(&mut run);
                     // The library keeps the parentheses; screenplay-tools gives the text inside.
@@ -200,12 +200,9 @@ impl Out {
 
     /// The Dialogue lines gathered so far, as one line.
     fn dialogue(&mut self, run: &mut Vec<String>) {
-        run.retain(|l| !l.is_empty());
-        if !run.is_empty() {
-            self.lines
-                .push(format!("DIALOGUE {}", run.join(&BREAK.to_string())));
-            run.clear();
-        }
+        // An empty Line is a continuation line (OFF-1b) and stays; only the ends are stripped.
+        self.push_shown("DIALOGUE", flat(&run.join("\n")));
+        run.clear();
     }
 
     fn scene(&mut self, sc: &Scene) {
@@ -461,8 +458,18 @@ fn lines_flatten_a_small_script() {
 
 #[test]
 fn lines_keep_indentation_and_expand_action_tabs() {
-    let got = lines(&parse("INT. ROOM - DAY\n\n  He stands.\n\tShe  sits.\n   \n").screenplay());
-    assert_eq!(got[1], "ACTION He stands.⏎    She  sits.");
+    let src = "INT. ROOM - DAY\n\n  He stands.\n\tShe  sits.\n\n   Later.\n\n\tTabbed.\n";
+    let got = lines(&parse(src).screenplay());
+    assert_eq!(
+        got[1],
+        "ACTION He stands.⏎    She  sits.⏎⏎   Later.⏎⏎    Tabbed."
+    );
+}
+
+#[test]
+fn lines_keep_a_two_space_continuation_line_in_dialogue() {
+    let got = lines(&parse("INT. ROOM - DAY\n\nMARA\nWait.\n  \nGo on.\n").screenplay());
+    assert_eq!(got[2], "DIALOGUE Wait.⏎⏎Go on.");
 }
 
 #[test]
