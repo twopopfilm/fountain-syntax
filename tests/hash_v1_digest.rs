@@ -248,3 +248,75 @@ fn hash2_46_blind_spot_kind_change_is_invisible_to_v1_and_seen_by_v2() {
         Some(false)
     );
 }
+
+const EDGE_CASES: &str = include_str!("corpus/twopop/edge_cases.fountain");
+const TWO_SCENE: &str = include_str!("corpus/twopop/two_scene.fountain");
+const BLUE_REV2: &str = include_str!("corpus/twopop/blue_rev2.fountain");
+
+/// Each scene's heading and `hash_v1`, in order.
+fn headings_and_hashes(src: &str) -> Vec<(String, String)> {
+    scenes(src)
+        .iter()
+        .map(|s| (s.heading.text.plain(), s.hash_v1().to_string()))
+        .collect()
+}
+
+fn expect(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+    pairs
+        .iter()
+        .map(|(h, d)| (h.to_string(), d.to_string()))
+        .collect()
+}
+
+#[test]
+fn hash1_21_parity_edge_cases() {
+    // The importer's stored `text_sha` values (Twopop Studio `tests/oracle/parse/edge_cases.json`).
+    assert_eq!(
+        headings_and_hashes(EDGE_CASES),
+        expect(&[
+            (
+                "THE ROOF AT DAWN",
+                "6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625"
+            ),
+            (
+                "INT. LAUNDERETTE - DAY",
+                "7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508"
+            ),
+        ])
+    );
+    // The title page and the opening Action are outside every scene, yet the first scene still
+    // gets the importer's hash.
+    let sp = parse(EDGE_CASES).screenplay();
+    assert!(sp.title_page.is_some());
+    assert!(!sp.preamble.elements.is_empty());
+}
+
+#[test]
+fn hash1_22_parity_two_scene_and_blue_rev2() {
+    assert_eq!(
+        headings_and_hashes(TWO_SCENE),
+        expect(&[
+            (
+                "INT. ARCHIVE VAULT - NIGHT",
+                "8436c17623fcfd3e6c813afdcb540d9d52ebd44de24cb9d794ae823e9b46919d"
+            ),
+            (
+                "INT. ARCHIVE VAULT - NIGHT - REVERSE",
+                "029202aa944de57e8e6dd8b4a7a652e66b06a9cadd782e2fd5b9c213a1ed87cf"
+            ),
+        ])
+    );
+    assert_eq!(
+        headings_and_hashes(BLUE_REV2),
+        expect(&[
+            (
+                "INT. ARCHIVE VAULT - NIGHT",
+                "0b24c579ece4de4c253589548b6394fb40fe17074f91b6f13ac0d1455bce333d"
+            ),
+            (
+                "INT. ARCHIVE STAIRWELL - NIGHT",
+                "9194840a945b5aa208721a8c95833556399bc71f6a23eda650af60a8f0fdd81f"
+            ),
+        ])
+    );
+}
