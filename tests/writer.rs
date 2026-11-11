@@ -224,7 +224,7 @@ fn built() -> Screenplay {
     Screenplay {
         title_page: Some(TitlePage {
             entries: vec![entry("Title", &["Big Fish"]), entry("Author", &["A", "B"])],
-            stray_lines: Vec::new(),
+            stray_lines: vec![t("a stray line")],
             span: None,
         }),
         preamble: Preamble {
