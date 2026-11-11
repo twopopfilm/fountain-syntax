@@ -244,6 +244,22 @@ impl Scene {
         hash_of("scene", &[&p.0, &counted(&self.element_hashes())])
     }
 
+    /// The scheme 1 scene hash: SHA-256 of the UTF-8 bytes of [`Scene::normalized_text_v1`], as a
+    /// [`Digest`] of scheme [`HashScheme::V1`].
+    ///
+    /// It is the importer's `text_sha`, kept so that an application can compare against values it
+    /// stored before scheme 2. Scheme 1 is frozen: this value never changes for the same scene
+    /// text. Its text form is the bare 64 lowercase hexadecimal digits, with no prefix, and it
+    /// never equals a scheme 2 digest, even with equal bytes. It needs the `hash` feature (the
+    /// line methods it is built on do not). New code should use [`Scene::hash`]; see `SPEC.md`
+    /// 11.7 for the rules and 11.8 for migrating stored values.
+    pub fn hash_v1(&self) -> Digest {
+        Digest {
+            scheme: HashScheme::V1,
+            bytes: Sha256::digest(self.normalized_text_v1().as_bytes()).into(),
+        }
+    }
+
     /// The source-facet hash of the scene's span in `document`, or `None` for a scene built in
     /// memory, which has no span. `document` must be the one the scene was read from.
     ///
