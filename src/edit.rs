@@ -54,6 +54,14 @@ fn carries_number(heading: Node<'_>, open: &str, number: &str) -> bool {
     })
 }
 
+/// Whether a Note or Boneyard sits anywhere inside `node`: replacing the node would drop it.
+fn hides(node: Node<'_>) -> bool {
+    node.children().any(|c| match c {
+        Child::Node(n) => matches!(n.kind(), NodeKind::Note | NodeKind::Boneyard) || hides(n),
+        Child::Token(_) => false,
+    })
+}
+
 /// Whether `node` is a Gap of exactly one line break.
 fn is_one_break(node: Node<'_>) -> bool {
     node.kind() == NodeKind::Gap && matches!(node.text(), "\n" | "\r\n" | "\r")
@@ -89,7 +97,12 @@ impl Document {
         let mut existing = None;
         for child in node.children() {
             match child {
-                Child::Node(n) if n.kind() == NodeKind::SceneNumber => existing = Some(n.span()),
+                Child::Node(n) if n.kind() == NodeKind::SceneNumber => {
+                    if hides(n) {
+                        return Err(EditError::Invalid);
+                    }
+                    existing = Some(n.span());
+                }
                 Child::Token(t) if t.kind() == TokenKind::Whitespace => {}
                 Child::Node(n) => at = n.span().end,
                 Child::Token(t) => at = t.span().end,
@@ -206,6 +219,9 @@ impl Document {
         let line = format!("= {text}");
         let (span, edit) = match (top.get(i + 1), top.get(i + 2)) {
             (Some(gap), Some(syn)) if is_one_break(*gap) && syn.kind() == NodeKind::Synopsis => {
+                if hides(*syn) {
+                    return Err(EditError::Invalid);
+                }
                 (syn.span(), line.clone())
             }
             _ => (
@@ -319,10 +335,7 @@ impl Document {
                 _ => None,
             })
             .ok_or(EditError::Invalid)?;
-        let hides = old.children().any(|c| {
-            matches!(c, Child::Node(n) if matches!(n.kind(), NodeKind::Note | NodeKind::Boneyard))
-        });
-        if hides {
+        if hides(old) {
             return Err(EditError::Invalid);
         }
         let edited = self.with_replaced(old.span(), name);

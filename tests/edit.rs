@@ -183,6 +183,16 @@ fn wr_13_scene_number_refusals() {
         );
     }
     assert_eq!(doc.source(), "INT. A\n\nHi.\n");
+
+    // A Note or Boneyard inside the old number would be lost.
+    for src in ["INT. A #1[[n]]#\n", "INT. A #1/* b */#\n"] {
+        let doc = parse_checked(src);
+        assert_eq!(
+            doc.with_scene_number(heading_span(&doc, 0), "2").err(),
+            Some(EditError::Invalid),
+            "{src:?}"
+        );
+    }
 }
 
 #[test]
@@ -319,6 +329,19 @@ fn wr_13_synopsis_and_note_refusals() {
         );
     }
     assert_eq!(doc.source(), "INT. A\n\nMARA\nHi.\n");
+
+    // A Note or Boneyard inside the Synopsis being replaced would be lost.
+    for src in [
+        "INT. A\n= old [[secret]]\n\nHi.\n",
+        "INT. A\n= old /* bone */\n",
+    ] {
+        let doc = parse_checked(src);
+        assert_eq!(
+            doc.with_synopsis(heading_span(&doc, 0), "new").err(),
+            Some(EditError::Invalid),
+            "{src:?}"
+        );
+    }
 }
 
 /// The `Cue.span` of the `n`th Character cue, in source order, from the typed view.
