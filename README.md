@@ -109,10 +109,10 @@ crate treats correctness as something to measure:
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
   both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13. The rest
   are planned for F2 to F4.
-- **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
-  has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
-  The spec's examples and sample scripts will be used only with written permission. Every script in it must
-  round-trip byte-for-byte through the writer.
+- **A conformance corpus.** `tests/corpus/` holds one original script for each row of the decision table in
+  [`SPEC.md`](SPEC.md) section 6.2, plus Twopop's own fixtures, each with its source and licence recorded. The spec's
+  text has no licence, so it is not copied, and sample scripts would need written permission. Every script round-trips
+  byte-for-byte through the writer (`WR-1`).
 - **Differential testing (planned, F4).** Parses will be compared with `screenplay-tools`, an established Fountain
   parser. Every difference will be classified as theirs-wrong, ours-wrong or a documented choice.
 
@@ -126,7 +126,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 | F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
 | F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
-| F4        | Conformance corpus and differential testing                                        | Planned     |
+| F4        | Conformance corpus and differential testing                                        | In progress |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
