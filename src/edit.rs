@@ -52,6 +52,11 @@ fn carries_number(heading: Node<'_>, open: &str, number: &str) -> bool {
     })
 }
 
+/// Whether `node` is a Gap of exactly one line break.
+fn is_one_break(node: Node<'_>) -> bool {
+    node.kind() == NodeKind::Gap && matches!(node.text(), "\n" | "\r\n" | "\r")
+}
+
 impl Document {
     /// The node of `kind` whose span is exactly `span`, at any depth.
     fn find(&self, kind: NodeKind, span: Span) -> Option<Node<'_>> {
@@ -144,6 +149,138 @@ impl Document {
         number: &str,
     ) -> Result<Document, EditError> {
         self.with_number_marked(heading, "##", number)
+    }
+
+    /// The root's children that are nodes, Gaps included, in source order.
+    fn top_level(&self) -> Vec<Node<'_>> {
+        self.root()
+            .children()
+            .filter_map(|c| match c {
+                Child::Node(n) => Some(n),
+                Child::Token(_) => None,
+            })
+            .collect()
+    }
+
+    /// The first line break in the source, or `"\n"` when it has none.
+    fn line_break(&self) -> &str {
+        let source = self.source();
+        match source.find(['\r', '\n']) {
+            Some(i) if source[i..].starts_with("\r\n") => "\r\n",
+            Some(i) if source[i..].starts_with('\r') => "\r",
+            _ => "\n",
+        }
+    }
+
+    /// Sets the one-line Synopsis of the scene whose Scene Heading has the span `heading`: puts
+    /// `= text` on the line right after the heading, or, when a Synopsis is already there,
+    /// replaces it. The new line uses the document's line break. Any other Synopsis of the scene
+    /// stays as it is.
+    ///
+    /// A `text` that holds a line break, or that would not read back as a Synopsis of this
+    /// scene, gives [`EditError::Invalid`]. A span that is not a Scene Heading gives
+    /// [`EditError::NotFound`].
+    ///
+    /// ```
+    /// use fountain_syntax::parse;
+    ///
+    /// let doc = parse("INT. A\n\nHi.\n");
+    /// let heading = doc.screenplay().scenes[0].heading.span.unwrap();
+    /// let edited = doc.with_synopsis(heading, "Mara arrives.").unwrap();
+    /// assert_eq!(edited.source(), "INT. A\n= Mara arrives.\n\nHi.\n");
+    ///
+    /// let again = edited.with_synopsis(heading, "Mara leaves.").unwrap();
+    /// assert_eq!(again.source(), "INT. A\n= Mara leaves.\n\nHi.\n");
+    /// ```
+    pub fn with_synopsis(&self, heading: Span, text: &str) -> Result<Document, EditError> {
+        let top = self.top_level();
+        let i = top
+            .iter()
+            .position(|n| n.kind() == NodeKind::SceneHeading && n.span() == heading)
+            .ok_or(EditError::NotFound)?;
+        if text.contains(['\n', '\r']) {
+            return Err(EditError::Invalid);
+        }
+        let line = format!("= {text}");
+        let (span, edit) = match (top.get(i + 1), top.get(i + 2)) {
+            (Some(gap), Some(syn)) if is_one_break(*gap) && syn.kind() == NodeKind::Synopsis => {
+                (syn.span(), line.clone())
+            }
+            _ => (
+                Span::new(heading.end, heading.end),
+                format!("{}{line}", self.line_break()),
+            ),
+        };
+        let edited = self.with_replaced(span, &edit);
+        // The heading must be unchanged and directly followed, across one line break, by the line.
+        let top = edited.top_level();
+        let ok = top
+            .iter()
+            .position(|n| n.span().start == heading.start)
+            .is_some_and(|i| {
+                top[i].kind() == NodeKind::SceneHeading
+                    && top[i].span() == heading
+                    && top.get(i + 1).is_some_and(|g| is_one_break(*g))
+                    && top
+                        .get(i + 2)
+                        .is_some_and(|n| n.kind() == NodeKind::Synopsis && n.text() == line)
+            });
+        if ok {
+            Ok(edited)
+        } else {
+            Err(EditError::Invalid)
+        }
+    }
+
+    /// Adds the Note `[[text]]` as its own block after the top-level element whose span is
+    /// `after`, with a blank line before it (and one after it when the next element would
+    /// otherwise follow on the very next line). Nothing else changes.
+    ///
+    /// A `text` that holds `]]` or a blank line, or that would not read back as a Note, gives
+    /// [`EditError::Invalid`]. A span that is not a top-level element of the document (a cue, a
+    /// title page entry, the blank lines between elements) gives [`EditError::NotFound`].
+    ///
+    /// ```
+    /// use fountain_syntax::{Child, NodeKind, parse};
+    ///
+    /// let doc = parse("INT. A\n\nHi.\n\nBYE.\n");
+    /// let hi = doc.root().children().find_map(|c| match c {
+    ///     Child::Node(n) if n.kind() == NodeKind::Action => Some(n.span()),
+    ///     _ => None,
+    /// });
+    /// let edited = doc.with_note(hi.unwrap(), "check this").unwrap();
+    /// assert_eq!(edited.source(), "INT. A\n\nHi.\n\n[[check this]]\n\nBYE.\n");
+    /// ```
+    pub fn with_note(&self, after: Span, text: &str) -> Result<Document, EditError> {
+        let top = self.top_level();
+        let i = top
+            .iter()
+            .position(|n| n.kind() != NodeKind::Gap && n.span() == after)
+            .ok_or(EditError::NotFound)?;
+        let unix = text.replace("\r\n", "\n").replace('\r', "\n");
+        if text.contains("]]") || unix.contains("\n\n") {
+            return Err(EditError::Invalid);
+        }
+        let nl = self.line_break();
+        let note = format!("[[{text}]]");
+        let mut edit = format!("{nl}{nl}{note}");
+        // One line break and then another element: keep a blank line between the note and it.
+        if let (Some(gap), Some(_)) = (top.get(i + 1), top.get(i + 2))
+            && is_one_break(*gap)
+        {
+            edit.push_str(nl);
+        }
+        let edited = self.with_replaced(Span::new(after.end, after.end), &edit);
+        let start = after.end + 2 * nl.len();
+        let ok = edited
+            .top_level()
+            .iter()
+            .any(|n| n.kind() == NodeKind::Note && n.span().start == start && n.text() == note);
+        if ok {
+            Ok(edited)
+        } else {
+            Err(EditError::Invalid)
+        }
     }
 
     /// Replaces the bytes of `span` with `text`, re-parses, and leaves every other byte

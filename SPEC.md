@@ -1050,6 +1050,12 @@ impl Document {
 
     /// The same, writing the locked form `##number#` (feature `locked-scene-numbers`).
     pub fn with_locked_scene_number(&self, heading: Span, number: &str) -> Result<Document, EditError>;
+
+    /// Puts `= text` on the line after the Scene Heading with this span, or replaces the Synopsis there.
+    pub fn with_synopsis(&self, heading: Span, text: &str) -> Result<Document, EditError>;
+
+    /// Adds `[[text]]` as its own block after the top-level element with this span.
+    pub fn with_note(&self, after: Span, text: &str) -> Result<Document, EditError>;
 }
 
 /// Why a named edit was refused; the document is unchanged.
@@ -1158,6 +1164,8 @@ views don't round-trip:
 | `WR-7` | `with_replaced` changes only the replaced span: every other byte is identical, and spans after the edit are shifted correctly. |
 | `WR-8` | `canonical` uses a sigil only where the text would otherwise re-parse as a different element. |
 | `WR-9` | `with_scene_number` writes `#n#` on a heading with or without a number and changes no other byte; `with_locked_scene_number` writes `##n#` (`locked-scene-numbers`). |
+| `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break. |
+| `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. |
 | `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element; the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
@@ -1887,11 +1895,11 @@ diff harness would come from the start of the file and not from the case.
 `HASH2-29`, `HASH2-30`, `HASH2-31`, `HASH2-32`, `HASH2-33`, `HASH2-34`, `HASH2-35`, `HASH2-36`, `HASH2-37`,
 `HASH2-38`, `HASH2-39`, `HASH2-40`, `HASH2-41`, `HASH2-42`, `HASH2-43`, `HASH2-44`, `HASH2-45`, `HASH2-46`, `HASH2-47`
 
-**Writer (section 10)**, 10 IDs:
+**Writer (section 10)**, 12 IDs:
 
-`WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`, `WR-9`, `WR-13`
+`WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`, `WR-9`, `WR-10`, `WR-11`, `WR-13`
 
-**Total: 272 IDs.**
+**Total: 274 IDs.**
 <!-- ID-INDEX:end -->
 
 ## 13. Open items
