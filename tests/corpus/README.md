@@ -1,14 +1,13 @@
 # Test corpus
 
-Scripts that the integration tests read (`WR-1` lists the directory; the integration tests read them with
-`include_str!` or through `corpus_files()`). **Do not edit the `twopop/` files**: they are byte-exact copies, and the
-tests pin the importer's digests for them. The `off/` files are original to this project, neither copies nor
-digest-pinned: you may edit one, as long as its row's test and the round-trip test (`WR-1`) still pass. The root
-`.gitattributes` sets `tests/corpus/** -text`, so
-a checkout never converts line endings or adds a final newline: the `off/` scripts for the line-ending rows
-(`OFF-2a`, `OFF-2b`, `OFF-23e`) keep their CR and CRLF bytes and their missing final newline on every platform. The
-`twopop/` files are stored with LF line endings, and the hash tests would pass even if a checkout converted them,
-because scheme 1 ignores line endings (`SPEC.md` 11.7, G1).
+Scripts that the integration tests read: `WR-1` lists the directory, and other tests use `include_str!` or
+`corpus_files()`. **Do not edit the `twopop/` files**: they are byte-exact copies, and the tests pin the importer's
+digests for them. The `off/` files are original to this project, neither copies nor digest-pinned: you may edit one, as
+long as its row's test and the round-trip test (`WR-1`) still pass. The root `.gitattributes` sets
+`tests/corpus/** -text`, so line endings, trailing whitespace and a missing final newline survive any checkout:
+the `off/` scripts for the line-ending rows (`OFF-2a`, `OFF-2b`, `OFF-23e`) keep their CR and CRLF bytes and their
+missing final newline on every platform. The `twopop/` files are stored with LF line endings, and the hash tests would
+pass even if a checkout converted them, because scheme 1 ignores line endings (`SPEC.md` 11.7, G1).
 
 Every file here is original to the Twopop project, or used under terms that allow redistribution. Record each new
 file's source and licence in the table below.
