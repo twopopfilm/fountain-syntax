@@ -234,7 +234,12 @@ impl Document {
 
     /// Adds the Note `[[text]]` as its own block after the top-level element whose span is
     /// `after`, with a blank line before it (and one after it when the next element would
-    /// otherwise follow on the very next line). Nothing else changes.
+    /// otherwise follow on the very next line). Nothing else changes. The text is inserted as
+    /// given, with its own line breaks: a multi-line note in a CRLF document keeps the breaks it
+    /// was written with.
+    ///
+    /// After a Scene Heading that a Synopsis follows directly, the note goes between them, so
+    /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
     /// A `text` that holds `]]` or a blank line, or that would not read back as a Note, gives
     /// [`EditError::Invalid`]. A span that is not a top-level element of the document (a cue, a
@@ -277,6 +282,58 @@ impl Document {
             .iter()
             .any(|n| n.kind() == NodeKind::Note && n.span().start == start && n.text() == note);
         if ok {
+            Ok(edited)
+        } else {
+            Err(EditError::Invalid)
+        }
+    }
+
+    /// Renames the Character cue whose span is `cue` (the `span` of a `Cue` in the view): replaces
+    /// the cue's name and nothing else, so its `@`, extensions, caret and the rest of its line stay
+    /// as they are. Other cues of the same character are not touched.
+    ///
+    /// `name` must read back as exactly the name of that cue: a lowercase name on a cue without
+    /// `@`, a name with a trailing space, a line break, an extension or a caret in it, or an empty
+    /// name gives [`EditError::Invalid`]. So does a cue whose name holds a Note or Boneyard
+    /// (`MA[[n]]RA`), which the rename would drop. A span that is not a Character cue gives
+    /// [`EditError::NotFound`].
+    ///
+    /// ```
+    /// use fountain_syntax::{Element, parse};
+    ///
+    /// let doc = parse("INT. A\n\nMARA (V.O.)\nHi.\n");
+    /// let Element::Dialogue(block) = &doc.screenplay().scenes[0].elements[0] else { panic!() };
+    /// let edited = doc.with_cue_renamed(block.cue.span.unwrap(), "JUNE").unwrap();
+    /// assert_eq!(edited.source(), "INT. A\n\nJUNE (V.O.)\nHi.\n");
+    /// ```
+    pub fn with_cue_renamed(&self, cue: Span, name: &str) -> Result<Document, EditError> {
+        let node = self
+            .find(NodeKind::CharacterCue, cue)
+            .ok_or(EditError::NotFound)?;
+        let old = node
+            .children()
+            .find_map(|c| match c {
+                Child::Node(n) if n.kind() == NodeKind::CharacterName => Some(n),
+                _ => None,
+            })
+            .ok_or(EditError::Invalid)?;
+        let hides = old.children().any(|c| {
+            matches!(c, Child::Node(n) if matches!(n.kind(), NodeKind::Note | NodeKind::Boneyard))
+        });
+        if hides {
+            return Err(EditError::Invalid);
+        }
+        let edited = self.with_replaced(old.span(), name);
+        // The cue, now longer or shorter by the difference, must carry exactly this name.
+        let end = cue.end + name.len() - old.span().len();
+        let named = edited
+            .find(NodeKind::CharacterCue, Span::new(cue.start, end))
+            .is_some_and(|c| {
+                c.children().any(|c| {
+                    matches!(c, Child::Node(n) if n.kind() == NodeKind::CharacterName && n.text() == name)
+                })
+            });
+        if named {
             Ok(edited)
         } else {
             Err(EditError::Invalid)

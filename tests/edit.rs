@@ -249,6 +249,17 @@ fn wr_11_adds_a_note_block_after_an_element() {
     };
     assert_eq!(note.text, "check this");
 
+    // A note after a heading that a Synopsis follows lands between them: the bytes are a pure
+    // insertion, but the view then reads the Synopsis as an element, not a synopsis of the scene.
+    let doc = parse_checked("INT. A\n= x\n\nHi.\n");
+    let edited = doc.with_note(heading_span(&doc, 0), "n").unwrap();
+    let scene = &edited.screenplay().scenes[0];
+    assert!(scene.synopses.is_empty());
+    assert!(matches!(
+        &scene.elements[..],
+        [Element::Note(_), Element::Synopsis(_), ..]
+    ));
+
     for (src, expected, at_heading) in [
         ("INT. A\n\nHi.", "INT. A\n\nHi.\n\n[[n]]", false),
         (
@@ -308,4 +319,93 @@ fn wr_13_synopsis_and_note_refusals() {
         );
     }
     assert_eq!(doc.source(), "INT. A\n\nMARA\nHi.\n");
+}
+
+/// The `Cue.span` of the `n`th Character cue, in source order, from the typed view.
+fn cue_span(doc: &Document, n: usize) -> Span {
+    let view = doc.screenplay();
+    let mut cues = Vec::new();
+    for element in view
+        .preamble
+        .elements
+        .iter()
+        .chain(view.scenes.iter().flat_map(|s| s.elements.iter()))
+    {
+        match element {
+            Element::Dialogue(d) => cues.push(d.cue.span.unwrap()),
+            Element::DualDialogue(d) => {
+                cues.push(d.left.cue.span.unwrap());
+                cues.push(d.right.cue.span.unwrap());
+            }
+            _ => {}
+        }
+    }
+    cues[n]
+}
+
+#[test]
+fn wr_12_renames_one_cue() {
+    let src = "INT. A\n\nMARA (V.O.)\nHi.\n\nMARA\nBye.\n";
+    let doc = parse_checked(src);
+    let edited = doc.with_cue_renamed(cue_span(&doc, 0), "JUNE").unwrap();
+    assert_eq!(
+        edited.source(),
+        "INT. A\n\nJUNE (V.O.)\nHi.\n\nMARA\nBye.\n"
+    );
+    assert_only_span_changed(src, &edited, Span::new(8, 12), "JUNE");
+    let view = edited.screenplay();
+    let [Element::Dialogue(first), Element::Dialogue(second)] = &view.scenes[0].elements[..] else {
+        panic!("{:?}", view.scenes[0].elements)
+    };
+    assert_eq!(first.cue.name.plain(), "JUNE");
+    assert_eq!(first.cue.extensions[0].text.plain(), "V.O.");
+    assert_eq!(second.cue.name.plain(), "MARA");
+}
+
+#[test]
+fn wr_12_keeps_sigil_and_caret() {
+    let doc = parse_checked("@mara\nHi.\n");
+    let edited = doc.with_cue_renamed(cue_span(&doc, 0), "june").unwrap();
+    assert_eq!(edited.source(), "@june\nHi.\n");
+
+    let doc = parse_checked("BOB\nHi.\n\nANN ^\nHey.\n");
+    let edited = doc.with_cue_renamed(cue_span(&doc, 1), "CAL").unwrap();
+    assert_eq!(edited.source(), "BOB\nHi.\n\nCAL ^\nHey.\n");
+    let Element::DualDialogue(dual) = &edited.screenplay().preamble.elements[0] else {
+        panic!("not a dual dialogue")
+    };
+    assert_eq!(dual.right.cue.name.plain(), "CAL");
+}
+
+#[test]
+fn wr_13_cue_refusals() {
+    let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
+    let cue = cue_span(&doc, 0);
+    let block = find(&doc, NodeKind::DialogueBlock)[0].span();
+    for span in [heading_span(&doc, 0), block, Span::new(0, 1)] {
+        assert_eq!(
+            doc.with_cue_renamed(span, "JUNE").err(),
+            Some(EditError::NotFound)
+        );
+    }
+    // Each would not read back as a cue with exactly this name.
+    for name in ["june", "JUNE ", "JUNE\nX", "JUNE\r\nX", "", "JUNE (V.O.)"] {
+        assert_eq!(
+            doc.with_cue_renamed(cue, name).err(),
+            Some(EditError::Invalid),
+            "{name:?}"
+        );
+    }
+    assert_eq!(doc.source(), "INT. A\n\nMARA\nHi.\n");
+
+    // A hidden span inside the name would be lost.
+    let doc = parse_checked("INT. A\n\nMA[[n]]RA\nHi.\n");
+    assert_eq!(
+        doc.with_cue_renamed(cue_span(&doc, 0), "JUNE").err(),
+        Some(EditError::Invalid)
+    );
+    // One beside the name stays where it is.
+    let doc = parse_checked("INT. A\n\nMARA[[n]]\nHi.\n");
+    let edited = doc.with_cue_renamed(cue_span(&doc, 0), "JUNE").unwrap();
+    assert_eq!(edited.source(), "INT. A\n\nJUNE[[n]]\nHi.\n");
 }

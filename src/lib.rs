@@ -16,9 +16,12 @@
 //!
 //! [`Document::write`] (and `Display`) gives the source back byte for byte. [`canonical`] writes a
 //! view built in memory as Fountain that parses back to the same view, except for the shapes its
-//! docs list, with a sigil only where one is needed. The `serde` feature serialises a [`Document`]
-//! as its source and parses it again when it is read back, and serialises the view as it is. The
-//! [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64 lowercase
+//! docs list, with a sigil only where one is needed. [`Document::with_replaced`] replaces one span
+//! and re-parses; the named edits (`with_scene_number`, `with_synopsis`, `with_note` and
+//! `with_cue_renamed`, and `with_locked_scene_number` with its feature) build on it and return an
+//! [`EditError`] when the edited text would not parse as the intended element. The `serde`
+//! feature serialises a [`Document`] as its source and parses it again when it is read back, and
+//! serialises the view as it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64 lowercase
 //! hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
 //! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
 //! the preamble, the title page, the whole screenplay and the exact bytes of any span (for example
