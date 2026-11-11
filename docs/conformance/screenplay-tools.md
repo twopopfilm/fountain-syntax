@@ -17,8 +17,9 @@ or `ours-wrong`.
   `HEADING <text>[ #<number>]`, `ACTION`, `CENTERED`, `CHARACTER <name>[ (<ext>)]...[ ^]`, `PAREN`, `DIALOGUE`, `LYRIC`,
   `TRANSITION`, `SECTION <depth> <text>`, `SYNOPSIS`, `PAGEBREAK`, and a last line `HASH_V1 <12 hex digits>` for each
   scene. A line break inside a text is written U+23CE. Text with its note and boneyard markers removed and its ends
-  stripped; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. Our
-  `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
+  stripped; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. For a
+  run of merged Actions the rule applies to the whole run: an empty Action inside it stays as an empty paragraph, and
+  the line is dropped only when the run is empty. Our `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
 - **The diff.** A longest-common-subsequence line diff of ours against theirs per file. Adjacent changes form one hunk.
   An entry shows `-` for our lines and `+` for theirs.
 
@@ -30,8 +31,9 @@ Each change makes our output match screenplay-tools' representation. A differenc
   run of merged Actions, the ends of the whole merged line, so every later paragraph keeps its leading indentation
   (`OFF-18`) and a text keeps the indentation of its inner lines. The one indentation not shown is what lies at the
   start or end of the line itself. An Action's tabs become four spaces first (`Action::display`, `OFF-18c`, which
-  screenplay-tools also does). Only a title value is stripped line by line, with its empty lines dropped, as the script does. Rust's
-  `trim` and Python's `strip` agree on U+0085 and U+2028 and differ on U+001C to U+001F; no corpus file has one today.
+  screenplay-tools also does). Only a title value is stripped line by line, with its empty lines dropped, as the
+  script does. Rust's `trim` and Python's `strip` agree on U+0085 and U+2028 and differ on U+001C to U+001F; no corpus
+  file has one today.
 - **Parentheticals.** A `PAREN` line holds the text inside the parentheses, trimmed, because screenplay-tools gives that
   (the library's `DialogueItem::Parenthetical` keeps the parentheses). This hides only the parentheses.
 - **Emphasis.** The markers are written back from `Run::Emphasis`: `***` for bold and italic, `**` for bold, `*` for
@@ -40,7 +42,8 @@ Each change makes our output match screenplay-tools' representation. A differenc
   left out, because screenplay-tools removes their markers the same way. This hides the notes' own text and position;
   their effect on the elements around them stays visible.
 - **Merged Actions and Dialogue.** Consecutive non-centered Actions are joined with U+23CE twice, also across a
-  left-out Note or Boneyard, as screenplay-tools merges them. Consecutive `DialogueItem::Line`s are joined with
+  left-out Note or Boneyard, as screenplay-tools merges them, and an empty Action (a forced `!` alone, `OFF-22f`)
+  is one of the run. Consecutive `DialogueItem::Line`s are joined with
   U+23CE. This hides only where one Action paragraph ends and the next starts; it is the same merge as `SPEC.md`
   11.7 rule 4.
 - **Cues.** Our `(CONT'D)` extensions are dropped, and forcing flags (`@`, `!`, `>`, `.`) are not compared. This hides
@@ -419,17 +422,6 @@ Unclassified.
 ````diff
 -ACTION The kettle clicks off and nobody moves.⏎⏎  indented action
 +ACTION The kettle clicks off and nobody moves.⏎⏎indented action
-````
-
-### off/off-22f.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--ACTION The kettle clicks off and nobody moves.⏎⏎@
-+ACTION The kettle clicks off and nobody moves.⏎⏎⏎⏎@
 ````
 
 ### off/off-23a.fountain

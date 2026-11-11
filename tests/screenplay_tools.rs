@@ -138,10 +138,8 @@ impl Out {
             // A whole-line Note or Boneyard is left out and does not end a run of Actions.
             Element::Note(_) | Element::Boneyard(_) => {}
             Element::Action(a) if !a.centered => {
-                let t = action_raw(&a.text);
-                if !t.trim().is_empty() {
-                    self.actions.push(t);
-                }
+                // An empty Action stays in the run; the line is dropped only if the whole run is empty.
+                self.actions.push(action_raw(&a.text));
                 a.interjections.iter().for_each(|i| self.element(i));
             }
             other => {
@@ -464,6 +462,12 @@ fn lines_keep_indentation_and_expand_action_tabs() {
         got[1],
         "ACTION He stands.⏎    She  sits.⏎⏎   Later.⏎⏎    Tabbed."
     );
+}
+
+#[test]
+fn lines_keep_an_empty_forced_action_in_a_run() {
+    let got = lines(&parse("INT. ROOM - DAY\n\nHe waits.\n\n!\n\nShe goes.\n").screenplay());
+    assert_eq!(got[1], "ACTION He waits.⏎⏎⏎⏎She goes.");
 }
 
 #[test]
