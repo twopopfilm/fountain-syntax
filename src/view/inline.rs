@@ -359,11 +359,19 @@ fn push_str(runs: &mut Vec<Run>, s: &str) {
 /// The as-typed text: marks and escapes as written, Notes and Boneyards deleted (`SPEC.md` 11.3, 11.7).
 pub(crate) fn typed(text: &Text) -> String {
     let mut out = String::new();
-    push_typed(&text.runs, &mut out);
+    push_typed(&text.runs, false, &mut out);
     out
 }
 
-fn push_typed(runs: &[Run], out: &mut String) {
+/// The text as Fountain: like [`typed`], but Notes (`[[..]]`) and Boneyards (`/*..*/`) are written back.
+pub(crate) fn fountain(text: &Text) -> String {
+    let mut out = String::new();
+    push_typed(&text.runs, true, &mut out);
+    out
+}
+
+/// Append `runs` as written; `hidden` keeps Notes and Boneyards instead of dropping them.
+fn push_typed(runs: &[Run], hidden: bool, out: &mut String) {
     for run in runs {
         match run {
             Run::Plain(s) => out.push_str(s),
@@ -381,12 +389,22 @@ fn push_typed(runs: &[Run], out: &mut String) {
                     _ => "*",
                 };
                 out.push_str(mark);
-                push_typed(runs, out);
+                push_typed(runs, hidden, out);
                 out.push_str(mark);
             }
             Run::Escaped(c) => {
                 out.push('\\');
                 out.push(*c);
+            }
+            Run::Note(n) if hidden => {
+                out.push_str("[[");
+                out.push_str(&n.text);
+                out.push_str("]]");
+            }
+            Run::Boneyard(b) if hidden => {
+                out.push_str("/*");
+                out.push_str(&b.text);
+                out.push_str("*/");
             }
             Run::Note(_) | Run::Boneyard(_) => {}
         }
@@ -816,6 +834,28 @@ mod tests {
         );
         assert_eq!(t.runs, [plain("a\n\n  b")]);
         assert_eq!(t.span, Some(Span::new(0, 11)));
+    }
+
+    #[test]
+    fn fountain_writes_hidden_spans_back() {
+        let t = Text {
+            span: None,
+            runs: vec![
+                plain("a "),
+                bold(vec![plain("b")]),
+                Run::Escaped('*'),
+                Run::Note(Note {
+                    text: "n".to_owned(),
+                    span: None,
+                }),
+                Run::Boneyard(Boneyard {
+                    text: "x".to_owned(),
+                    span: None,
+                }),
+            ],
+        };
+        assert_eq!(fountain(&t), "a **b**\\*[[n]]/*x*/");
+        assert_eq!(typed(&t), "a **b**\\*", "typed still drops hidden spans");
     }
 
     #[test]
