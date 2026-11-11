@@ -1052,7 +1052,7 @@ impl core::fmt::Display for Document { /* the same as write() */ }
 pub fn canonical(screenplay: &Screenplay) -> String;
 ```
 
-`write`, `Display` and `canonical` exist (issue #12). `with_replaced` and the named edits land with issue #13.
+`write`, `Display`, `canonical` and `with_replaced` exist (issues #12 and #13); the named edits of 10.2 land with issue #13.
 
 ### 10.1 Byte-for-byte round trip
 
