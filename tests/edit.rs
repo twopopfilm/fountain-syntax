@@ -113,6 +113,13 @@ fn wr_9_sets_a_number_on_a_heading_without_one() {
 }
 
 #[test]
+fn wr_9_inserts_before_trailing_whitespace() {
+    let doc = parse_checked("INT. A  \n");
+    let edited = doc.with_scene_number(heading_span(&doc, 0), "7").unwrap();
+    assert_eq!(edited.source(), "INT. A #7#  \n");
+}
+
+#[test]
 fn wr_9_replaces_an_existing_number_only() {
     for (src, number, expected) in [
         ("INT. A  #1#\n", "2", "INT. A  #2#\n"),
