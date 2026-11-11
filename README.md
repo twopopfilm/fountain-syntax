@@ -15,9 +15,9 @@ rest.
 > codes `SPEC.md` §7 defines. With the `hash` feature, the scheme 2 hashes work: element, scene, document, title page
 > and source spans, and the importer-compatible scheme 1 hashes (`Scene::hash_v1`) reproduce the Twopop importer's
 > values on its captured scripts. `Document::write` gives the source back byte for byte, and `canonical` writes a
-> view built in memory as Fountain that parses back to the same view. Targeted edits (`with_replaced`) are planned,
-> and the crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 and F3
-> are in progress.
+> view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
+> `SPEC.md` §10.3). Targeted edits (`with_replaced`) are planned, and the crate is not on crates.io. Milestone F1, the
+> standards study, is done ([`SPEC.md`](SPEC.md)); F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust

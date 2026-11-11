@@ -191,7 +191,8 @@ impl core::fmt::Display for Document {
 /// Serialises as `{ "source": "..." }` and deserialises by calling [`parse`](crate::parse) on that
 /// source, so a deserialised tree is always a valid one (SPEC 8.6). The arena itself is not
 /// written. The tree is rebuilt by the reading build, so a reader compiled with different `shot`
-/// or `locked-scene-numbers` features than the writer gets that build's tree for the same source.
+/// or `locked-scene-numbers` features than the build that serialised it gets that build's tree for
+/// the same source.
 #[cfg(feature = "serde")]
 impl serde::Serialize for Document {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {

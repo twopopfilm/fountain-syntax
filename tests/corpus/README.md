@@ -11,13 +11,14 @@ file's source and licence in the table below.
 ## `twopop/`
 
 Three scripts from the Python importer's captured fixtures, used to prove that scheme 1 agrees with the importer
-(`HASH1-21`, `HASH1-22`, in `tests/hash_v1_digest.rs`; `SPEC.md` 11.7). Issue #15 will extend the corpus.
+(`HASH1-21`, `HASH1-22`, in `tests/hash_v1_digest.rs`; `SPEC.md` 11.7) and to prove that the writer gives each back
+byte for byte (`WR-1`, in `tests/writer.rs`; `SPEC.md` 10.4). Issue #15 will extend the corpus.
 
 | File | Source | Licence | Checked by |
 |---|---|---|---|
-| `twopop/edge_cases.fountain` | Twopop Studio, `tests/oracle/fountain/edge_cases.fountain`; authored in the Python oracle's capture script | MIT OR Apache-2.0, original to the Twopop project | `HASH1-21` |
-| `twopop/two_scene.fountain` | Twopop Studio, `tests/oracle/fountain/two_scene.fountain`; copied from the Python oracle's `tests/fixtures/two_scene.fountain` | MIT OR Apache-2.0, original to the Twopop project | `HASH1-22` |
-| `twopop/blue_rev2.fountain` | Twopop Studio, `tests/oracle/fountain/blue_rev2.fountain`; authored in the Python oracle's capture script | MIT OR Apache-2.0, original to the Twopop project | `HASH1-22` |
+| `twopop/edge_cases.fountain` | Twopop Studio, `tests/oracle/fountain/edge_cases.fountain`; authored in the Python oracle's capture script | MIT OR Apache-2.0, original to the Twopop project | `HASH1-21, WR-1` |
+| `twopop/two_scene.fountain` | Twopop Studio, `tests/oracle/fountain/two_scene.fountain`; copied from the Python oracle's `tests/fixtures/two_scene.fountain` | MIT OR Apache-2.0, original to the Twopop project | `HASH1-22, WR-1` |
+| `twopop/blue_rev2.fountain` | Twopop Studio, `tests/oracle/fountain/blue_rev2.fountain`; authored in the Python oracle's capture script | MIT OR Apache-2.0, original to the Twopop project | `HASH1-22, WR-1` |
 
 The expected `hash_v1` values in the tests are the importer's stored `text_sha` values, taken from Twopop Studio's
 `tests/oracle/parse/<name>.json`, field `.twopop.scenes[].text_sha`, where `<name>` is the file's name without
