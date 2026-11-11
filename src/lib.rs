@@ -11,9 +11,12 @@
 //! [`Document::screenplay`] builds the typed view, a [`Screenplay`]: the title page, the preamble
 //! and the scenes, as plain owned data. Its Dialogue blocks hold the cue, the dialogue lines, the
 //! parentheticals and the lines that interrupt them, and a caret cue is paired with its partner
-//! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7 without
-//! changing the tree or the view. [`Document::write`] (and `Display`) gives the source back byte for byte; the canonical writer, `canonical`, is still to come. The `serde` feature serialises a
-//! [`Document`] as its source and parses it again when it is read back, and serialises the view as
+//! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7
+//! without changing the tree or the view.
+//!
+//! [`Document::write`] (and `Display`) gives the source back byte for byte. [`canonical`] writes a
+//! view built in memory as Fountain that parses back to the same view, with a sigil only where one
+//! is needed. The `serde` feature serialises a [`Document`] as its source and parses it again when it is read back, and serialises the view as
 //! it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64
 //! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
 //! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
@@ -52,6 +55,7 @@ mod lines;
 mod parse;
 mod tree;
 mod view;
+mod write;
 
 pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
 pub use digest::{Digest, HASH_SCHEME_CURRENT, HashScheme, ParseDigestError};
@@ -63,6 +67,7 @@ pub use view::{
     Lyrics, Note, NoteConvention, PageBreak, Preamble, Run, Scene, SceneNumber, Screenplay,
     Section, Synopsis, Text, TitleEntry, TitlePage, Transition,
 };
+pub use write::canonical;
 
 /// Parses any text. It never fails and never panics.
 /// The returned tree reproduces `source` exactly.

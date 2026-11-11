@@ -3,9 +3,10 @@
 **A lossless, spec-complete parser and writer for [Fountain](https://fountain.io) screenplays, in Rust.**
 
 Fountain is the plain-text markup screenwriters use to write scripts in any text editor. `fountain-syntax` reads it
-into a syntax tree that keeps every byte of the source, with a typed screenplay view on top. A writer that puts it
-back out unchanged is planned. That makes it a foundation for editors, linters, converters and production tools
-that need to change one detail of a script without disturbing the rest.
+into a syntax tree that keeps every byte of the source, with a typed screenplay view on top. A writer puts it
+back out unchanged, and writes a screenplay built in memory as canonical Fountain. That makes it a foundation for
+editors, linters, converters and production tools that need to change one detail of a script without disturbing the
+rest.
 
 > **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
@@ -13,8 +14,10 @@ that need to change one detail of a script without disturbing the rest.
 > dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 diagnostic
 > codes `SPEC.md` §7 defines. With the `hash` feature, the scheme 2 hashes work: element, scene, document, title page
 > and source spans, and the importer-compatible scheme 1 hashes (`Scene::hash_v1`) reproduce the Twopop importer's
-> values on its captured scripts. The writer is still planned, and the crate is not on crates.io. Milestone F1, the
-> standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress.
+> values on its captured scripts. `Document::write` gives the source back byte for byte, and `canonical` writes a
+> view built in memory as Fountain that parses back to the same view. Targeted edits (`with_replaced`) are planned,
+> and the crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 and F3
+> are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
@@ -58,7 +61,7 @@ The text that scheme 1 hashes is available in every build, without the `hash` fe
 ## Goals
 
 - **Lossless.** A concrete syntax tree with a source span on every node. Its tokens reproduce the input
-  exactly, including whitespace, notes, boneyard and odd formatting. Writing it back byte-for-byte is planned.
+  exactly, including whitespace, notes, boneyard and odd formatting. `Document::write` gives it back byte for byte.
 - **Spec-complete.** Every Fountain element:
   - title page;
   - scene headings and scene numbers;
@@ -98,11 +101,12 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  both hash schemes are written, which is every HASH1 and HASH2 test. The rest are planned for F2 to F4.
+  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-6 and WR-8.
+  WR-7 comes with the edit API (planned). The rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
-  The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every
-  script must round-trip byte-for-byte.
+  The spec's examples and sample scripts will be used only with written permission. Every script in it must
+  round-trip byte-for-byte through the writer.
 - **Differential testing (planned, F4).** Parses will be compared with `screenplay-tools`, an established Fountain
   parser. Every difference will be classified as theirs-wrong, ours-wrong or a documented choice.
 
@@ -115,7 +119,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 |-----------|------------------------------------------------------------------------------------|-------------|
 | F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
 | F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
-| F3        | Writer with byte-for-byte round-trip; targeted edit API                            | Planned     |
+| F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
 | F4        | Conformance corpus and differential testing                                        | Planned     |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |
 

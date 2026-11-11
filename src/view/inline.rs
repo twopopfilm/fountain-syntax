@@ -364,7 +364,6 @@ pub(crate) fn typed(text: &Text) -> String {
 }
 
 /// The text as Fountain: like [`typed`], but Notes (`[[..]]`) and Boneyards (`/*..*/`) are written back.
-#[allow(dead_code)] // Nothing calls it until the writer in `write.rs` does.
 pub(crate) fn fountain(text: &Text) -> String {
     let mut out = String::new();
     push_typed(&text.runs, true, &mut out);

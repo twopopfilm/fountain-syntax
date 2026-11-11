@@ -1052,11 +1052,13 @@ impl core::fmt::Display for Document { /* the same as write() */ }
 pub fn canonical(screenplay: &Screenplay) -> String;
 ```
 
+`write`, `Display` and `canonical` exist (issue #12). `with_replaced` and the named edits land with issue #13.
+
 ### 10.1 Byte-for-byte round trip
 
-- `write` concatenates the tokens in order (invariant 1). It makes no decisions, so it cannot lose a byte: forced
-  headings, Transitions, dual-dialogue carets, scene numbers, odd whitespace, mixed line endings, a byte-order mark and
-  a missing final newline come back as they went in.
+- `write` returns the source, which the tokens reproduce in order (invariant 1). It makes no decisions, so it cannot
+  lose a byte: forced headings, Transitions, dual-dialogue carets, scene numbers, odd whitespace, mixed line endings,
+  a byte-order mark and a missing final newline come back as they went in.
 - **Why the source is kept and not regenerated.** The reference writer rebuilds text from its model, and
   [reference-parser.md](docs/research/reference-parser.md) records that it does not round-trip several constructs:
   forced headings (`.INT. X` comes back as an automatic heading, `.INTERCUT` stops being a heading, `. SPACE AFTER`
@@ -1079,15 +1081,40 @@ pub fn canonical(screenplay: &Screenplay) -> String;
 `canonical` writes a view that was built in memory, not parsed (its spans are `None`, which is why the view owns its
 text). It follows these rules:
 
-- `\n` line breaks, a final line break, no trailing whitespace, one blank line between elements.
-- Title page as `Key: value`, with continuation lines indented by four spaces, then one blank line.
-- A sigil only where it is needed for the text to re-parse as the same element: `.` for a heading with no prefix, `!`
-  for Action that would read as something else, `@` for a cue that is not uppercase, `>` for a Transition that does not
-  end in `TO:`, `~` for Lyrics, `>` and `<` for centered text.
+- `\n` line breaks, a final line break, one blank line between blocks, and no trailing whitespace except in an empty
+  Dialogue line, which is written as exactly two spaces: the only form that parses as one.
+- Title page as `Key: value`, with continuation lines indented by four spaces, then its stray lines, then one blank
+  line. An entry with no value, or an empty first value, is `Key:` followed by its continuation lines.
+- Each scene: its Sections, then the Synopses that the private scheme 1 scope counts as coming from before the heading
+  (11.7; none for a scene built in memory), the heading, its other Synopses and its elements. Writing those Synopses
+  before the heading keeps the scope, and so `hash_v1`, of a parsed scene.
+- A sigil only where it is needed for the text to re-parse as the same element. The writer decides by trial: it
+  parses the heading, Action, cue block or Transition without its sigil, after the text written so far while no title
+  page has been written and only Sections, Synopses, Notes and Boneyards come before it (so that a first line such as
+  `Time: 5pm` is not read as a title page), and otherwise after a neutral Action line. If the node there is not the
+  expected kind, it writes `.`, `!`, `@` or `>`. `~` for Lyrics and `>` and `<` for centered text are always written.
+- A later Action line whose first non-blank character is one of `!@.>~#=` gets a leading `!`, which the parser drops,
+  so that it does not start another element.
 - A scene number as `#n#` after the heading (`##n#` only with `locked-scene-numbers`).
 - Whole-line Notes and Boneyards as their own blocks; inline ones in place.
 
-The canonical text re-parses to a view equal to the one given, and writing it again changes nothing.
+The canonical text re-parses to a view equal to the one given, apart from spans and `forced` (WR-5: both record how
+a text was written, not what it says), and writing it again changes nothing. The function never panics, but these
+views don't round-trip:
+
+- a blank line inside Action;
+- `Escaped` of a character other than `*` and `_`;
+- a Plain run whose `*` or `_` would pair, or that ends in `\` before an `Escaped`, or that holds `[[` or `/*`;
+- adjacent emphasis spans (`*a**b*`);
+- `]]` in a Note or `*/` in a Boneyard;
+- an Action with interjections but only one line;
+- a Dialogue line that reads as a Parenthetical or starts with `!`, `@x`, `.x` or `>`;
+- a heading whose text ends in ` #n#`;
+- an `unpaired_caret` block right after another block;
+- Sections or Synopses at the end of the preamble or of a scene;
+- stray title lines placed among the entries;
+- an empty name or empty text where the element needs text;
+- a heading, Action, cue or Transition whose text starts with its own sigil (`.`, `!`, `@` or `>`).
 
 ### 10.4 Tests
 
