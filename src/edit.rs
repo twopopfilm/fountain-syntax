@@ -27,7 +27,9 @@ impl fmt::Display for EditError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             EditError::NotFound => "no element of the needed kind has this span",
-            EditError::Invalid => "the edited text would not parse as the intended element",
+            EditError::Invalid => {
+                "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+            }
         })
     }
 }

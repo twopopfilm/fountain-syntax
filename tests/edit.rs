@@ -409,3 +409,16 @@ fn wr_13_cue_refusals() {
     let edited = doc.with_cue_renamed(cue_span(&doc, 0), "JUNE").unwrap();
     assert_eq!(edited.source(), "INT. A\n\nJUNE[[n]]\nHi.\n");
 }
+
+#[test]
+fn edit_error_display_names_both_cases() {
+    assert_eq!(
+        EditError::NotFound.to_string(),
+        "no element of the needed kind has this span"
+    );
+    assert_eq!(
+        EditError::Invalid.to_string(),
+        "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+    );
+    let _: &dyn std::error::Error = &EditError::Invalid;
+}
