@@ -1501,7 +1501,7 @@ prints as the bare hexadecimal text that Studio stores.
    prefix**. Case is kept. The importer merges consecutive Action elements, so the lines are made by walking the hash
    scope in source order with a current **Action group**:
    - a **non-centered Action** joins the group. The consecutive Actions of a group give **one line**: their typed texts
-     joined with a space and collapsed. A blank line between two Action paragraphs, or inside one, makes no difference.
+     joined with a space and collapsed. A blank line between two Action lines makes no difference, except next to a Section, Page Break or Synopsis line (G1).
      An Action whose collapsed text is empty joins the group and adds nothing;
    - a whole-line **Note** or **Boneyard** (`Element::Note`, `Element::Boneyard`) is skipped and **does not end the
      group**;
@@ -1554,9 +1554,10 @@ The methods are those of 11.2: `Scene::normalized_text_v1` gives the text of rul
 - re-wrapping the lines of one Action paragraph or one run of Dialogue lines (a line break to a space or the reverse).
   Lyrics are the exception: each `~` line is its own hash line;
 - adding or removing extra blank lines between elements, as long as one remains;
-- **adding or removing a blank line between two Action paragraphs, or inside one.** Consecutive Actions merge into one
-  line (rule 4), so the paragraphs may be joined or split freely. A whole-line Note or Boneyard between them does not
-  separate them either;
+- **adding or removing a blank line between two Action lines**, whether they are in one paragraph or two. Consecutive
+  Actions merge into one line (rule 4), so the paragraphs may be joined or split freely. A whole-line Note or Boneyard
+  between them does not separate them either. The exception is a blank line next to a Section, Page Break or Synopsis
+  line, because it turns an interjection (inside the paragraph) into an element between paragraphs (see below);
 - adding, changing or removing a scene number, a Note, a Boneyard, or a Section or Page Break that is not between two
   Action paragraphs;
 - adding, changing or removing any cue extension (`(CONT'D)`, `(V.O.)`) or the dual-dialogue caret, or changing the case
@@ -1565,14 +1566,17 @@ The methods are those of 11.2: `Scene::normalized_text_v1` gives the text of rul
 This holds provided the edit does not move non-whitespace text to or from the start of a line in a way that changes how
 the line is read, and does not create or remove a blank line inside a Dialogue block or a Lyrics run (the blank lines
 of an Action paragraph are the exception above). A Section, a Page Break, a Synopsis, a centered Action or any other
-element that is not Action, and sits between two Action paragraphs, **splits them into two lines**: adding or removing
-it changes the hash. A Section or Page Break inside an Action paragraph (an interjection) does not.
+element that is not Action (a whole-line Note or Boneyard excepted) and sits between two Action paragraphs **splits
+them into two lines**: adding or removing it changes the hash. A Section or Page Break inside an Action paragraph (an
+interjection) does not. So `A`, `# Sec`, `B` on consecutive lines is one Action with an interjection, and the line is
+`A B`; blank lines around the Section make it Action, Section, Action, and the lines are `A` and `B`. The same holds for
+a Page Break, and for a Synopsis (which also moves the Synopsis line after the Action line).
 
 *Changes (G2).* The hash changes for any change of kept text: a different word, case in Action or Dialogue, an
 emphasis mark, a different cue name, a reordered line, an added or removed element of a kept kind, a different
 Synopsis. Moving a Synopsis across a heading moves it between the hash scopes of two scenes.
-Adding or removing a non-Action element between two Action paragraphs changes the hash, because it splits or joins the
-two lines.
+Adding or removing a non-Action element other than a whole-line Note or Boneyard between two Action paragraphs changes
+the hash, because it splits or joins the two lines.
 
 *Limits (G3).* Scheme 1 **does not see a change of element kind or of a cue's extension when the text is the same**,
 because the importer does not. Action made into a Transition with the same words, Dialogue made into Action, a cue
@@ -1581,7 +1585,8 @@ of Actions, because the merge then changes the lines (a Transition between two A
 line instead of three). It also does not hash the preamble. This is a known limit, accepted for compatibility with the
 importer, and scheme 2 removes it.
 
-*The boundary.* A blank line added inside an Action paragraph does **not** change the hash: the two paragraphs merge
+*The boundary.* A blank line added inside an Action paragraph does **not** change the hash (unless it is next to a
+Section, Page Break or Synopsis line, G1): the two paragraphs merge
 again (rule 4). A blank line added inside a run of Dialogue lines splits it into Dialogue and Action, which changes how
 the text is read, so it changes the hash. A blank line under a cue (`OFF-5b`) turns the cue into Action, and now the
 hash **always changes**: the cue line and the line after it were two lines, and as two Action paragraphs they merge into
@@ -1687,7 +1692,7 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
 | `HASH1-25` | The line shapes: a cue line is the name only, upper-cased (no extension, no caret); a centered Action line has no `>` or `<`; a Shot line (with the `shot` flag) has no `!!`; no line has a kind prefix; `#prop-coin` stays in the text. |
 | `HASH1-26` | `hash_v1` returns a `Digest` of scheme `V1` whose text form is the bare hexadecimal digits (no prefix), and it is the same on every call. The three `_v1` line methods exist and work in a build without `hash`. |
-| `HASH1-27` | The Action merge (11.7, rule 4). Consecutive non-centered Actions give one line, joined with a space and collapsed, across blank lines and across a whole-line Note or Boneyard, so adding or removing a blank line between two Action paragraphs, or inside one, does not change the hash. A centered Action, a Section, a Synopsis, a Page Break, a Transition, Lyrics, a Dialogue block or a Shot between two Actions ends the group, so the two Actions stay two lines and the Synopsis gives its own line. An Action with a Synopsis interjection gives its group line first, then the Synopsis line, and ends the group. |
+| `HASH1-27` | The Action merge (11.7, rule 4). Consecutive non-centered Actions give one line, joined with a space and collapsed, across blank lines and across a whole-line Note or Boneyard, so adding or removing a blank line between two Action lines does not change the hash, except next to a Section, Page Break or Synopsis line, where it turns an interjection into an element between paragraphs. A centered Action, a Section, a Synopsis, a Page Break, a Transition, Lyrics, a Dialogue block or a Shot between two Actions ends the group, so the two Actions stay two lines and the Synopsis gives its own line. An Action with a Synopsis interjection gives its group line first, then the Synopsis line, and ends the group. |
 
 Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash`.
 
