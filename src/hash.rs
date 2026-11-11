@@ -2,49 +2,12 @@
 
 use crate::digest::{Digest, HashScheme};
 use crate::tree::{Document, Node, Span};
+use crate::view::inline::typed;
 use crate::view::{
-    Cue, DialogueBlock, DialogueItem, Element, Preamble, Run, Scene, Screenplay, Synopsis, Text,
-    TitleEntry,
+    Cue, DialogueBlock, DialogueItem, Element, Preamble, Scene, Screenplay, Synopsis, TitleEntry,
 };
 use sha2::{Digest as _, Sha256};
 use unicode_normalization::UnicodeNormalization;
-
-/// The as-typed text: marks and escapes as written, Notes and Boneyards deleted (`SPEC.md` 11.3).
-pub(crate) fn typed(text: &Text) -> String {
-    let mut out = String::new();
-    push_typed(&text.runs, &mut out);
-    out
-}
-
-fn push_typed(runs: &[Run], out: &mut String) {
-    for run in runs {
-        match run {
-            Run::Plain(s) => out.push_str(s),
-            Run::Emphasis {
-                bold,
-                italic,
-                underline,
-                runs,
-            } => {
-                // The parser pairs only these four marks (`view/inline.rs`, `build`).
-                let mark = match (*bold, *italic, *underline) {
-                    (_, _, true) => "_",
-                    (true, true, _) => "***",
-                    (true, false, _) => "**",
-                    _ => "*",
-                };
-                out.push_str(mark);
-                push_typed(runs, out);
-                out.push_str(mark);
-            }
-            Run::Escaped(c) => {
-                out.push('\\');
-                out.push(*c);
-            }
-            Run::Note(_) | Run::Boneyard(_) => {}
-        }
-    }
-}
 
 /// NFC, collapse each run of Unicode `White_Space` to one space and trim; with `upper`, then the
 /// full upper-case mapping and NFC again. `char::is_whitespace` is the `White_Space` property.
@@ -367,6 +330,7 @@ impl Node<'_> {
 mod tests {
     use super::*;
     use crate::parse;
+    use crate::view::Text;
 
     /// The text of the first Action of `src`.
     fn action_text(src: &str) -> Text {

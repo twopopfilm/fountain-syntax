@@ -10,6 +10,7 @@ use crate::Span;
 mod build;
 pub(crate) mod inline;
 mod note;
+mod scheme1;
 
 /// A whole screenplay: the title page, the elements before the first scene, and the scenes.
 ///
@@ -183,8 +184,6 @@ impl Scene {
     /// The hash scope of scheme 1: the Synopses that count (after the `leading` ones), the
     /// elements, and the trailing Synopses. `leading` is clamped, so a scene edited after parsing
     /// cannot panic.
-    // Unused outside tests until the scheme 1 hash reads it (issue #35); remove this then.
-    #[cfg_attr(not(test), expect(dead_code))]
     pub(crate) fn hash_scope_v1(&self) -> (&[Synopsis], &[Element], &[Synopsis]) {
         let leading = self.hash_scope_v1.leading.min(self.synopses.len());
         (
