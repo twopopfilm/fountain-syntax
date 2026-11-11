@@ -140,8 +140,9 @@ pub fn find(doc: &Document, kind: NodeKind) -> Vec<Node<'_>> {
 /// contents), sorted by path.
 pub fn corpus_files() -> Vec<(String, String)> {
     fn walk(dir: &std::path::Path, rel: &str, out: &mut Vec<(String, String)>) {
-        for entry in std::fs::read_dir(dir).expect("read corpus dir") {
-            let entry = entry.expect("read corpus entry");
+        let fail = |e: std::io::Error| -> ! { panic!("{}: {e}", dir.display()) };
+        for entry in std::fs::read_dir(dir).unwrap_or_else(|e| fail(e)) {
+            let entry = entry.unwrap_or_else(|e| fail(e));
             let path = entry.path();
             let name = entry.file_name().to_string_lossy().into_owned();
             let rel = if rel.is_empty() {
@@ -152,7 +153,8 @@ pub fn corpus_files() -> Vec<(String, String)> {
             if path.is_dir() {
                 walk(&path, &rel, out);
             } else if rel.ends_with(".fountain") {
-                let text = std::fs::read_to_string(&path).expect("corpus file is UTF-8");
+                let text = std::fs::read_to_string(&path)
+                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
                 out.push((rel, text));
             }
         }

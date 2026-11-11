@@ -80,6 +80,12 @@ fn corpus_off_scripts_keep_their_first_block_ordinary() {
             "{path}: first visible element is {first:?}, not Action"
         );
         let block = first_block(&src);
+        // A sigil, or a note or boneyard opener, would hide or change the first block.
+        let lead = block.first().and_then(|l| l.trim_start().chars().next());
+        assert!(
+            lead.is_some_and(|c| !"!@~.>#=[/".contains(c)),
+            "{path}: first block starts with a sigil or an opener: {block:?}"
+        );
         assert!(
             block.iter().all(|l| !l.contains(':')),
             "{path}: first block has a colon: {block:?}"
@@ -109,7 +115,16 @@ fn rows_with_diagnostics(spec: &str) -> Vec<(String, String)> {
                 .rsplit('|')
                 .next()?
                 .trim();
-            let code = cell.strip_prefix('`')?.strip_suffix('`')?;
+            if cell == "none" {
+                return None;
+            }
+            let code = cell
+                .strip_prefix('`')
+                .and_then(|c| c.strip_suffix('`'))
+                .filter(|c| !c.is_empty() && !c.contains('`'))
+                .unwrap_or_else(|| {
+                    panic!("{id}: Diagnostic cell is not `none` or one backticked code: {cell:?}")
+                });
             Some((id, code.to_owned()))
         })
         .collect();
