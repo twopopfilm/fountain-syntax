@@ -18,8 +18,9 @@
 //! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
 //! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
 //! the preamble, the title page, the whole screenplay and the exact bytes of any span (for example
-//! `Screenplay::hash`). Scheme 1, the importer-compatible scheme, is planned
-//! (issue #35). The design is in `SPEC.md`.
+//! `Screenplay::hash`). Scheme 1, the importer-compatible scheme, hashes scenes only: `Scene::hash_v1`
+//! with the `hash` feature, and in every build the line methods `Scene::normalized_text_v1`,
+//! `heading_line_v1` and `element_lines_v1` that give the text it hashes. The design is in `SPEC.md`.
 //!
 //! ```
 //! use fountain_syntax::{Child, NodeKind, parse};

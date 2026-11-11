@@ -5,8 +5,8 @@ use core::str::FromStr;
 
 /// The hash scheme a [`Digest`] was made by.
 ///
-/// Scheme 2 is the default; scheme 1 is the frozen compatibility scheme. No method of this crate
-/// makes a `V1` digest yet (issue #35), but parsing and printing one is supported.
+/// Scheme 2 is the default; scheme 1 is the frozen compatibility scheme. `Scene::hash_v1` (with the
+/// `hash` feature) makes a `V1` digest; parsing and printing one is supported in every build.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum HashScheme {
@@ -41,6 +41,7 @@ pub const HASH_SCHEME_CURRENT: u32 = 2;
 #[cfg_attr(feature = "hash", doc = "```")]
 /// let s = fountain_syntax::parse("INT. X\n").screenplay();
 /// let _ = s.hash();
+/// let _ = s.scenes[0].hash_v1();
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Digest {

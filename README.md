@@ -12,8 +12,9 @@ that need to change one detail of a script without disturbing the rest.
 > `Document::screenplay()` builds the typed view: the title page, the scenes and their elements, including
 > dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 diagnostic
 > codes `SPEC.md` §7 defines. With the `hash` feature, the scheme 2 hashes work: element, scene, document, title page
-> and source spans. The importer-compatible scheme 1 hashes (issue #35) and the writer are still planned, and the
-> crate is not on crates.io. Milestone F1, the standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress.
+> and source spans, and the importer-compatible scheme 1 hashes (`Scene::hash_v1`) reproduce the Twopop importer's
+> values on its captured scripts. The writer is still planned, and the crate is not on crates.io. Milestone F1, the
+> standards study, is done ([`SPEC.md`](SPEC.md)); F2 is in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
@@ -34,7 +35,7 @@ assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 
 The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions.
 The `serde` feature exists too: a `Document` serialises as its source text and is parsed again when it is read back.
-The `hash` feature adds the scheme 2 hashes (and `sha2` and `unicode-normalization`):
+The `hash` feature adds the scheme 2 hashes and the scheme 1 hash of a scene (and `sha2` and `unicode-normalization`):
 
 ```rust
 // needs the `hash` feature
@@ -47,7 +48,12 @@ assert!(screenplay.hash().to_string().starts_with("fs2:"));
 // A scene has one hash per element, to see which element changed.
 assert_eq!(screenplay.scenes.len(), 1);
 assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
+// The importer-compatible scheme 1 hash of a scene is the bare 64 digits.
+assert_eq!(screenplay.scenes[0].hash_v1().to_string().len(), 64);
 ```
+
+The text that scheme 1 hashes is available in every build, without the `hash` feature: `Scene::normalized_text_v1`,
+`heading_line_v1` and `element_lines_v1`.
 
 ## Goals
 
@@ -76,8 +82,8 @@ assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
 - **Targeted edits (planned).** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
 - **Draft comparison.** With the `hash` feature, self-describing scheme 2 hashes at three levels (element, scene and
   document) and over the exact bytes of any span, so tools can match scenes across drafts, tell real changes from
-  whitespace and see which element changed. A second scheme, compatible with the Twopop importer, is planned (issue
-  #35), so hashes it stored can be checked and migrated.
+  whitespace and see which element changed. A second scheme, compatible with the Twopop importer (`Scene::hash_v1`,
+  scenes only), lets hashes it stored be checked and migrated.
 - **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
   optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features exist. An optional
   WASM build for a browser playground is being considered.
@@ -92,8 +98,7 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  the scheme 2 hashes are written, except HASH2-46 and the scheme 1 parts of HASH2-39 and HASH2-47, which wait for
-  scheme 1 (#35). The rest are planned for F2 to F4.
+  both hash schemes are written, which is every HASH1 and HASH2 test. The rest are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Once the writer exists, every
@@ -109,7 +114,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 | Milestone | Scope                                                                              | State       |
 |-----------|------------------------------------------------------------------------------------|-------------|
 | F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
-| F2        | Lossless parser, typed view, diagnostics, hashes (scheme 2 done, scheme 1 planned) | In progress |
+| F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API                            | Planned     |
 | F4        | Conformance corpus and differential testing                                        | Planned     |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |

@@ -2,49 +2,12 @@
 
 use crate::digest::{Digest, HashScheme};
 use crate::tree::{Document, Node, Span};
+use crate::view::inline::typed;
 use crate::view::{
-    Cue, DialogueBlock, DialogueItem, Element, Preamble, Run, Scene, Screenplay, Synopsis, Text,
-    TitleEntry,
+    Cue, DialogueBlock, DialogueItem, Element, Preamble, Scene, Screenplay, Synopsis, TitleEntry,
 };
 use sha2::{Digest as _, Sha256};
 use unicode_normalization::UnicodeNormalization;
-
-/// The as-typed text: marks and escapes as written, Notes and Boneyards deleted (`SPEC.md` 11.3).
-pub(crate) fn typed(text: &Text) -> String {
-    let mut out = String::new();
-    push_typed(&text.runs, &mut out);
-    out
-}
-
-fn push_typed(runs: &[Run], out: &mut String) {
-    for run in runs {
-        match run {
-            Run::Plain(s) => out.push_str(s),
-            Run::Emphasis {
-                bold,
-                italic,
-                underline,
-                runs,
-            } => {
-                // The parser pairs only these four marks (`view/inline.rs`, `build`).
-                let mark = match (*bold, *italic, *underline) {
-                    (_, _, true) => "_",
-                    (true, true, _) => "***",
-                    (true, false, _) => "**",
-                    _ => "*",
-                };
-                out.push_str(mark);
-                push_typed(runs, out);
-                out.push_str(mark);
-            }
-            Run::Escaped(c) => {
-                out.push('\\');
-                out.push(*c);
-            }
-            Run::Note(_) | Run::Boneyard(_) => {}
-        }
-    }
-}
 
 /// NFC, collapse each run of Unicode `White_Space` to one space and trim; with `upper`, then the
 /// full upper-case mapping and NFC again. `char::is_whitespace` is the `White_Space` property.
@@ -281,6 +244,22 @@ impl Scene {
         hash_of("scene", &[&p.0, &counted(&self.element_hashes())])
     }
 
+    /// The scheme 1 scene hash: SHA-256 of the UTF-8 bytes of [`Scene::normalized_text_v1`], as a
+    /// [`Digest`] of scheme [`HashScheme::V1`].
+    ///
+    /// It is the importer's `text_sha`, kept so that an application can compare against values it
+    /// stored before scheme 2. Scheme 1 is frozen: this value never changes for the same scene
+    /// text. Its text form is the bare 64 lowercase hexadecimal digits, with no prefix, and it
+    /// never equals a scheme 2 digest, even with equal bytes. It needs the `hash` feature (the
+    /// line methods it is built on do not). New code should use [`Scene::hash`]; see `SPEC.md`
+    /// 11.7 for the rules and 11.8 for migrating stored values.
+    pub fn hash_v1(&self) -> Digest {
+        Digest {
+            scheme: HashScheme::V1,
+            bytes: Sha256::digest(self.normalized_text_v1().as_bytes()).into(),
+        }
+    }
+
     /// The source-facet hash of the scene's span in `document`, or `None` for a scene built in
     /// memory, which has no span. `document` must be the one the scene was read from.
     ///
@@ -367,6 +346,7 @@ impl Node<'_> {
 mod tests {
     use super::*;
     use crate::parse;
+    use crate::view::Text;
 
     /// The text of the first Action of `src`.
     fn action_text(src: &str) -> Text {

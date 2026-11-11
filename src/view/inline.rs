@@ -356,6 +356,43 @@ fn push_str(runs: &mut Vec<Run>, s: &str) {
     }
 }
 
+/// The as-typed text: marks and escapes as written, Notes and Boneyards deleted (`SPEC.md` 11.3, 11.7).
+pub(crate) fn typed(text: &Text) -> String {
+    let mut out = String::new();
+    push_typed(&text.runs, &mut out);
+    out
+}
+
+fn push_typed(runs: &[Run], out: &mut String) {
+    for run in runs {
+        match run {
+            Run::Plain(s) => out.push_str(s),
+            Run::Emphasis {
+                bold,
+                italic,
+                underline,
+                runs,
+            } => {
+                // The parser pairs only these four marks (`pair` and `build` in this file).
+                let mark = match (*bold, *italic, *underline) {
+                    (_, _, true) => "_",
+                    (true, true, _) => "***",
+                    (true, false, _) => "**",
+                    _ => "*",
+                };
+                out.push_str(mark);
+                push_typed(runs, out);
+                out.push_str(mark);
+            }
+            Run::Escaped(c) => {
+                out.push('\\');
+                out.push(*c);
+            }
+            Run::Note(_) | Run::Boneyard(_) => {}
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

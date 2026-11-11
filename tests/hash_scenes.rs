@@ -1018,23 +1018,17 @@ fn degenerate_input_hashes() {
 
     // A scene built in memory, with every span `None`, hashes like the parsed scene.
     let parsed = scene("INT. KITCHEN - DAY\n\nMara fills the kettle.\n");
-    let built = Scene {
-        heading: Heading {
-            text: plain("INT. KITCHEN - DAY"),
-            forced: false,
-            span: None,
-        },
-        number: None,
-        sections: Vec::new(),
-        synopses: Vec::new(),
-        elements: vec![Element::Action(Action {
-            text: plain("Mara fills the kettle."),
-            centered: false,
-            forced: false,
-            interjections: Vec::new(),
-        })],
+    let mut built = Scene::new(Heading {
+        text: plain("INT. KITCHEN - DAY"),
+        forced: false,
         span: None,
-    };
+    });
+    built.elements = vec![Element::Action(Action {
+        text: plain("Mara fills the kettle."),
+        centered: false,
+        forced: false,
+        interjections: Vec::new(),
+    })];
     assert_eq!(built.hash(), parsed.hash());
     assert_eq!(built.element_hashes(), parsed.element_hashes());
     assert_eq!(built.source_hash(&parse("")), None);

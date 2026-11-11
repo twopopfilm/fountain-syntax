@@ -7,9 +7,9 @@
 
 use super::inline::{self, Piece, Trim};
 use super::{
-    Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension, Heading,
-    Lyrics, Note, PageBreak, Preamble, Scene, SceneNumber, Screenplay, Section, Synopsis, Text,
-    TitleEntry, TitlePage, Transition,
+    Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension,
+    HashScopeV1, Heading, Lyrics, Note, PageBreak, Preamble, Scene, SceneNumber, Screenplay,
+    Section, Synopsis, Text, TitleEntry, TitlePage, Transition,
 };
 use crate::{Child, Document, Node, NodeKind, Span, TokenKind};
 
@@ -661,10 +661,22 @@ struct OpenScene {
     /// The Sections and Synopses directly before the heading.
     before: Vec<(Element, Span)>,
     body: Vec<(Element, Span)>,
+    /// The Synopses directly before the next heading, for the hash scope (`SPEC.md` 11.7).
+    trailing: Vec<Synopsis>,
 }
 
 fn is_outline(e: &Element) -> bool {
     matches!(e, Element::Section(_) | Element::Synopsis(_))
+}
+
+/// The Synopses of a run of Sections and Synopses, in source order.
+fn synopses(run: &[(Element, Span)]) -> Vec<Synopsis> {
+    run.iter()
+        .filter_map(|(e, _)| match e {
+            Element::Synopsis(s) => Some(s.clone()),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Sort the items into the preamble and the scenes.
@@ -687,13 +699,18 @@ fn group(items: Vec<Item>) -> (Preamble, Vec<Scene>) {
                     .rposition(|(e, _)| !is_outline(e))
                     .map_or(0, |p| p + 1);
                 let before = sink.split_off(k);
-                scenes.extend(open.take().map(OpenScene::finish));
+                let mut closing = open.take();
+                if let Some(s) = &mut closing {
+                    s.trailing = synopses(&before);
+                }
+                scenes.extend(closing.map(OpenScene::finish));
                 open = Some(OpenScene {
                     heading,
                     number,
                     span,
                     before,
                     body: Vec::new(),
+                    trailing: Vec::new(),
                 });
             }
         }
@@ -707,6 +724,11 @@ fn group(items: Vec<Item>) -> (Preamble, Vec<Scene>) {
 
 impl OpenScene {
     fn finish(self) -> Scene {
+        let before_count = self
+            .before
+            .iter()
+            .filter(|(e, _)| matches!(e, Element::Synopsis(_)))
+            .count();
         let start = self
             .before
             .first()
@@ -740,6 +762,10 @@ impl OpenScene {
             synopses,
             elements,
             span: Some(Span::new(start, end)),
+            hash_scope_v1: HashScopeV1 {
+                leading: before_count,
+                trailing: self.trailing,
+            },
         }
     }
 }
