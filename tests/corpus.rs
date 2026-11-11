@@ -1,0 +1,130 @@
+//! The conformance corpus (`SPEC.md` §12): every file has a recorded source and licence, each `off/`
+//! script keeps its first block ordinary, and each script fires the diagnostic its `OFF` row names.
+
+mod common;
+
+use common::corpus_files;
+use fountain_syntax::{Element, parse};
+
+/// The `off/` scripts whose case is the first block, so they cannot start with an ordinary one.
+const START_OF_DOCUMENT: [&str; 8] = [
+    "off/off-6e.fountain",
+    "off/off-15f.fountain",
+    "off/off-17a.fountain",
+    "off/off-17b.fountain",
+    "off/off-17c.fountain",
+    "off/off-17d.fountain",
+    "off/off-17e.fountain",
+    "off/off-17f.fountain",
+];
+
+const OFF_GLOB: &str = "off/off-*.fountain";
+
+fn read(name: &str) -> String {
+    std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(name))
+        .unwrap_or_else(|e| panic!("read {name}: {e}"))
+}
+
+#[test]
+fn corpus_every_file_has_source_and_licence() {
+    let readme = read("tests/corpus/README.md");
+    let listed: Vec<&str> = readme
+        .lines()
+        .filter(|l| l.starts_with('|'))
+        .filter_map(|l| l.split('|').nth(1))
+        .map(|c| c.trim().trim_matches('`'))
+        .collect();
+    for (path, _) in corpus_files() {
+        let by_glob = path.starts_with("off/off-") && path.ends_with(".fountain");
+        assert!(
+            listed.contains(&path.as_str()) || (by_glob && listed.contains(&OFF_GLOB)),
+            "{path} has no source and licence row in tests/corpus/README.md"
+        );
+    }
+}
+
+/// The lines of the first block: after any leading blank lines (and a BOM), up to the next blank line.
+fn first_block(src: &str) -> Vec<&str> {
+    src.trim_start_matches('\u{FEFF}')
+        .split(['\r', '\n'])
+        .skip_while(|l| l.trim().is_empty())
+        .take_while(|l| !l.trim().is_empty())
+        .collect()
+}
+
+#[test]
+fn corpus_off_scripts_keep_their_first_block_ordinary() {
+    let scripts = corpus_files()
+        .into_iter()
+        .filter(|(p, _)| p.starts_with("off/") && !START_OF_DOCUMENT.contains(&p.as_str()));
+    for (path, src) in scripts {
+        let sp = parse(&src).screenplay();
+        assert!(
+            sp.title_page.is_none(),
+            "{path}: first block is a title page"
+        );
+        let first = sp
+            .preamble
+            .elements
+            .iter()
+            .find(|e| !matches!(e, Element::Note(_) | Element::Boneyard(_)));
+        assert!(
+            matches!(first, Some(Element::Action(_))),
+            "{path}: first visible element is {first:?}, not Action"
+        );
+        let block = first_block(&src);
+        assert!(
+            block.iter().all(|l| !l.contains(':')),
+            "{path}: first block has a colon: {block:?}"
+        );
+    }
+}
+
+/// (lowercase row ID, diagnostic code) for each §6.2 row whose Diagnostic cell names a code.
+fn rows_with_diagnostics(spec: &str) -> Vec<(String, String)> {
+    // A row line is `| OFF-<digits><letter> | ...`; the §6.3 lines read `| OFF-7: ...`.
+    let row_id = |l: &str| -> Option<String> {
+        let id = l.strip_prefix("| ")?.split(' ').next()?;
+        let rest = id.strip_prefix("OFF-")?;
+        let digits = rest.strip_suffix(|c: char| c.is_ascii_lowercase())?;
+        let ok = !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit());
+        ok.then(|| id.to_lowercase())
+    };
+    let rows: Vec<(String, String)> = spec
+        .lines()
+        .filter_map(|l| {
+            let id = row_id(l)?;
+            let cell = l
+                .trim_end()
+                .trim_end_matches('|')
+                .rsplit('|')
+                .next()?
+                .trim();
+            let code = cell.strip_prefix('`')?.strip_suffix('`')?;
+            Some((id, code.to_owned()))
+        })
+        .collect();
+    assert!(
+        !rows.is_empty(),
+        "no OFF rows with a diagnostic found in SPEC.md"
+    );
+    rows
+}
+
+#[test]
+fn corpus_off_scripts_fire_their_row_diagnostic() {
+    let files = corpus_files();
+    for (id, code) in rows_with_diagnostics(&read("SPEC.md")) {
+        let name = format!("off/{id}.fountain");
+        // Test 4 requires every row to have a script; until then a missing one is skipped.
+        let Some((_, src)) = files.iter().find(|(p, _)| *p == name) else {
+            continue;
+        };
+        let doc = parse(src);
+        let codes: Vec<&str> = doc.diagnostics().iter().map(|d| d.code.as_str()).collect();
+        assert!(
+            codes.contains(&code.as_str()),
+            "{name}: expected diagnostic {code}, got {codes:?}"
+        );
+    }
+}
