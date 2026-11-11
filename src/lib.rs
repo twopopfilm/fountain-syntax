@@ -61,6 +61,7 @@ mod write;
 
 pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
 pub use digest::{Digest, HASH_SCHEME_CURRENT, HashScheme, ParseDigestError};
+pub use edit::EditError;
 pub use tree::{Child, Document, Node, NodeKind, Span, Token, TokenKind};
 #[cfg(feature = "shot")]
 pub use view::Shot;
