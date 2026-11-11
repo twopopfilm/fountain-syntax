@@ -7,7 +7,7 @@ use common::parse_checked;
 use fountain_syntax::{
     Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension, Heading,
     Lyrics, Note, PageBreak, Preamble, Run, Scene, SceneNumber, Screenplay, Section, Synopsis,
-    Text, TitleEntry, TitlePage, Transition, canonical, parse,
+    Text, TitleEntry, TitlePage, Transition, canonical,
 };
 
 fn assert_round_trips(src: &str) {
@@ -288,8 +288,48 @@ fn wr_5_canonical_reparses_to_an_equal_view() {
 fn wr_6_canonical_is_stable() {
     for view in views() {
         let c = canonical(&view);
-        assert_eq!(canonical(&parse(&c).screenplay()), c);
+        assert_eq!(canonical(&parse_checked(&c).screenplay()), c);
     }
+}
+
+#[test]
+fn wr_5_an_empty_title_page_is_left_out() {
+    let view = Screenplay {
+        title_page: Some(TitlePage {
+            entries: Vec::new(),
+            stray_lines: Vec::new(),
+            span: None,
+        }),
+        preamble: Preamble::default(),
+        scenes: vec![Scene::new(heading("INT. A"))],
+    };
+    let c = canonical(&view);
+    assert_eq!(c, "INT. A\n");
+    // The re-parse has no title page, so only the text is compared (WR-6).
+    let back = parse_checked(&c).screenplay();
+    assert!(back.title_page.is_none());
+    assert_eq!(canonical(&back), c);
+}
+
+#[cfg(feature = "locked-scene-numbers")]
+#[test]
+fn wr_8_a_locked_scene_number_is_written_with_two_marks() {
+    let mut scene = Scene::new(heading("INT. A"));
+    scene.number = Some(SceneNumber {
+        text: "12A".to_owned(),
+        locked: true,
+        span: None,
+    });
+    let c = canonical(&Screenplay {
+        title_page: None,
+        preamble: Preamble::default(),
+        scenes: vec![scene],
+    });
+    assert_eq!(c, "INT. A ##12A#\n");
+    let back = parse_checked(&c).screenplay();
+    let n = back.scenes[0].number.as_ref().expect("the number survives");
+    assert_eq!((n.text.as_str(), n.locked), ("12A", true));
+    assert_eq!(back.scenes[0].heading.text.plain(), "INT. A");
 }
 
 #[test]

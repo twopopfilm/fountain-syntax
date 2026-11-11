@@ -28,14 +28,30 @@ use crate::{
 /// - adjacent emphasis spans (`*a**b*`);
 /// - `]]` in a Note or `*/` in a Boneyard;
 /// - an Action with interjections but only one line;
-/// - a Dialogue line that reads as a Parenthetical or starts with `!`, `@x`, `.x` or `>`;
+/// - a Dialogue line that reads as a Parenthetical or starts with `!`, `@x`, `.x`, `>`, `~`, `#`,
+///   `=` or `===` (the last four read as Lyrics, a Section, a Synopsis or a Page Break);
 /// - a heading whose text ends in ` #n#`;
 /// - an `unpaired_caret` block right after another block;
 /// - Sections or Synopses at the end of the preamble or of a scene;
-/// - stray title lines placed among the entries;
+/// - stray title lines placed among the entries, or shaped `key: value` (it re-parses as an entry);
 /// - an empty name or empty text where the element needs text;
-/// - a heading, Action, cue or Transition whose text starts with its own sigil (`.`, `!`, `@`
-///   or `>`): it parses as the same element without that character.
+/// - a heading, Action, cue or Transition whose text starts with its own sigil (`.`, `!`, `@` or
+///   `>`): it parses as the same element without that character;
+/// - an empty title page, a title page of stray lines only, or a single title entry with no value:
+///   an empty `TitlePage` is left out, so it re-parses as no title page, and the other two re-parse
+///   as Action;
+/// - a title entry whose first value is empty but which has later values: `values: ["", "A"]` is
+///   written `Key:` followed by the continuation line and re-parses as `["A"]`, which is not
+///   stable;
+/// - a line break in text that holds one line (a Dialogue line, a title value, a heading, a cue,
+///   centered Action): it re-parses as several lines or elements, and for centered text the output
+///   is not stable;
+/// - an empty or split `Plain` run (`Run::Plain("")`, or two adjacent `Plain` runs): the parser
+///   merges and drops them, so the view differs; empty text is `runs: []`;
+/// - emphasis with both `bold` and `underline`, which is written `_x_` and loses the bold; a
+///   `Section` with `depth: 0`, for which no `#` is written;
+/// - an Interjection that has no one-line form, and any `Element` variant this version does not
+///   know (the enum is `#[non_exhaustive]`): they are left out of the output without notice.
 ///
 /// ```
 /// use fountain_syntax::{Heading, Run, Scene, Screenplay, Text, canonical, parse};
@@ -59,12 +75,15 @@ use crate::{
 /// assert_eq!(canonical(&back), text);
 /// ```
 pub fn canonical(screenplay: &Screenplay) -> String {
+    // A title page with no text is left out: a blank block would only add blank lines.
+    let page = screenplay.title_page.as_ref().map(title_page);
+    let page = page.filter(|p| !p.is_empty());
     let mut w = Writer {
         out: String::new(),
-        open: screenplay.title_page.is_none(),
+        open: page.is_none(),
     };
-    if let Some(page) = &screenplay.title_page {
-        w.block(&title_page(page));
+    if let Some(page) = &page {
+        w.block(page);
     }
     for e in &screenplay.preamble.elements {
         w.element(e);

@@ -1084,7 +1084,7 @@ text). It follows these rules:
 - `\n` line breaks, a final line break, one blank line between blocks, and no trailing whitespace except in an empty
   Dialogue line, which is written as exactly two spaces: the only form that parses as one.
 - Title page as `Key: value`, with continuation lines indented by four spaces, then its stray lines, then one blank
-  line. An entry with no value, or an empty first value, is `Key:` followed by its continuation lines.
+  line. An entry with no values is `Key:`.
 - Each scene: its Sections, then the Synopses that the private scheme 1 scope counts as coming from before the heading
   (11.7; none for a scene built in memory), the heading, its other Synopses and its elements. Writing those Synopses
   before the heading keeps the scope, and so `hash_v1`, of a parsed scene.
@@ -1108,14 +1108,27 @@ views don't round-trip:
 - adjacent emphasis spans (`*a**b*`);
 - `]]` in a Note or `*/` in a Boneyard;
 - an Action with interjections but only one line;
-- a Dialogue line that reads as a Parenthetical or starts with `!`, `@x`, `.x` or `>`;
+- a Dialogue line that reads as a Parenthetical or starts with `!`, `@x`, `.x`, `>`, `~`, `#`, `=` or `===` (the last
+  four read as Lyrics, a Section, a Synopsis or a Page Break);
 - a heading whose text ends in ` #n#`;
 - an `unpaired_caret` block right after another block;
 - Sections or Synopses at the end of the preamble or of a scene;
-- stray title lines placed among the entries;
+- stray title lines placed among the entries, or shaped `key: value` (it re-parses as an entry);
 - an empty name or empty text where the element needs text;
-- a heading, Action, cue or Transition whose text starts with its own sigil (`.`, `!`, `@`
-  or `>`): it parses as the same element without that character.
+- a heading, Action, cue or Transition whose text starts with its own sigil (`.`, `!`, `@` or `>`): it parses as the
+  same element without that character;
+- an empty title page, a title page of stray lines only, or a single title entry with no value: an empty `TitlePage`
+  is left out, so it re-parses as no title page, and the other two re-parse as Action;
+- a title entry whose first value is empty but which has later values: `values: ["", "A"]` is written `Key:` followed
+  by the continuation line and re-parses as `["A"]`, which is not stable;
+- a line break in text that holds one line (a Dialogue line, a title value, a heading, a cue, centered Action): it
+  re-parses as several lines or elements, and for centered text the output is not stable;
+- an empty or split `Plain` run (`Run::Plain("")`, or two adjacent `Plain` runs): the parser merges and drops them, so
+  the view differs; empty text is `runs: []`;
+- emphasis with both `bold` and `underline`, which is written `_x_` and loses the bold; a `Section` with `depth: 0`,
+  for which no `#` is written;
+- an Interjection that has no one-line form, and any `Element` variant this version does not know (the enum is
+  `#[non_exhaustive]`): they are left out of the output without notice.
 
 ### 10.4 Tests
 
@@ -1783,9 +1796,9 @@ Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash
 ## 12. Test IDs
 
 Every decision, element, extension, diagnostic, hash rule and writer property in this file has an ID. **Each ID names a
-test**, written in F2 to F4 (README.md says which exist): the parser, view, diagnostics and scheme 2 hash tests in F2 (issues #7 to #10), the
-scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and the conformance corpus in F4 (#15, #16). The test
-carries the ID in its name, so `grep` finds the test for any decision.
+test**, written in F2 to F4 (README.md says which exist): the parser, view, diagnostics and scheme 2 hash tests in F2
+(issues #7 to #10), the scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and the conformance corpus in
+F4 (#15, #16). The test carries the ID in its name, so `grep` finds the test for any decision.
 
 | Scheme | Meaning | Where defined |
 |---|---|---|
