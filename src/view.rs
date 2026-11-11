@@ -1,6 +1,6 @@
-//! The typed screenplay view (SPEC 9): plain owned data with public fields, so a value can be built
-//! in memory (with [`Scene::new`] for a scene), serialised and read back without a
-//! [`Document`](crate::Document).
+//! The typed screenplay view (SPEC 9): plain owned data, so a value can be built in memory,
+//! serialised and read back without a [`Document`](crate::Document). Every field is public except
+//! `Scene`'s private scheme 1 hash scope, so build a `Scene` with [`Scene::new`].
 //!
 //! A `span` is an optional back-reference to the source: `None` for a value that was built and not
 //! parsed.
@@ -15,9 +15,10 @@ mod scheme1;
 /// A whole screenplay: the title page, the elements before the first scene, and the scenes.
 ///
 /// With the `serde` feature, a view reads back from JSON written by a build with other features,
-/// with two limits. A `SceneNumber` without a `locked` field reads as not locked. Data that holds
+/// with three limits. A `SceneNumber` without a `locked` field reads as not locked. Data that holds
 /// an `Element::Shot` cannot be read by a build without the `shot` feature: the variant is unknown
-/// to it, so reading fails with an error.
+/// to it, so reading fails with an error. A `Scene` without a `hash_scope_v1` field reads with the
+/// default scope (see [`Scene`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Screenplay {
@@ -122,6 +123,11 @@ impl TitleEntry {
 ///
 /// The struct has a private field (what hash scheme 1 counts as the scene, `SPEC.md` 11.7), so
 /// outside the crate a scene is built with [`Scene::new`] and then its public fields are set.
+///
+/// With the `serde` feature, JSON that lacks `hash_scope_v1` (written before the field existed, or
+/// by an in-memory scene) reads with the default, empty scope, so `hash_v1` of a scene that has
+/// leading or trailing Synopses can differ from the parsed scene's. The field is skipped when it is
+/// the default, and the derived `PartialEq` includes it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Scene {

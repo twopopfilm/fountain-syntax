@@ -373,7 +373,7 @@ fn push_typed(runs: &[Run], out: &mut String) {
                 underline,
                 runs,
             } => {
-                // The parser pairs only these four marks (`view/inline.rs`, `build`).
+                // The parser pairs only these four marks (`pair` and `build` in this file).
                 let mark = match (*bold, *italic, *underline) {
                     (_, _, true) => "_",
                     (true, true, _) => "***",

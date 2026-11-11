@@ -41,6 +41,7 @@ pub const HASH_SCHEME_CURRENT: u32 = 2;
 #[cfg_attr(feature = "hash", doc = "```")]
 /// let s = fountain_syntax::parse("INT. X\n").screenplay();
 /// let _ = s.hash();
+/// let _ = s.scenes[0].hash_v1();
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Digest {

@@ -862,7 +862,7 @@ a broken tree. The exact encoding of the arena is left to F2.
 ## 9. Typed view API sketch
 
 Built on demand from the tree by `Document::screenplay()`. All types are plain owned data: they hold their own text, so
-a view can be built in memory (issue #12), serialised and read back (issue #8) without the document. A `span` is an
+a view can be built in memory (issue #12; a `Scene` with `Scene::new`), serialised and read back (issue #8) without the document. A `span` is an
 optional back-reference to the source, `None` for a value that was built and not parsed.
 
 ```rust
@@ -1024,7 +1024,7 @@ How the awkward pieces appear:
   hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
   to the earlier scene for `Scene::hash_v1` (11.7).
 - **The hash scope field is serialised.** With the `serde` feature the private scheme 1 hash scope of `Scene` is
-  serialised with the scene, so that a view read back hashes as it did. When the field is absent from the input it reads
+  serialised with the scene and is omitted when empty, so that a view read back hashes as it did. When the field is absent from the input it reads
   as empty, which gives the scope of a scene built in memory (11.7). The derived `PartialEq` includes it.
 - **Hashes.** The hash methods of the types above are listed once, in 11.2, with their signatures:
   `Element::hashes`, `Scene::{hash, element_hashes, source_hash, hash_v1}`, `Preamble::hash` and
@@ -1497,7 +1497,8 @@ prints as the bare hexadecimal text that Studio stores.
    Unicode normal forms, and not case, apart from rules 3 and 5.
 3. **Heading line.** The heading's visible text, collapsed, then upper-cased. It leaves out the forcing `.`, the scene
    number (locked or not) and hidden spans.
-4. **Element lines.** Each kept element gives one line, which is that element's text only, collapsed, **with no kind
+4. **Element lines.** Each kept element gives one line, except that consecutive non-centered Actions share one (below)
+   and a Dialogue block gives several lines. A line is that element's text only, collapsed, **with no kind
    prefix**. Case is kept. The importer merges consecutive Action elements, so the lines are made by walking the hash
    scope in source order with a current **Action group**:
    - a **non-centered Action** joins the group. The consecutive Actions of a group give **one line**: their typed texts
@@ -1629,7 +1630,7 @@ The library makes the migration possible; the application runs it. An applicatio
 Studio's `text_sha`) migrates **lazily**, a scene at a time, as it meets each stored value. Twopop Studio keeps scheme 1
 while its Python oracle exists, so that parity can be proven, and migrates after. Twopop Studio tracks its own
 migration as an issue in its repository (`twopopfilm/twopop-studio#252`, "M4.11 Migrate scene hashes to fountain-syntax
-scheme 2"), which waits for the parity gate and for this crate's issues #10 and #35.
+scheme 2"), which waits for the parity gate; this crate's issues #10 and #35 delivered the hashes.
 
 **Rules for any application:**
 
@@ -1689,7 +1690,7 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-18` | A scene with only a heading has the text `HEADING` plus a newline. Two scenes with equal text have equal hashes. |
 | `HASH1-19` | Dual dialogue hashes the left block, then the right, with no marker. |
 | `HASH1-20` | A known-answer test: the text `HEADING ONLY` plus a newline (13 bytes) gives `f7eb426cff87a0a1af2b2d5390cc9a2477df78d309f88f77f176751c57863e6f`, as the text form of `hash_v1`. Needs `hash`. |
-| `HASH1-21` | Parity with the importer on `edge_cases.fountain`, a fixture original to the Twopop project (MIT OR Apache-2.0; the test records its source and licence in the corpus README). The `THE ROOF AT DAWN` scene's `hash_v1` is `6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625` and the `INT. LAUNDERETTE - DAY` scene's is `7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508`. Needs `hash`. |
+| `HASH1-21` | Parity with the importer on `edge_cases.fountain`, a fixture original to the Twopop project (MIT OR Apache-2.0; the corpus README records its source and licence). The `THE ROOF AT DAWN` scene's `hash_v1` is `6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625` and the `INT. LAUNDERETTE - DAY` scene's is `7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508`. Needs `hash`. |
 | `HASH1-22` | Parity with the importer on its other captured scripts, by the same method: each scene's `hash_v1` equals the stored value, and each difference is classified in the F4 diff harness as a parsing difference (11.7). Needs `hash`. |
 | `HASH1-23` | A Parenthetical line is the text inside the parentheses, trimmed and collapsed: `(quietly)` gives `quietly`, and `( quietly )` gives the same. |
 | `HASH1-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
