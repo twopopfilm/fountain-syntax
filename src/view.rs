@@ -1,5 +1,6 @@
 //! The typed screenplay view (SPEC 9): plain owned data with public fields, so a value can be built
-//! in memory, serialised and read back without a [`Document`](crate::Document).
+//! in memory (with [`Scene::new`] for a scene), serialised and read back without a
+//! [`Document`](crate::Document).
 //!
 //! A `span` is an optional back-reference to the source: `None` for a value that was built and not
 //! parsed.
@@ -117,6 +118,9 @@ impl TitleEntry {
 }
 
 /// A scene: its heading and everything up to the next heading.
+///
+/// The struct has a private field (what hash scheme 1 counts as the scene, `SPEC.md` 11.7), so
+/// outside the crate a scene is built with [`Scene::new`] and then its public fields are set.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Scene {
@@ -133,6 +137,62 @@ pub struct Scene {
     /// From the first byte of the first attached Section or Synopsis, or of the heading, to the
     /// last byte of the last element.
     pub span: Option<Span>,
+    /// Which Synopses hash scheme 1 counts in this scene; the default for a scene built in memory.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "HashScopeV1::is_default")
+    )]
+    hash_scope_v1: HashScopeV1,
+}
+
+/// The part of a scene's hash scope that the view places differently (`SPEC.md` 11.7). The scope
+/// is `synopses[leading..]`, then `elements`, then `trailing`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+struct HashScopeV1 {
+    /// How many of the scene's `synopses` came from before its heading: they belong to the
+    /// previous scene's scope.
+    leading: usize,
+    /// The Synopses directly before the next heading: the view attaches them to the next scene,
+    /// but scheme 1 keeps them in this one.
+    trailing: Vec<Synopsis>,
+}
+
+impl HashScopeV1 {
+    #[cfg(feature = "serde")]
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+impl Scene {
+    /// A scene built in memory: the heading, no number, no Sections, Synopses or elements, and no
+    /// span. Set the public fields to fill it in.
+    pub fn new(heading: Heading) -> Scene {
+        Scene {
+            heading,
+            number: None,
+            sections: Vec::new(),
+            synopses: Vec::new(),
+            elements: Vec::new(),
+            span: None,
+            hash_scope_v1: HashScopeV1::default(),
+        }
+    }
+
+    /// The hash scope of scheme 1: the Synopses that count (after the `leading` ones), the
+    /// elements, and the trailing Synopses. `leading` is clamped, so a scene edited after parsing
+    /// cannot panic.
+    // Unused outside tests until the scheme 1 hash reads it (issue #35); remove this then.
+    #[cfg_attr(not(test), expect(dead_code))]
+    pub(crate) fn hash_scope_v1(&self) -> (&[Synopsis], &[Element], &[Synopsis]) {
+        let leading = self.hash_scope_v1.leading.min(self.synopses.len());
+        (
+            &self.synopses[leading..],
+            &self.elements,
+            &self.hash_scope_v1.trailing,
+        )
+    }
 }
 
 /// A scene heading.
@@ -458,6 +518,78 @@ mod tests {
             span: None,
             runs: vec![Run::Plain(s.to_owned())],
         }
+    }
+
+    fn plains(synopses: &[Synopsis]) -> Vec<String> {
+        synopses.iter().map(|s| s.text.plain()).collect()
+    }
+
+    fn heading(s: &str) -> Heading {
+        Heading {
+            text: text(s),
+            forced: false,
+            span: None,
+        }
+    }
+
+    #[test]
+    fn a_parsed_scene_records_which_synopses_its_hash_scope_keeps() {
+        let src = "= before one\n\nINT. ONE - DAY\n\n= after one\n\nMara waits.\n\n\
+                   # Act\n\n= before two\n\n## Beat\n\n= before two b\n\nINT. TWO - DAY\n\n= after two\n";
+        let scenes = crate::parse(src).screenplay().scenes;
+        let [one, two] = scenes.as_slice() else {
+            panic!("two scenes");
+        };
+        // The view gives scene 1 the Synopsis before its heading and the one after it.
+        assert_eq!(plains(&one.synopses), ["before one", "after one"]);
+        assert_eq!(one.hash_scope_v1.leading, 1);
+        assert_eq!(
+            plains(&one.hash_scope_v1.trailing),
+            ["before two", "before two b"]
+        );
+        let (synopses, elements, trailing) = one.hash_scope_v1();
+        assert_eq!(plains(synopses), ["after one"]);
+        assert_eq!(elements.len(), 1);
+        assert_eq!(plains(trailing), ["before two", "before two b"]);
+
+        // Scene 2 holds both Synopses before its heading, but they are not in its scope.
+        assert_eq!(
+            plains(&two.synopses),
+            ["before two", "before two b", "after two"]
+        );
+        assert_eq!(two.hash_scope_v1.leading, 2);
+        assert!(two.hash_scope_v1.trailing.is_empty());
+        let (synopses, elements, trailing) = two.hash_scope_v1();
+        assert_eq!(plains(synopses), ["after two"]);
+        assert!(elements.is_empty() && trailing.is_empty());
+    }
+
+    #[test]
+    fn scene_new_has_the_in_memory_defaults() {
+        let mut scene = Scene::new(heading("INT. A - DAY"));
+        assert_eq!(scene.heading, heading("INT. A - DAY"));
+        assert!(scene.number.is_none() && scene.span.is_none());
+        assert!(
+            scene.sections.is_empty() && scene.synopses.is_empty() && scene.elements.is_empty()
+        );
+        assert_eq!(scene.hash_scope_v1, HashScopeV1::default());
+
+        scene.synopses.push(Synopsis { text: text("beat") });
+        scene
+            .elements
+            .push(Element::PageBreak(PageBreak { span: None }));
+        let (synopses, elements, trailing) = scene.hash_scope_v1();
+        assert_eq!(synopses, scene.synopses.as_slice());
+        assert_eq!(elements, scene.elements.as_slice());
+        assert!(trailing.is_empty());
+    }
+
+    #[test]
+    fn a_leading_count_past_the_synopses_is_clamped() {
+        let mut scene = Scene::new(heading("INT. A - DAY"));
+        scene.synopses.push(Synopsis { text: text("beat") });
+        scene.hash_scope_v1.leading = 5;
+        assert!(scene.hash_scope_v1().0.is_empty());
     }
 
     fn entry(key: &str, value: &str) -> TitleEntry {

@@ -185,3 +185,17 @@ fn diagnostics_round_trip_and_survive_a_document_round_trip() {
     let back: Document = serde_json::from_str(&serde_json::to_string(&doc).unwrap()).unwrap();
     assert_eq!(back.diagnostics(), doc.diagnostics());
 }
+
+#[test]
+fn a_parsed_scene_round_trips_with_its_hash_scope_and_a_new_scene_omits_it() {
+    use fountain_syntax::Scene;
+    let sp = parse("= a\n\nINT. ONE - DAY\n\n= b\n\nINT. TWO - DAY\n").screenplay();
+    let json = serde_json::to_string(&sp).unwrap();
+    assert!(json.contains("hash_scope_v1"));
+    assert_eq!(serde_json::from_str::<Screenplay>(&json).unwrap(), sp);
+
+    let scene = Scene::new(sp.scenes[0].heading.clone());
+    let json = serde_json::to_string(&scene).unwrap();
+    assert!(!json.contains("hash_scope_v1"));
+    assert_eq!(serde_json::from_str::<Scene>(&json).unwrap(), scene);
+}
