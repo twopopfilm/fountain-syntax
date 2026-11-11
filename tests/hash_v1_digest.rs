@@ -1,6 +1,7 @@
 #![cfg(feature = "hash")]
 //! The scheme 1 digest (`SPEC.md` 11.7), its scheme tag, and the migration an application runs
-//! (11.8): `HASH1-20`, the digest half of `HASH1-26`, the `_v1` clause of `HASH2-39` and
+//! (11.8): `HASH1-20`, `HASH1-21` and `HASH1-22` (parity with the importer on the scripts in
+//! `tests/corpus/twopop`), the digest half of `HASH1-26`, the `_v1` clause of `HASH2-39` and
 //! `HASH2-46`. The line rules are tested in `hash_v1.rs`.
 
 use fountain_syntax::{Digest, Element, HashScheme, Scene, parse};

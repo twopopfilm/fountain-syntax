@@ -19,7 +19,7 @@ meant to be useful on its own.
     forced elements.
   - **Self-describing hashes at element, scene and document level**, and over the exact bytes of any span, so a tool
     can compare script drafts scene by scene and see which element changed. A second scheme, compatible with Twopop's
-    importer, is planned (#35). The hashes sit behind an optional `hash` feature (SHA-256 from `sha2`, and Unicode
+    importer, is implemented (#35). The hashes sit behind an optional `hash` feature (SHA-256 from `sha2`, and Unicode
     normalisation).
   - **A parser that never fails.** Fountain has no invalid input, so ambiguous cases are reported as diagnostics.
 

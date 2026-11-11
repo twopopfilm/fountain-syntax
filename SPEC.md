@@ -1510,7 +1510,8 @@ prints as the bare hexadecimal text that Studio stores.
      the group;
    - **anything else ends the group**: a centered Action, a Dialogue block, a dual pair, a Transition, Lyrics, a
      Section, a Synopsis, a Page Break or a Shot. A Section and a Page Break end the group and give no line. A group
-     that is ended gives its line at that point, so the lines keep source order.
+     that is ended gives its line at that point, so the lines keep source order. A group still open at the end of the
+     scope gives its line there.
 
    The other kept kinds are:
    - a centered Action: its own line (the `>` and `<` marks are dropped), never merged;
@@ -1526,7 +1527,8 @@ prints as the bare hexadecimal text that Studio stores.
 
    In a dual dialogue the left block comes before the right block, with no marker. An element whose collapsed text is
    empty is dropped. A Synopsis inside an Action paragraph or a Dialogue block, and a Lyrics line inside a Dialogue
-   block, give their own lines straight after the line of the element they interrupt, in source order. The interrupted element is still one line (section 13, item 10).
+   block, give their own lines straight after the line of the element they interrupt, in source order. The interrupted
+   element is still one line (section 13, item 10).
 5. **Cue line.** The name only, collapsed and upper-cased. There are **no extension groups** at all, neither `(V.O.)`
    nor `(CONT'D)`, and no caret and no dual flag. (The importer keeps the extension and the dual flag as separate
    fields that it does not hash.)
@@ -1608,6 +1610,7 @@ on the importer's own fixtures and nowhere else.
 | `CUT TO:` forms (`OFF-9`, `OFF-23`) | Whether a `TO:` line is a Transition, a cue or Action depends on the blank lines and on trailing whitespace, and the parsers may disagree. |
 | A Note spanning two lines (`OFF-15`) | Hidden spans are deleted before the text is read here, so lines can join or vanish differently from the importer's result. |
 | Sections, Synopses or Lyrics inside a Dialogue block (`OFF-21`, `OFF-24`) | The block continues across them here, as one Dialogue element; the importer's parser may split it. |
+| Section, Page Break or Synopsis inside an Action paragraph (`OFF-21b`) | Here a Synopsis ends the Action group and a Section or Page Break does not; the importer's parser very probably makes each its own element, so the Action splits. |
 | Tag text (`OFF-20`) | `#prop-coin` inside a line stays in the text; a line that starts with `#` is a Section here, which is not hashed. |
 | Title page edge cases (`OFF-17`) | Which opening lines form the title page decides which text is an element, so the parsers can differ on the first scene. |
 
