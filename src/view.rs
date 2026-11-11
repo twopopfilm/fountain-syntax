@@ -124,6 +124,10 @@ impl TitleEntry {
 /// The struct has a private field (what hash scheme 1 counts as the scene, `SPEC.md` 11.7), so
 /// outside the crate a scene is built with [`Scene::new`] and then its public fields are set.
 ///
+/// If a user edits `synopses` of a parsed scene (removes or reorders its leading Synopses), the
+/// private count of leading Synopses keeps pointing at the old positions, so `hash_v1` follows the
+/// stored scope, not the edited list. A scene built with `Scene::new` has no such scope.
+///
 /// With the `serde` feature, JSON that lacks `hash_scope_v1` (written before the field existed, or
 /// by an in-memory scene) reads with the default, empty scope, so `hash_v1` of a scene that has
 /// leading or trailing Synopses can differ from the parsed scene's. The field is skipped when it is

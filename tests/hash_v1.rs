@@ -216,6 +216,25 @@ fn hash1_7_case_of_heading_and_cue() {
 }
 
 #[test]
+fn hash1_7_no_nfc_a_decomposed_letter_stays_decomposed() {
+    // Scheme 1 applies no Unicode normal form (SPEC 11.7 rule 2): E + combining acute is not U+00C9.
+    let decomposed = scene("INT. CAFE\u{301}\n\nHi.\n");
+    let precomposed = scene("INT. CAF\u{c9}\n\nHi.\n");
+    assert_eq!(decomposed.heading_line_v1(), "INT. CAFE\u{301}");
+    assert_eq!(precomposed.heading_line_v1(), "INT. CAF\u{c9}");
+    assert_eq!(decomposed.normalized_text_v1(), "INT. CAFE\u{301}\nHi.");
+    assert_eq!(precomposed.normalized_text_v1(), "INT. CAF\u{c9}\nHi.");
+    assert_ne!(
+        decomposed.normalized_text_v1(),
+        precomposed.normalized_text_v1()
+    );
+    // The same for an Action line.
+    assert_eq!(t("Caf\u{e9}."), want(&["Caf\u{e9}."]));
+    assert_eq!(t("Cafe\u{301}."), want(&["Cafe\u{301}."]));
+    differ("Caf\u{e9}.", "Cafe\u{301}.");
+}
+
+#[test]
 fn hash1_8_cue_extensions_and_caret() {
     let base = t("MARA\nHi.");
     assert_eq!(base, want(&["MARA", "Hi."]));
@@ -476,6 +495,14 @@ fn hash1_19_dual_dialogue() {
         want(&["MARA", "softly", "Hi there.", "OTTO", "Yo."])
     );
     // A Synopsis between the two halves follows the left block's last line.
+    let pair = scene(&body("MARA\nHi.\n\n= beat\n\nOTTO ^\nYo."));
+    assert!(
+        pair.elements
+            .iter()
+            .any(|e| matches!(e, Element::DualDialogue(_))),
+        "the input is a dual pair: {:?}",
+        pair.elements
+    );
     assert_eq!(
         t("MARA\nHi.\n\n= beat\n\nOTTO ^\nYo."),
         want(&["MARA", "Hi.", "beat", "OTTO", "Yo."])

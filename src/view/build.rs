@@ -724,7 +724,11 @@ fn group(items: Vec<Item>) -> (Preamble, Vec<Scene>) {
 
 impl OpenScene {
     fn finish(self) -> Scene {
-        let before_count = synopses(&self.before).len();
+        let before_count = self
+            .before
+            .iter()
+            .filter(|(e, _)| matches!(e, Element::Synopsis(_)))
+            .count();
         let start = self
             .before
             .first()

@@ -1,8 +1,9 @@
 # Test corpus
 
 Scripts that the integration tests read with `include_str!`. **Do not edit these files**: they are byte-exact
-copies, and the tests pin the importer's digests for them. All files use LF line endings, and the repository sets no
-attribute that would change them; keep them LF.
+copies, and the tests pin the importer's digests for them. The stored files use LF line endings, and the repository sets no
+attribute that would change them. A checkout that converts line endings still passes the tests, because scheme 1
+ignores line endings (`SPEC.md` 11.7, G1).
 
 Every file here is original to the Twopop project, or used under terms that allow redistribution. Record each new
 file's source and licence in the table below.

@@ -27,9 +27,7 @@ struct Lines {
 impl Lines {
     /// Add `s` as a line, dropping it when empty.
     fn push(&mut self, s: String) {
-        if !s.is_empty() {
-            self.out.push(s);
-        }
+        push_nonempty(&mut self.out, s);
     }
 
     /// End the open Action group: its collapsed line, if it has any text.
@@ -83,14 +81,17 @@ impl Lines {
     }
 }
 
+/// Add `s` to `out` as a line, dropping it when empty.
+fn push_nonempty(out: &mut Vec<String>, s: String) {
+    if !s.is_empty() {
+        out.push(s);
+    }
+}
+
 /// The lines of the kinds that give plain text: Transition, Lyrics, Synopsis and Shot. Everything
 /// else gives none here (Sections and Page Breaks are not hashed).
 fn kept_lines(el: &Element, out: &mut Vec<String>) {
-    let mut push = |s: String| {
-        if !s.is_empty() {
-            out.push(s);
-        }
-    };
+    let mut push = |s: String| push_nonempty(out, s);
     match el {
         Element::Transition(t) => push(line(&t.text)),
         Element::Lyrics(l) => l.lines.iter().for_each(|t| push(line(t))),

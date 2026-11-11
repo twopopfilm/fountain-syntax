@@ -862,8 +862,8 @@ a broken tree. The exact encoding of the arena is left to F2.
 ## 9. Typed view API sketch
 
 Built on demand from the tree by `Document::screenplay()`. All types are plain owned data: they hold their own text, so
-a view can be built in memory (issue #12; a `Scene` with `Scene::new`), serialised and read back (issue #8) without the document. A `span` is an
-optional back-reference to the source, `None` for a value that was built and not parsed.
+a view can be built in memory (issue #12; a `Scene` with `Scene::new`), serialised and read back (issue #8) without the
+document. A `span` is an optional back-reference to the source, `None` for a value that was built and not parsed.
 
 ```rust
 pub struct Screenplay {
@@ -1024,8 +1024,9 @@ How the awkward pieces appear:
   hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
   to the earlier scene for `Scene::hash_v1` (11.7).
 - **The hash scope field is serialised.** With the `serde` feature the private scheme 1 hash scope of `Scene` is
-  serialised with the scene and is omitted when empty, so that a view read back hashes as it did. When the field is absent from the input it reads
-  as empty, which gives the scope of a scene built in memory (11.7). The derived `PartialEq` includes it.
+  serialised with the scene and is omitted when empty, so that a view read back hashes as it did. When the field is
+  absent from the input it reads as empty, which gives the scope of a scene built in memory (11.7). The derived
+  `PartialEq` includes it.
 - **Hashes.** The hash methods of the types above are listed once, in 11.2, with their signatures:
   `Element::hashes`, `Scene::{hash, element_hashes, source_hash, hash_v1}`, `Preamble::hash` and
   `Screenplay::{hash, title_page_hash, source_hash}` need the `hash` feature, and `Scene::{normalized_text_v1,
@@ -1502,7 +1503,8 @@ prints as the bare hexadecimal text that Studio stores.
    prefix**. Case is kept. The importer merges consecutive Action elements, so the lines are made by walking the hash
    scope in source order with a current **Action group**:
    - a **non-centered Action** joins the group. The consecutive Actions of a group give **one line**: their typed texts
-     joined with a space and collapsed. A blank line between two Action lines makes no difference, except next to a Section, Page Break or Synopsis line (G1).
+     joined with a space and collapsed. A blank line between two Action lines makes no difference, except next to a
+     Section, Page Break or Synopsis line (G1).
      An Action whose collapsed text is empty joins the group and adds nothing;
    - a whole-line **Note** or **Boneyard** (`Element::Note`, `Element::Boneyard`) is skipped and **does not end the
      group**;
