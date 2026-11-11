@@ -3,6 +3,8 @@
 
 mod common;
 
+use std::collections::BTreeSet;
+
 use common::corpus_files;
 use fountain_syntax::{Element, parse};
 
@@ -85,16 +87,18 @@ fn corpus_off_scripts_keep_their_first_block_ordinary() {
     }
 }
 
+/// The lowercase row ID of a §6.2 row line (`| OFF-<digits><letter> | ...`). The §6.3 lines read
+/// `| OFF-7: ...` and give none.
+fn row_id(line: &str) -> Option<String> {
+    let id = line.strip_prefix("| ")?.split(' ').next()?;
+    let rest = id.strip_prefix("OFF-")?;
+    let digits = rest.strip_suffix(|c: char| c.is_ascii_lowercase())?;
+    let ok = !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit());
+    ok.then(|| id.to_lowercase())
+}
+
 /// (lowercase row ID, diagnostic code) for each §6.2 row whose Diagnostic cell names a code.
 fn rows_with_diagnostics(spec: &str) -> Vec<(String, String)> {
-    // A row line is `| OFF-<digits><letter> | ...`; the §6.3 lines read `| OFF-7: ...`.
-    let row_id = |l: &str| -> Option<String> {
-        let id = l.strip_prefix("| ")?.split(' ').next()?;
-        let rest = id.strip_prefix("OFF-")?;
-        let digits = rest.strip_suffix(|c: char| c.is_ascii_lowercase())?;
-        let ok = !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit());
-        ok.then(|| id.to_lowercase())
-    };
     let rows: Vec<(String, String)> = spec
         .lines()
         .filter_map(|l| {
@@ -121,7 +125,7 @@ fn corpus_off_scripts_fire_their_row_diagnostic() {
     let files = corpus_files();
     for (id, code) in rows_with_diagnostics(&read("SPEC.md")) {
         let name = format!("off/{id}.fountain");
-        // Test 4 requires every row to have a script; until then a missing one is skipped.
+        // A missing script is reported by `corpus_every_off_row_has_a_script`.
         let Some((_, src)) = files.iter().find(|(p, _)| *p == name) else {
             continue;
         };
@@ -132,4 +136,24 @@ fn corpus_off_scripts_fire_their_row_diagnostic() {
             "{name}: expected diagnostic {code}, got {codes:?}"
         );
     }
+}
+
+#[test]
+fn corpus_every_off_row_has_a_script() {
+    let rows: BTreeSet<String> = read("SPEC.md").lines().filter_map(row_id).collect();
+    assert!(!rows.is_empty(), "no OFF rows found in SPEC.md");
+    let scripts: BTreeSet<String> = corpus_files()
+        .into_iter()
+        .filter_map(|(p, _)| {
+            p.strip_prefix("off/")?
+                .strip_suffix(".fountain")
+                .map(str::to_owned)
+        })
+        .collect();
+    let missing: Vec<_> = rows.difference(&scripts).collect();
+    let extra: Vec<_> = scripts.difference(&rows).collect();
+    assert!(
+        missing.is_empty() && extra.is_empty(),
+        "SPEC.md §6.2 rows without a script: {missing:?}; scripts without a row: {extra:?}"
+    );
 }
