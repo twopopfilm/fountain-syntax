@@ -902,6 +902,12 @@ pub struct Scene {
     // and a private scheme 1 hash scope, filled in by `screenplay()` (11.7)
 }
 
+impl Scene {
+    /// A scene with this heading and no number, Sections, Synopses, elements or span. Its scheme 1 hash scope is
+    /// empty, so the scope is its own `synopses` and `elements`.
+    pub fn new(heading: Heading) -> Scene;
+}
+
 pub struct Heading { pub text: Text, pub forced: bool, pub span: Option<Span> }
 
 pub struct SceneNumber {
@@ -1017,6 +1023,9 @@ How the awkward pieces appear:
   Synopses directly after it belong to it too (`synopses`). Any other Section or Synopsis stays in `elements`. Scheme 2
   hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
   to the earlier scene for `Scene::hash_v1` (11.7).
+- **The hash scope field is serialised.** With the `serde` feature the private scheme 1 hash scope of `Scene` is
+  serialised with the scene, so that a view read back hashes as it did. When the field is absent from the input it reads
+  as empty, which gives the scope of a scene built in memory (11.7). The derived `PartialEq` includes it.
 - **Hashes.** The hash methods of the types above are listed once, in 11.2, with their signatures:
   `Element::hashes`, `Scene::{hash, element_hashes, source_hash, hash_v1}`, `Preamble::hash` and
   `Screenplay::{hash, title_page_hash, source_hash}` need the `hash` feature, and `Scene::{normalized_text_v1,
@@ -1447,6 +1456,12 @@ comparison of stored hashes, so a different algorithm would make all stored brea
 own hash code reproduces the importer's rule byte for byte and has to keep matching it until the Python oracle is
 retired. This subsection is complete in itself: it needs nothing from 11.3 to 11.6, only the methods of 11.2.
 
+**Amended before release (maintainer, 2026-11-10).** The first draft of rule 4 gave one line per Action paragraph.
+That matched only 2 of the 6 captured scenes. The importer's parser, screenplay-tools, merges consecutive Action
+elements by default (`mergeActions`, applied in `_add_element` of its `parser.py`), across blank lines and whole-line
+Notes. Rule 4 now does the same, and with it all six captured `text_sha` values match. Scheme 1 had not shipped, so
+this is an amendment of the draft and not a change to a frozen scheme.
+
 Scheme 1 hashes **scenes only** (no element, preamble or document hash), and it yields a `Digest` of scheme `V1`, which
 prints as the bare hexadecimal text that Studio stores.
 
@@ -1459,7 +1474,14 @@ prints as the bare hexadecimal text that Studio stores.
   the earlier scene, because it comes after that scene's last element and before the next heading. A Section is never
   hashed, so only Synopses show the difference. The scheme 1 methods follow this **hash scope**, not the view's span.
   The view records each scene's hash scope in a private field that `screenplay()` fills in, so the methods work on a
-  `Scene` alone. For a scene built in memory the scope is its own `synopses` and `elements`. Only scheme 1 uses it.
+  `Scene` alone. Only scheme 1 uses it. The scope is, in order:
+  1. the scene's `synopses`, minus those that came before the heading;
+  2. then its `elements`;
+  3. then the **trailing Synopses**, which come after this scene's last element and before the next heading (the view
+     attaches them to the next scene).
+
+  For a scene built in memory with `Scene::new(heading)` (section 9) the scope is its own `synopses` and `elements`,
+  because nothing came before the heading and nothing trails the elements.
 - **The preamble** is everything before the first heading, apart from the title page. Scheme 1 does **not** hash it; the
   importer only counts those elements. A kept element before the first heading (a Synopsis directly before it, say) is
   in no scene's hash scope.
@@ -1476,9 +1498,22 @@ prints as the bare hexadecimal text that Studio stores.
 3. **Heading line.** The heading's visible text, collapsed, then upper-cased. It leaves out the forcing `.`, the scene
    number (locked or not) and hidden spans.
 4. **Element lines.** Each kept element gives one line, which is that element's text only, collapsed, **with no kind
-   prefix**. Case is kept. The kept kinds are:
-   - Action, centered or not (the `>` and `<` marks are dropped). Consecutive Action lines are one element, so one line
-     per Action paragraph;
+   prefix**. Case is kept. The importer merges consecutive Action elements, so the lines are made by walking the hash
+   scope in source order with a current **Action group**:
+   - a **non-centered Action** joins the group. The consecutive Actions of a group give **one line**: their typed texts
+     joined with a space and collapsed. A blank line between two Action paragraphs, or inside one, makes no difference.
+     An Action whose collapsed text is empty joins the group and adds nothing;
+   - a whole-line **Note** or **Boneyard** (`Element::Note`, `Element::Boneyard`) is skipped and **does not end the
+     group**;
+   - an Action with a **Synopsis** among its interjections **ends the group**: the group's line comes first, then the
+     Synopsis lines (see below). A Section or Page Break among an Action's interjections gives no line and does not end
+     the group;
+   - **anything else ends the group**: a centered Action, a Dialogue block, a dual pair, a Transition, Lyrics, a
+     Section, a Synopsis, a Page Break or a Shot. A Section and a Page Break end the group and give no line. A group
+     that is ended gives its line at that point, so the lines keep source order.
+
+   The other kept kinds are:
+   - a centered Action: its own line (the `>` and `<` marks are dropped), never merged;
    - the Character cue (rule 5);
    - Dialogue: one line per Dialogue element as the view defines it, meaning the lines of a run between Parentheticals,
      joined and collapsed, continuing across interjections;
@@ -1491,8 +1526,7 @@ prints as the bare hexadecimal text that Studio stores.
 
    In a dual dialogue the left block comes before the right block, with no marker. An element whose collapsed text is
    empty is dropped. A Synopsis inside an Action paragraph or a Dialogue block, and a Lyrics line inside a Dialogue
-   block, give their own lines straight after the line of the element they interrupt, in source order. The interrupted
-   element is still one line (section 13, item 10).
+   block, give their own lines straight after the line of the element they interrupt, in source order. The interrupted element is still one line (section 13, item 10).
 5. **Cue line.** The name only, collapsed and upper-cased. There are **no extension groups** at all, neither `(V.O.)`
    nor `(CONT'D)`, and no caret and no dual flag. (The importer keeps the extension and the dual flag as separate
    fields that it does not hash.)
@@ -1520,30 +1554,44 @@ The methods are those of 11.2: `Scene::normalized_text_v1` gives the text of rul
 - re-wrapping the lines of one Action paragraph or one run of Dialogue lines (a line break to a space or the reverse).
   Lyrics are the exception: each `~` line is its own hash line;
 - adding or removing extra blank lines between elements, as long as one remains;
-- adding, changing or removing a scene number, a Section, a Note, a Boneyard or a Page Break;
+- **adding or removing a blank line between two Action paragraphs, or inside one.** Consecutive Actions merge into one
+  line (rule 4), so the paragraphs may be joined or split freely. A whole-line Note or Boneyard between them does not
+  separate them either;
+- adding, changing or removing a scene number, a Note, a Boneyard, or a Section or Page Break that is not between two
+  Action paragraphs;
 - adding, changing or removing any cue extension (`(CONT'D)`, `(V.O.)`) or the dual-dialogue caret, or changing the case
   of a heading or a cue name.
 
 This holds provided the edit does not move non-whitespace text to or from the start of a line in a way that changes how
-the line is read, and does not create or remove a blank line inside an element.
+the line is read, and does not create or remove a blank line inside a Dialogue block or a Lyrics run (the blank lines
+of an Action paragraph are the exception above). A Section, a Page Break, a Synopsis, a centered Action or any other
+element that is not Action, and sits between two Action paragraphs, **splits them into two lines**: adding or removing
+it changes the hash. A Section or Page Break inside an Action paragraph (an interjection) does not.
 
 *Changes (G2).* The hash changes for any change of kept text: a different word, case in Action or Dialogue, an
 emphasis mark, a different cue name, a reordered line, an added or removed element of a kept kind, a different
 Synopsis. Moving a Synopsis across a heading moves it between the hash scopes of two scenes.
+Adding or removing a non-Action element between two Action paragraphs changes the hash, because it splits or joins the
+two lines.
 
 *Limits (G3).* Scheme 1 **does not see a change of element kind or of a cue's extension when the text is the same**,
 because the importer does not. Action made into a Transition with the same words, Dialogue made into Action, a cue
-that gains or loses `(V.O.)`: the hash stays. It also does not hash the preamble. This is a known limit, accepted for
-compatibility with the importer, and scheme 2 removes it.
+that gains or loses `(V.O.)`: the hash stays. The exception is a change that makes an Action join or leave a group
+of Actions, because the merge then changes the lines (a Transition between two Actions that becomes Action is one
+line instead of three). It also does not hash the preamble. This is a known limit, accepted for compatibility with the
+importer, and scheme 2 removes it.
 
-*The boundary.* A blank line added inside an Action paragraph splits it into two lines, and a blank line added inside
-a run of Dialogue lines splits it into Dialogue and Action. Those edits change how the text is read, so they change the
-hash. A blank line under a cue (`OFF-5b`) turns the cue into Action, but by G3 the hash changes only if that moves text:
-under a bare cue the lines are the same and the hash stays; under a cue with an extension the Action line now holds the
-extension and the hash changes.
+*The boundary.* A blank line added inside an Action paragraph does **not** change the hash: the two paragraphs merge
+again (rule 4). A blank line added inside a run of Dialogue lines splits it into Dialogue and Action, which changes how
+the text is read, so it changes the hash. A blank line under a cue (`OFF-5b`) turns the cue into Action, and now the
+hash **always changes**: the cue line and the line after it were two lines, and as two Action paragraphs they merge into
+one. Under a bare cue, `BEN` and `Hello` (the lines `BEN` and `Hello`) become the single line `BEN Hello`. Under a cue
+with an extension, `BEN (V.O.)` and `Hello` become `BEN (V.O.) Hello`, which holds the extension as well. (Before the
+merge, the bare cue kept the hash by G3. It no longer does.)
 
 **How scheme 1 agrees with the importer.** The hashing rule is the importer's, as verified against its code and its
-captured fixtures: the same shape, the same heading line, the same line for each kind, the same scene membership. So the
+captured fixtures: the same shape, the same heading line, the same line for each kind, the same scene membership, and
+the same merging of consecutive Action elements (rule 4), which is part of the hash rule and not of the parser. So the
 differences that remain are all caused by **parsing, not hashing**. Where a ruling in section 6 splits or joins elements
 differently from the importer's parser, or decides a case differently, the elements and so the hash differ for that
 input. The F4 diff harness classifies each such difference. This library claims parity with the importer for scheme 1
@@ -1617,7 +1665,7 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-2` | `\n`, `\r\n` and `\r` give the same hash. |
 | `HASH1-3` | Re-wrapping the lines of one Action paragraph and one Dialogue block does not change the hash. |
 | `HASH1-4` | Extra blank lines between elements do not change the hash. |
-| `HASH1-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. |
+| `HASH1-5` | Adding or removing a Note, a Boneyard (inline or whole-line), a Section or a Page Break does not change the hash, also when it sits inside an Action paragraph or a Dialogue block. The exception is a Section or a Page Break between two Action paragraphs: it splits them into two lines, so adding or removing it changes the hash (`HASH1-27`). |
 | `HASH1-6` | Adding, changing or removing a scene number, locked or not, does not change the hash. |
 | `HASH1-7` | Case of the heading and of a cue name does not change the hash. |
 | `HASH1-8` | Adding or removing `(CONT'D)` on a cue, adding, removing or changing `(V.O.)`, and adding or removing the dual-dialogue caret do not change the hash. |
@@ -1625,9 +1673,9 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-10` | Changing a word in Action, Dialogue, a Transition or a Synopsis changes the hash. |
 | `HASH1-11` | Changing the case of Action or Dialogue text changes the hash. |
 | `HASH1-12` | Adding or removing an emphasis mark changes the hash. |
-| `HASH1-13` | Changing the element kind while the text stays the same (Action to Transition by `>`, Dialogue to Action) does **not** change the hash: the known limit G3. |
+| `HASH1-13` | Changing the element kind while the text stays the same (Action to Transition by `>`, Dialogue to Action) does **not** change the hash: the known limit G3. The Action in the test has no Action neighbour, since a neighbour would merge with it (`HASH1-27`). |
 | `HASH1-14` | Swapping two lines changes the hash. |
-| `HASH1-15` | A blank line inside an Action paragraph, and one inside a run of Dialogue lines, change the hash; a blank line under a bare cue does not, and under a cue with an extension it does (the boundary in 11.7). |
+| `HASH1-15` | The boundary in 11.7. A blank line inside an Action paragraph does **not** change the hash (the paragraphs merge, `HASH1-27`). A blank line inside a run of Dialogue lines changes it. A blank line under a bare cue changes it (`BEN` and `Hello` become the one line `BEN Hello`), and so does one under a cue with an extension (`BEN (V.O.)` and `Hello` become `BEN (V.O.) Hello`). |
 | `HASH1-16` | A Synopsis is hashed and a Section is not. A Synopsis after a scene's last element and before the next heading is in the earlier scene's hash and not in the next one's; a Synopsis directly after a heading is in its own scene's. |
 | `HASH1-17` | Elements before the first heading (the preamble, and a Synopsis directly before the first heading) and the title page are in no scene's hash. |
 | `HASH1-18` | A scene with only a heading has the text `HEADING` plus a newline. Two scenes with equal text have equal hashes. |
@@ -1639,6 +1687,7 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
 | `HASH1-25` | The line shapes: a cue line is the name only, upper-cased (no extension, no caret); a centered Action line has no `>` or `<`; a Shot line (with the `shot` flag) has no `!!`; no line has a kind prefix; `#prop-coin` stays in the text. |
 | `HASH1-26` | `hash_v1` returns a `Digest` of scheme `V1` whose text form is the bare hexadecimal digits (no prefix), and it is the same on every call. The three `_v1` line methods exist and work in a build without `hash`. |
+| `HASH1-27` | The Action merge (11.7, rule 4). Consecutive non-centered Actions give one line, joined with a space and collapsed, across blank lines and across a whole-line Note or Boneyard, so adding or removing a blank line between two Action paragraphs, or inside one, does not change the hash. A centered Action, a Section, a Synopsis, a Page Break, a Transition, Lyrics, a Dialogue block or a Shot between two Actions ends the group, so the two Actions stay two lines and the Synopsis gives its own line. An Action with a Synopsis interjection gives its group line first, then the Synopsis line, and ends the group. |
 
 Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash`.
 
@@ -1755,11 +1804,11 @@ diff harness would come from the start of the file and not from the case.
 `DIAG-to-trailing-space`, `DIAG-transition-lookalike`, `DIAG-unclosed-boneyard`, `DIAG-unclosed-note`,
 `DIAG-unframed-heading`, `DIAG-unframed-transition`
 
-**Hashes, scheme 1 (section 11)**, 26 IDs:
+**Hashes, scheme 1 (section 11)**, 27 IDs:
 
 `HASH1-1`, `HASH1-2`, `HASH1-3`, `HASH1-4`, `HASH1-5`, `HASH1-6`, `HASH1-7`, `HASH1-8`, `HASH1-9`, `HASH1-10`,
 `HASH1-11`, `HASH1-12`, `HASH1-13`, `HASH1-14`, `HASH1-15`, `HASH1-16`, `HASH1-17`, `HASH1-18`, `HASH1-19`,
-`HASH1-20`, `HASH1-21`, `HASH1-22`, `HASH1-23`, `HASH1-24`, `HASH1-25`, `HASH1-26`
+`HASH1-20`, `HASH1-21`, `HASH1-22`, `HASH1-23`, `HASH1-24`, `HASH1-25`, `HASH1-26`, `HASH1-27`
 
 **Hashes, scheme 2 (section 11)**, 47 IDs:
 
@@ -1773,7 +1822,7 @@ diff harness would come from the start of the file and not from the case.
 
 `WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`
 
-**Total: 269 IDs.**
+**Total: 270 IDs.**
 <!-- ID-INDEX:end -->
 
 ## 13. Open items
@@ -1808,10 +1857,12 @@ and 7 were resolved by the maintainer on 2026-11-05.
    `OFF-21`, `OFF-24`) or low confidence. No decision depends on them.
 9. **Serde encoding of the tree** (8.6) and the exact tokenisation (`TokenKind`) are left to F2. The invariants in 8.3
    are the contract.
-10. **Oracle behaviour on multi-line Lyrics and interrupted blocks (scheme 1 parity).** How the importer treats several
-    `~` lines and a Dialogue block or Action paragraph interrupted by a Section, Synopsis or Lyrics line is settled only
-    by the F4 parity tests (`HASH1-22`). The importer's merging of consecutive Dialogue and Action lines was read from
-    the parser's default settings, not from a run of every shape. Scheme 2 does not depend on it.
+10. **Oracle behaviour on multi-line Lyrics and interrupted blocks (scheme 1 parity).** *Partly settled on 2026-11-10:*
+    the importer's merging of consecutive Action elements is settled by the captured scripts, where all six `text_sha`
+    values match with the merge (11.7, rule 4, `HASH1-27`). Still open: how the importer treats several `~` lines and a
+    Dialogue block or Action paragraph interrupted by a Section, Synopsis or Lyrics line. Only the F4 parity tests
+    (`HASH1-22`) settle those, and the merging of consecutive Dialogue lines was read from the parser's default
+    settings, not from a run of every shape. Scheme 2 does not depend on it.
 11. **Details of scheme 2 chosen by the writer, for review.** They are rules now, and each is easy to change before F2:
     the `dual` flag is true for both cues of a pair and false for an unpaired caret; empty `~` lines are dropped from a
     Lyrics list but an empty extension group `()` is kept; the stray lines of a title page are not hashed; the heading
