@@ -16,7 +16,8 @@ rest.
 > and source spans, and the importer-compatible scheme 1 hashes (`Scene::hash_v1`) reproduce the Twopop importer's
 > values on its captured scripts. `Document::write` gives the source back byte for byte, and `canonical` writes a
 > view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
-> `SPEC.md` §10.3). Targeted edits (`with_replaced`) are planned, and the crate is not on crates.io. Milestone F1, the
+> `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
+> `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
 > standards study, is done ([`SPEC.md`](SPEC.md)); F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
@@ -36,7 +37,8 @@ assert_eq!(kinds, [NodeKind::TitlePage, NodeKind::SceneHeading]);
 assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 ```
 
-The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions.
+The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions;
+`locked-scene-numbers` also adds `Document::with_locked_scene_number`.
 The `serde` feature exists too: a `Document` serialises as its source text and is parsed again when it is read back.
 The `hash` feature adds the scheme 2 hashes and the scheme 1 hash of a scene (and `sha2` and `unicode-normalization`):
 
@@ -82,7 +84,11 @@ The text that scheme 1 hashes is available in every build, without the `hash` fe
   never changes the tree.
 - **A typed view.** Title page, scenes and elements as plain Rust types, with optional `serde` support for both
   the tree and the view.
-- **Targeted edits (planned).** Set a scene number as `#12A#` or insert a `= synopsis` line, and only that text changes.
+- **Targeted edits.** Set a scene number as `#12A#` (`with_scene_number`), set a `= synopsis` line (`with_synopsis`),
+  add a `[[note]]` block (`with_note`) or rename a character cue (`with_cue_renamed`), and only that text changes.
+  The named edits return an `EditError` instead of an edit that would not parse as what it was meant to be;
+  `with_replaced` replaces any span, checks nothing, and panics on a span that is out of range
+  or not on character boundaries.
 - **Draft comparison.** With the `hash` feature, self-describing scheme 2 hashes at three levels (element, scene and
   document) and over the exact bytes of any span, so tools can match scenes across drafts, tell real changes from
   whitespace and see which element changed. A second scheme, compatible with the Twopop importer (`Scene::hash_v1`,
@@ -101,8 +107,8 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-6 and WR-8.
-  WR-7 comes with the edit API (planned). The rest are planned for F2 to F4.
+  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13. The rest
+  are planned for F2 to F4.
 - **A conformance corpus (planned, F4).** It will hold original examples modelled on the spec's own (the spec's text
   has no licence, so it will not be copied) and edge cases from the study, each with its source and licence recorded.
   The spec's examples and sample scripts will be used only with written permission. Every script in it must

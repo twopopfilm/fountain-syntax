@@ -740,7 +740,7 @@ pub fn parse(source: &str) -> Document;
 | Feature | Adds | Dependency |
 |---|---|---|
 | `serde` | `Serialize` and `Deserialize` on the tree, the view and `Diagnostic` | `serde` |
-| `locked-scene-numbers` | Slugline's `##n#` (5.2) | none |
+| `locked-scene-numbers` | Slugline's `##n#` (5.2) and `with_locked_scene_number` (10.2) | none |
 | `shot` | Beat's `!!` Shot (5.2) | none |
 | `hash` | The hash methods and digests of section 11 (scheme 2 and scheme 1) | `sha2` 0.10 and `unicode-normalization` |
 
@@ -1038,12 +1038,36 @@ How the awkward pieces appear:
 
 ```rust
 impl Document {
-    /// Exactly `source()` for a tree that has not been edited.
+    /// Exactly `source()`, whether or not the document came from an edit.
     pub fn write(&self) -> String;
 
     /// Replaces one span, re-parses, and leaves every other byte untouched. The named edits
-    /// of issue #13 are built on this primitive.
+    /// of 10.2 are built on this primitive.
     pub fn with_replaced(&self, span: Span, text: &str) -> Document;
+
+    /// Writes `#number#` on the Scene Heading with this span, replacing its number or adding one.
+    pub fn with_scene_number(&self, heading: Span, number: &str) -> Result<Document, EditError>;
+
+    /// The same, writing the locked form `##number#` (feature `locked-scene-numbers`).
+    pub fn with_locked_scene_number(&self, heading: Span, number: &str) -> Result<Document, EditError>;
+
+    /// Puts `= text` on the line after the Scene Heading with this span, or replaces the Synopsis there.
+    pub fn with_synopsis(&self, heading: Span, text: &str) -> Result<Document, EditError>;
+
+    /// Adds `[[text]]` as its own block after the top-level element with this span.
+    pub fn with_note(&self, after: Span, text: &str) -> Result<Document, EditError>;
+
+    /// Replaces the name of the Character cue with this span, keeping its `@`, extensions and caret.
+    pub fn with_cue_renamed(&self, cue: Span, name: &str) -> Result<Document, EditError>;
+}
+
+/// Why a named edit was refused; the document is unchanged.
+#[non_exhaustive]
+pub enum EditError {
+    /// No element of the kind the edit needs has exactly this span.
+    NotFound,
+    /// The edited text would not parse as the intended element, or the edit would drop a Note or Boneyard.
+    Invalid,
 }
 
 impl core::fmt::Display for Document { /* the same as write() */ }
@@ -1052,7 +1076,7 @@ impl core::fmt::Display for Document { /* the same as write() */ }
 pub fn canonical(screenplay: &Screenplay) -> String;
 ```
 
-`write`, `Display` and `canonical` exist (issue #12). `with_replaced` and the named edits land with issue #13.
+`write`, `Display`, `canonical`, `with_replaced`, the named edits of 10.2 and `EditError` exist (issues #12 and #13).
 
 ### 10.1 Byte-for-byte round trip
 
@@ -1070,11 +1094,18 @@ pub fn canonical(screenplay: &Screenplay) -> String;
 ### 10.2 Edits
 
 - A **targeted edit** changes only the bytes of the span it replaces (issue #13). `with_replaced` is the one primitive;
-  set a scene number (writes `#12A#`; the locked form `##12A#` is possible only with `locked-scene-numbers`),
-  insert or replace a synopsis, add a note and rename a cue are named wrappers around it.
+  `with_scene_number` (writes `#12A#`), `with_locked_scene_number` (the locked form `##12A#`, only with
+  `locked-scene-numbers`), `with_synopsis`, `with_note` and `with_cue_renamed` are named wrappers around it, and
+  `EditError` is the error they return.
+- `with_replaced` checks nothing: it panics if the span is out of range, inverted or not on character boundaries
+  (tests `wr_7_bad_span_panics`, `wr_7_inverted_span_panics` and `wr_7_non_boundary_span_panics`). Only the named
+  edits return an `EditError`.
+- An edit returns a new document. After an edit, take spans from it, not from the old document or its view: their spans
+  refer to the old source and can match a different element of the new one.
 - New lines use the first line break found in the document (`\n` if there is none).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
-  the edited text still parses as the element it was meant to be.
+  the edited text still parses as the element it was meant to be. A wrapper also refuses (`Invalid`) to replace a node
+  that holds a Note or Boneyard, since that would drop the hidden text; a Note or Boneyard beside the node is kept.
 
 ### 10.3 Canonical form for new documents
 
@@ -1142,6 +1173,11 @@ views don't round-trip:
 | `WR-6` | `canonical` is stable: writing its own output again gives the same text. |
 | `WR-7` | `with_replaced` changes only the replaced span: every other byte is identical, and spans after the edit are shifted correctly. |
 | `WR-8` | `canonical` uses a sigil only where the text would otherwise re-parse as a different element. |
+| `WR-9` | `with_scene_number` writes `#n#` on a heading with or without a number and changes no other byte; `with_locked_scene_number` writes `##n#` (`locked-scene-numbers`). |
+| `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break. |
+| `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. |
+| `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, and a name holding a Note or Boneyard is refused. |
+| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element or when the edit would drop a Note or Boneyard (a number, a synopsis or a cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
 
@@ -1870,11 +1906,11 @@ diff harness would come from the start of the file and not from the case.
 `HASH2-29`, `HASH2-30`, `HASH2-31`, `HASH2-32`, `HASH2-33`, `HASH2-34`, `HASH2-35`, `HASH2-36`, `HASH2-37`,
 `HASH2-38`, `HASH2-39`, `HASH2-40`, `HASH2-41`, `HASH2-42`, `HASH2-43`, `HASH2-44`, `HASH2-45`, `HASH2-46`, `HASH2-47`
 
-**Writer (section 10)**, 8 IDs:
+**Writer (section 10)**, 13 IDs:
 
-`WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`
+`WR-1`, `WR-2`, `WR-3`, `WR-4`, `WR-5`, `WR-6`, `WR-7`, `WR-8`, `WR-9`, `WR-10`, `WR-11`, `WR-12`, `WR-13`
 
-**Total: 270 IDs.**
+**Total: 275 IDs.**
 <!-- ID-INDEX:end -->
 
 ## 13. Open items
