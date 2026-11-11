@@ -1104,7 +1104,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   refer to the old source and can match a different element of the new one.
 - New lines use the first line break found in the document (`\n` if there is none).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
-  the edited text still parses as the element it was meant to be.
+  the edited text still parses as the element it was meant to be. A wrapper also refuses (`Invalid`) to replace a node
+  that holds a Note or Boneyard, since that would drop the hidden text; a Note or Boneyard beside the node is kept.
 
 ### 10.3 Canonical form for new documents
 
@@ -1176,7 +1177,7 @@ views don't round-trip:
 | `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break. |
 | `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. |
 | `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, and a name holding a Note or Boneyard is refused. |
-| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element; the document is unchanged. |
+| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element or when the edit would drop a Note or Boneyard (a number, a synopsis or a cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
 

@@ -131,8 +131,9 @@ impl Document {
     /// heading's text. Nothing else changes. A locked number becomes a plain one.
     ///
     /// `number` must be a scene number the parser reads (`SPEC.md` OFF-8a: letters, digits, `-`
-    /// and `.`); otherwise the result is [`EditError::Invalid`]. A span that is not a Scene
-    /// Heading gives [`EditError::NotFound`].
+    /// and `.`); otherwise the result is [`EditError::Invalid`]. So is a number that holds a Note
+    /// or Boneyard, which replacing it would drop. A span that is not a Scene Heading gives
+    /// [`EditError::NotFound`].
     ///
     /// ```
     /// use fountain_syntax::parse;
@@ -146,7 +147,9 @@ impl Document {
         self.with_number_marked(heading, "#", number)
     }
 
-    /// Like [`Document::with_scene_number`], but writes the locked form `##number#`.
+    /// Like [`Document::with_scene_number`], but writes the locked form `##number#`. It also
+    /// gives [`EditError::Invalid`] for a number that holds a Note or Boneyard, which replacing it
+    /// would drop.
     ///
     /// ```
     /// use fountain_syntax::parse;
@@ -193,7 +196,8 @@ impl Document {
     /// stays as it is.
     ///
     /// A `text` that holds a line break, or that would not read back as a Synopsis of this
-    /// scene, gives [`EditError::Invalid`]. A span that is not a Scene Heading gives
+    /// scene, gives [`EditError::Invalid`]. So does replacing a Synopsis that holds a Note or
+    /// Boneyard, which would drop it. A span that is not a Scene Heading gives
     /// [`EditError::NotFound`].
     ///
     /// ```
