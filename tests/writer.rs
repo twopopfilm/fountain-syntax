@@ -3,7 +3,7 @@
 
 mod common;
 
-use common::parse_checked;
+use common::{corpus_files, parse_checked};
 use fountain_syntax::{
     Action, Boneyard, Cue, DialogueBlock, DialogueItem, DualDialogue, Element, Extension, Heading,
     Lyrics, Note, PageBreak, Preamble, Run, Scene, SceneNumber, Screenplay, Section, Synopsis,
@@ -18,12 +18,8 @@ fn assert_round_trips(src: &str) {
 
 #[test]
 fn wr_1_corpus_scripts_round_trip() {
-    for src in [
-        include_str!("corpus/twopop/blue_rev2.fountain"),
-        include_str!("corpus/twopop/edge_cases.fountain"),
-        include_str!("corpus/twopop/two_scene.fountain"),
-    ] {
-        assert_round_trips(src);
+    for (_, src) in corpus_files() {
+        assert_round_trips(&src);
     }
 }
 

@@ -135,3 +135,33 @@ pub fn find(doc: &Document, kind: NodeKind) -> Vec<Node<'_>> {
     walk(doc.root(), kind, &mut out);
     out
 }
+
+/// Every `.fountain` file under `tests/corpus/`, as (path relative to it with `/` separators,
+/// contents), sorted by path.
+pub fn corpus_files() -> Vec<(String, String)> {
+    fn walk(dir: &std::path::Path, rel: &str, out: &mut Vec<(String, String)>) {
+        let fail = |e: std::io::Error| -> ! { panic!("{}: {e}", dir.display()) };
+        for entry in std::fs::read_dir(dir).unwrap_or_else(|e| fail(e)) {
+            let entry = entry.unwrap_or_else(|e| fail(e));
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let rel = if rel.is_empty() {
+                name
+            } else {
+                format!("{rel}/{name}")
+            };
+            if path.is_dir() {
+                walk(&path, &rel, out);
+            } else if rel.ends_with(".fountain") {
+                let text = std::fs::read_to_string(&path)
+                    .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+                out.push((rel, text));
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus");
+    let mut out = Vec::new();
+    walk(&root, "", &mut out);
+    out.sort();
+    out
+}

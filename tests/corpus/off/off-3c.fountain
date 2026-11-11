@@ -1,0 +1,13 @@
+The kettle clicks off and nobody moves.
+
+MARA (HI) THERE
+Text after a group, so this is not a cue.
+
+MARA (HI
+The group is never closed.
+
+MARA ((HI))
+The group is nested.
+
+MARA (HI) (THERE
+The second group is never closed.

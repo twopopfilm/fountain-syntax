@@ -1846,10 +1846,14 @@ F4 (#15, #16). The test carries the ID in its name, so `grep` finds the test for
 | `HASH2-n` | A scheme 2 (default) hash, encoding, digest or migration rule. | Section 11 |
 | `WR-n` | A writer property. | Section 10 |
 
-**The conformance corpus (issue #15).** Each `OFF` row gets a corpus script that exercises it. **Every corpus script
-keeps its first block ordinary** (a plain Action paragraph, with no colon), and puts the case after it. Otherwise
-another parser may read the opening lines of an edge case as a title page (`OFF-17a`), and a difference found by the
-diff harness would come from the start of the file and not from the case.
+**The conformance corpus (issue #15).** Each `OFF` row gets a corpus script that exercises it. The scripts are
+`tests/corpus/off/off-<row>.fountain`, one per row of 6.2. **Every `OFF` script keeps its first block ordinary** (a
+plain Action paragraph, with no colon), and puts the case after it. Otherwise another parser may read the opening lines
+of an edge case as a title page (`OFF-17a`), and a difference found by the diff harness would come from the start of the
+file and not from the case. The exceptions are the rows about the start of the document (`OFF-6e`, `OFF-15f` and
+`OFF-17a` to `OFF-17f`): their case is the first block (a heading at the start of the file, a Note in the title page,
+the title page itself), so those scripts begin with it. The Twopop fixtures in `tests/corpus/twopop/` are byte-exact
+copies of the importer's captured scripts and are exempt: they open with a title page.
 
 ### 12.1 Index of every ID
 
