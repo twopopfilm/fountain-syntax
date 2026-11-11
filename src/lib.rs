@@ -12,7 +12,7 @@
 //! and the scenes, as plain owned data. Its Dialogue blocks hold the cue, the dialogue lines, the
 //! parentheticals and the lines that interrupt them, and a caret cue is paired with its partner
 //! as dual dialogue. [`Document::diagnostics`] reports the 22 diagnostic codes of `SPEC.md` §7 without
-//! changing the tree or the view. The writer is not written yet. The `serde` feature serialises a
+//! changing the tree or the view. [`Document::write`] (and `Display`) gives the source back byte for byte; the canonical writer, `canonical`, is still to come. The `serde` feature serialises a
 //! [`Document`] as its source and parses it again when it is read back, and serialises the view as
 //! it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64
 //! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature

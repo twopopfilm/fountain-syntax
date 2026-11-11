@@ -146,6 +146,20 @@ impl Document {
         &self.source
     }
 
+    /// The document written back: exactly the text that was parsed, byte for byte, whatever its
+    /// line endings, byte order mark or oddities. [`Display`](core::fmt::Display) writes the same
+    /// text.
+    ///
+    /// ```
+    /// use fountain_syntax::parse;
+    ///
+    /// let src = ".INT. X\n";
+    /// assert_eq!(parse(src).write(), src);
+    /// ```
+    pub fn write(&self) -> String {
+        self.source.clone()
+    }
+
     /// The diagnostics (SPEC 7): notes about places the parser read one way and an author or
     /// another tool may read differently. They are ordered by start of span, are the same for the
     /// same input, and never change the tree or the typed view.
@@ -164,6 +178,13 @@ impl Document {
     /// The root node, of kind [`NodeKind::Document`].
     pub fn root(&self) -> Node<'_> {
         Node { doc: self, id: 0 }
+    }
+}
+
+/// Writes the source, as [`Document::write`] does.
+impl core::fmt::Display for Document {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.source)
     }
 }
 

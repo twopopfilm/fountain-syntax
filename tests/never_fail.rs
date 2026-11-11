@@ -59,6 +59,18 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 #[test]
+fn wr_3_any_string_writes_back_unchanged() {
+    let mut state = 0x9E37_79B9_7F4A_7C15_u64;
+    for _ in 0..5_000 {
+        let count = xorshift(&mut state) % 49;
+        let src: String = (0..count)
+            .map(|_| FRAGMENTS[(xorshift(&mut state) % FRAGMENTS.len() as u64) as usize])
+            .collect();
+        assert_eq!(parse_checked(&src).write(), src, "write changed {src:?}");
+    }
+}
+
+#[test]
 fn never_fail_random_inputs() {
     let mut state = 0x9E37_79B9_7F4A_7C15_u64;
     let mut lone_seen = 0;
