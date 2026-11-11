@@ -16,8 +16,8 @@ or `ours-wrong`.
 - **The line form.** One string per element, in document order, as in the script's docstring: `TITLE <key>: <value>`,
   `HEADING <text>[ #<number>]`, `ACTION`, `CENTERED`, `CHARACTER <name>[ (<ext>)]...[ ^]`, `PAREN`, `DIALOGUE`, `LYRIC`,
   `TRANSITION`, `SECTION <depth> <text>`, `SYNOPSIS`, `PAGEBREAK`, and a last line `HASH_V1 <12 hex digits>` for each
-  scene. A line break inside a text is written U+23CE. Text with its note and boneyard markers removed and each line
-  trimmed; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. Our
+  scene. A line break inside a text is written U+23CE. Text with its note and boneyard markers removed and its ends
+  stripped; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. Our
   `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
 - **The diff.** A longest-common-subsequence line diff of ours against theirs per file. Adjacent changes form one hunk.
   An entry shows `-` for our lines and `+` for theirs.
@@ -26,9 +26,12 @@ or `ours-wrong`.
 
 Each change makes our output match screenplay-tools' representation. A difference hidden by one of them is not seen.
 
-- **Trimmed lines, tabs.** Each line of a text is trimmed with Rust's `trim`, and an Action's tabs become four spaces
-  (`Action::display`, `OFF-18c`). This hides only indentation, which our own tests cover. Rust's `trim` and Python's
-  `strip` differ on U+0085, U+2028 and the separators U+001C to U+001F; no corpus file has one today.
+- **Stripped ends, tabs.** Only the two ends of a text are stripped, with Rust's `trim`; the indentation inside it stays
+  visible (`OFF-18`). An Action's tabs become four spaces first (`Action::display`, `OFF-18c`, which screenplay-tools
+  also does). Only a title value is stripped line by line, with its empty lines dropped, as the script does. Rust's
+  `trim` and Python's `strip` agree on U+0085 and U+2028 and differ on U+001C to U+001F; no corpus file has one today.
+- **Parentheticals.** A `PAREN` line holds the text inside the parentheses, trimmed, because screenplay-tools gives that
+  (the library's `DialogueItem::Parenthetical` keeps the parentheses). This hides only the parentheses.
 - **Emphasis.** The markers are written back from `Run::Emphasis`: `***` for bold and italic, `**` for bold, `*` for
   italic, `_` for underline (outermost). `Run::Escaped(c)` is written `\c`. This hides nothing.
 - **Notes and boneyards.** `Run::Note`, `Run::Boneyard` and whole-line `Element::Note` and `Element::Boneyard` are
@@ -113,28 +116,6 @@ Unclassified.
 ````diff
 -CHARACTER ELI
 +CHARACTER ELI ^
-````
-
-### off/off-12a.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (softly)
-+PAREN softly
-````
-
-### off/off-12a.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (  a beat  )
-+PAREN a beat
 ````
 
 ### off/off-13a.fountain
@@ -306,17 +287,6 @@ Unclassified.
 +ACTION The kettle clicks off and nobody moves.⏎⏎   Mara stands at the sink.
 ````
 
-### off/off-18b.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (quietly)
-+PAREN quietly
-````
-
 ### off/off-18c.fountain
 
 **Class:** todo · **Ruling:** ? · **Reference parser:** ?
@@ -326,17 +296,6 @@ Unclassified.
 ````diff
 -ACTION The kettle clicks off and nobody moves.⏎⏎Mara crosses    the room.⏎⏎She stops at the window.
 +ACTION The kettle clicks off and nobody moves.⏎⏎    Mara crosses    the room.⏎⏎        She stops at the window.
-````
-
-### off/off-18d.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (low)
-+PAREN low
 ````
 
 ### off/off-1a.fountain
@@ -515,17 +474,6 @@ Unclassified.
 +ACTION The kettle clicks off and nobody moves.
 +TRANSITION CUT TO:
 +ACTION Mara sets the cup down.
-````
-
-### off/off-24a.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (beat)
-+PAREN beat
 ````
 
 ### off/off-24c.fountain
@@ -796,28 +744,6 @@ Unclassified.
 +ACTION Rows of steel shelving. A caged bulb flickers, then steadies.⏎⏎MARA VOSS (40s, cropped grey hair, long oilskin coat) slips through the door, clutching a red leather LEDGER.⏎⏎⏎⏎DESMOND (60s, night guard, cardigan) looks up from his desk.
 ````
 
-### twopop/blue_rev2.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (holding up the ledger)
-+PAREN holding up the ledger
-````
-
-### twopop/edge_cases.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (quietly)
-+PAREN quietly
-````
-
 ### twopop/two_scene.fountain
 
 **Class:** todo · **Ruling:** ? · **Reference parser:** ?
@@ -827,15 +753,4 @@ Unclassified.
 ````diff
 -ACTION Rows of steel shelving. A single caged bulb swings.⏎⏎MARA VOSS (40s, cropped grey hair, long oilskin coat) slips through the door, clutching a red leather LEDGER.⏎⏎DESMOND (60s, night guard, cardigan) looks up from his desk.
 +ACTION Rows of steel shelving. A single caged bulb swings.⏎⏎MARA VOSS (40s, cropped grey hair, long oilskin coat) slips through the door, clutching a red leather LEDGER.⏎⏎⏎⏎DESMOND (60s, night guard, cardigan) looks up from his desk.
-````
-
-### twopop/two_scene.fountain
-
-**Class:** todo · **Ruling:** ? · **Reference parser:** ?
-
-Unclassified.
-
-````diff
--PAREN (holding up the ledger)
-+PAREN holding up the ledger
 ````

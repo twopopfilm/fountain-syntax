@@ -80,21 +80,24 @@ fn marked(runs: &[Run], out: &mut String) {
     }
 }
 
-/// Each line of the text, trimmed.
-fn text_lines(text: &Text) -> Vec<String> {
-    let mut raw = String::new();
-    marked(&text.runs, &mut raw);
-    raw.replace("\r\n", "\n")
-        .replace('\r', "\n")
-        .split('\n')
-        .map(|l| l.trim().to_owned())
-        .collect()
+/// The marked text, every line break written `\n`.
+fn raw(text: &Text) -> String {
+    let mut out = String::new();
+    marked(&text.runs, &mut out);
+    out.replace("\r\n", "\n").replace('\r', "\n")
 }
 
-/// The text on one line: trimmed lines joined with the break mark.
+/// The text on one line: only its ends are stripped, and each line break is the break mark.
 fn shown(text: &Text) -> String {
-    let sep = BREAK.to_string();
-    text_lines(text).join(&sep).trim_matches(BREAK).to_owned()
+    raw(text).trim().replace('\n', &BREAK.to_string())
+}
+
+/// An Action's text as `shown` gives it, with each tab four spaces (`Action::display`, OFF-18c).
+fn action_shown(text: &Text) -> String {
+    raw(text)
+        .replace('\t', "    ")
+        .trim()
+        .replace('\n', &BREAK.to_string())
 }
 
 /// The importer's `HASH_V1` of a scene: the first 12 hex digits of the SHA-256 of its scheme 1 text.
@@ -113,7 +116,10 @@ struct Out {
 impl Out {
     /// A line `<prefix> <text>`, dropped when the text is empty.
     fn push(&mut self, prefix: &str, text: &Text) {
-        let t = shown(text);
+        self.push_shown(prefix, shown(text));
+    }
+
+    fn push_shown(&mut self, prefix: &str, t: String) {
         if !t.is_empty() {
             self.lines.push(format!("{prefix} {t}"));
         }
@@ -132,7 +138,7 @@ impl Out {
             // A whole-line Note or Boneyard is left out and does not end a run of Actions.
             Element::Note(_) | Element::Boneyard(_) => {}
             Element::Action(a) if !a.centered => {
-                let t = shown(&a.text).replace('\t', "    ");
+                let t = action_shown(&a.text);
                 if !t.is_empty() {
                     self.actions.push(t);
                 }
@@ -142,7 +148,7 @@ impl Out {
                 self.flush();
                 match other {
                     Element::Action(a) => {
-                        self.push("CENTERED", &a.text);
+                        self.push_shown("CENTERED", action_shown(&a.text));
                         a.interjections.iter().for_each(|i| self.element(i));
                     }
                     Element::Dialogue(b) => self.block(b, false),
@@ -176,7 +182,10 @@ impl Out {
                 DialogueItem::Line(t) => run.push(shown(t)),
                 DialogueItem::Parenthetical(t) => {
                     self.dialogue(&mut run);
-                    self.push("PAREN", t);
+                    // The library keeps the parentheses; screenplay-tools gives the text inside.
+                    let p = shown(t);
+                    let inner = p.strip_prefix('(').and_then(|x| x.strip_suffix(')'));
+                    self.push_shown("PAREN", inner.unwrap_or(&p).trim().to_owned());
                 }
                 DialogueItem::Interjection(e) => {
                     if !matches!(**e, Element::Note(_) | Element::Boneyard(_)) {
@@ -233,10 +242,17 @@ fn lines(sp: &Screenplay) -> Vec<String> {
     let mut out = Out::default();
     let sep = BREAK.to_string();
     for entry in sp.title_page.iter().flat_map(|t| &t.entries) {
+        // Only a TITLE value is stripped line by line, with the empty lines dropped.
         let value: Vec<String> = entry
             .values
             .iter()
-            .flat_map(text_lines)
+            .flat_map(|v| {
+                raw(v)
+                    .trim()
+                    .split('\n')
+                    .map(|l| l.trim().to_owned())
+                    .collect::<Vec<_>>()
+            })
             .filter(|l| !l.is_empty())
             .collect();
         out.lines
@@ -433,7 +449,7 @@ fn lines_flatten_a_small_script() {
             "HEADING INT. ROOM - DAY",
             "ACTION The kettle is **hot** and *old*, \\*not\\* _bare_.⏎⏎Still hot.",
             "CHARACTER MARA (V.O.)",
-            "PAREN (quietly)",
+            "PAREN quietly",
             "DIALOGUE Hello.⏎There.",
             "CHARACTER BEN",
             "DIALOGUE Hi.",
@@ -441,6 +457,12 @@ fn lines_flatten_a_small_script() {
             "DIALOGUE Yo.",
         ])
     );
+}
+
+#[test]
+fn lines_keep_indentation_and_expand_action_tabs() {
+    let got = lines(&parse("INT. ROOM - DAY\n\n  He stands.\n\tShe  sits.\n   \n").screenplay());
+    assert_eq!(got[1], "ACTION He stands.⏎    She  sits.");
 }
 
 #[test]
