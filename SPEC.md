@@ -740,7 +740,7 @@ pub fn parse(source: &str) -> Document;
 | Feature | Adds | Dependency |
 |---|---|---|
 | `serde` | `Serialize` and `Deserialize` on the tree, the view and `Diagnostic` | `serde` |
-| `locked-scene-numbers` | Slugline's `##n#` (5.2) | none |
+| `locked-scene-numbers` | Slugline's `##n#` (5.2) and `with_locked_scene_number` (10.2) | none |
 | `shot` | Beat's `!!` Shot (5.2) | none |
 | `hash` | The hash methods and digests of section 11 (scheme 2 and scheme 1) | `sha2` 0.10 and `unicode-normalization` |
 
@@ -1038,7 +1038,7 @@ How the awkward pieces appear:
 
 ```rust
 impl Document {
-    /// Exactly `source()` for a tree that has not been edited.
+    /// Exactly `source()`, whether or not the document came from an edit.
     pub fn write(&self) -> String;
 
     /// Replaces one span, re-parses, and leaves every other byte untouched. The named edits
@@ -1097,6 +1097,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   `with_scene_number` (writes `#12A#`), `with_locked_scene_number` (the locked form `##12A#`, only with
   `locked-scene-numbers`), `with_synopsis`, `with_note` and `with_cue_renamed` are named wrappers around it, and
   `EditError` is the error they return.
+- `with_replaced` checks nothing: it panics if the span is out of range, inverted or not on character boundaries
+  (test `wr_7_bad_span_panics`). Only the named edits return an `EditError`.
 - New lines use the first line break found in the document (`\n` if there is none).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be.

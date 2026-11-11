@@ -6,7 +6,8 @@
 //! dual-dialogue carets, transitions, centered text, lyrics, sections, synopses and page breaks
 //! (and Shot with the `shot` feature). Notes and Boneyard are `Note` and `Boneyard` nodes, and a `Gap`
 //! holds the line breaks and blank lines around top-level nodes: before the first, between two, and
-//! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number.
+//! after the last. The `locked-scene-numbers` feature reads `##12A#` as a scene number and adds
+//! `Document::with_locked_scene_number`.
 //!
 //! [`Document::screenplay`] builds the typed view, a [`Screenplay`]: the title page, the preamble
 //! and the scenes, as plain owned data. Its Dialogue blocks hold the cue, the dialogue lines, the
@@ -21,8 +22,8 @@
 //! `with_cue_renamed`, and `with_locked_scene_number` with its feature) build on it and return an
 //! [`EditError`] when the edited text would not parse as the intended element. The `serde`
 //! feature serialises a [`Document`] as its source and parses it again when it is read back, and
-//! serialises the view as it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64 lowercase
-//! hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
+//! serialises the view as it is. The [`Digest`] type exists in every build; a scheme 2 digest prints as `fs2:` and 64
+//! lowercase hexadecimal digits, and a scheme 1 digest as the bare 64 digits. The `hash` feature
 //! adds the methods that compute scheme 2 digests (`SPEC.md` section 11): for elements, scenes,
 //! the preamble, the title page, the whole screenplay and the exact bytes of any span (for example
 //! `Screenplay::hash`). Scheme 1, the importer-compatible scheme, hashes scenes only: `Scene::hash_v1`
