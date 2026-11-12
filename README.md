@@ -19,7 +19,7 @@ rest.
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
 > `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
 > standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
-> `screenplay-tools` are in place, and some corpus additions and rulings are still open. F2 and F3 are in progress.
+> `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust

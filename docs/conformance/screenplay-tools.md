@@ -247,6 +247,39 @@ The scene hash differs only because the elements do (above); it follows the OFF-
 +HASH_V1 b7fb49974f7b
 ````
 
+### off/off-17a-bare-key.fountain
+
+**Class:** documented-choice · **Ruling:** OFF-17a · **Reference parser:** OFF-17
+
+A bare `Title:` as the first line with no indented line under it: ours keeps it in the Action, since a bare key needs an indented line under it; theirs takes the block as a title page with an empty `Title`. The official syntax shows a bare key only with indented lines under it and leaves a lone one open.
+
+````diff
+-ACTION Title:⏎The kettle clicks off and nobody moves.
++TITLE Title: 
++ACTION The kettle clicks off and nobody moves.
+````
+
+### off/off-17a-heading.fountain
+
+**Class:** documented-choice · **Ruling:** OFF-17a · **Reference parser:** OFF-17
+
+`INT HOUSE: KITCHEN` as the first line: ours makes it a heading, since a heading-shaped line is never a key; theirs reads any line of the form key, colon, value as the title page. The official syntax does not say what a heading-shaped line with a colon is.
+
+````diff
+-HEADING INT HOUSE: KITCHEN
++TITLE INT HOUSE: KITCHEN
+````
+
+### off/off-17a-heading.fountain
+
+**Class:** documented-choice · **Ruling:** OFF-17a; 11.7 row Title page edge cases · **Reference parser:** OFF-17
+
+The scene hash exists only in ours, because the heading is a scene in ours and a title-page key in theirs (above).
+
+````diff
+-HASH_V1 248c26b7ac9e
+````
+
 ### off/off-17d.fountain
 
 **Class:** documented-choice · **Ruling:** OFF-17d · **Reference parser:** OFF-17
@@ -263,16 +296,17 @@ One- and two-space lines in the title page: ours keeps them as stray lines attac
 
 **Class:** documented-choice · **Ruling:** OFF-17e, OFF-17b · **Reference parser:** OFF-17
 
-An inline value followed by indented lines: ours keeps both as the value and the title page runs to the blank line; theirs ends the title page after `Contact: A. Writer` and makes the following lines, keys included, Action.
+An inline value followed by indented lines, and a bare key with an indented value: ours keeps both as the value and the title page runs to the blank line; theirs ends the title page after `Contact: A. Writer` and makes the following lines, keys included, Action.
 
 ````diff
 -TITLE Contact: A. Writer⏎Street line⏎Town line
 -TITLE Draft date: 5:30 pm
 -TITLE Source: 
 -TITLE Credit: Written by
+-TITLE Notes: For the table read
 -ACTION The kettle clicks off and nobody moves.⏎⏎The lights hold.
 +TITLE Contact: A. Writer
-+ACTION Street line⏎   Town line⏎Draft date: 5:30 pm⏎Source:⏎Credit: Written by⏎⏎The kettle clicks off and nobody moves.⏎⏎The lights hold.
++ACTION Street line⏎   Town line⏎Draft date: 5:30 pm⏎Source:⏎Credit: Written by⏎Notes:⏎   For the table read⏎⏎The kettle clicks off and nobody moves.⏎⏎The lights hold.
 ````
 
 ### off/off-17f.fountain
@@ -435,11 +469,11 @@ The second half of the same split: theirs makes `She opens it at last.` its own 
 
 **Class:** theirs-wrong · **Ruling:** OFF-22a, OFF-18b, OFF-22d · **Reference parser:** OFF-22
 
-`  !indented action`: both force Action and drop the `!`; ours keeps the two spaces before it, as Action text keeps its leading whitespace (4.3), and theirs drops them.
+`  !indented action` and a tab before `!`: both force Action and drop the `!`; ours keeps the two spaces (the tab shows as four) before it, as Action text keeps its leading whitespace (4.3), and theirs drops them. No test yet pins the view's text for either; issue #69 pins it.
 
 ````diff
--ACTION The kettle clicks off and nobody moves.⏎⏎  indented action
-+ACTION The kettle clicks off and nobody moves.⏎⏎indented action
+-ACTION The kettle clicks off and nobody moves.⏎⏎  indented action⏎⏎    tabbed action
++ACTION The kettle clicks off and nobody moves.⏎⏎indented action⏎⏎tabbed action
 ````
 
 ### off/off-23a.fountain
