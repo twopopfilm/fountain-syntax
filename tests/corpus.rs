@@ -9,10 +9,13 @@ use common::corpus_files;
 use fountain_syntax::{Element, parse};
 
 /// The `off/` scripts whose case is the first block, so they cannot start with an ordinary one.
-const START_OF_DOCUMENT: [&str; 8] = [
+const START_OF_DOCUMENT: [&str; 11] = [
     "off/off-6e.fountain",
     "off/off-15f.fountain",
     "off/off-17a.fountain",
+    "off/off-17a-heading.fountain",
+    "off/off-17a-bare-key.fountain",
+    "off/off-17a-prose.fountain",
     "off/off-17b.fountain",
     "off/off-17c.fountain",
     "off/off-17d.fountain",
@@ -154,15 +157,26 @@ fn corpus_off_scripts_fire_their_row_diagnostic() {
 }
 
 #[test]
+fn corpus_off_23e_uses_one_line_ending() {
+    // OFF-23e is about a carriage return as trailing whitespace; mixed endings are `off-2a`'s case.
+    let doc = parse(&read("tests/corpus/off/off-23e.fountain"));
+    let codes: Vec<&str> = doc.diagnostics().iter().map(|d| d.code.as_str()).collect();
+    assert!(
+        !codes.contains(&"mixed-line-endings"),
+        "off-23e mixes line endings: {codes:?}"
+    );
+}
+
+#[test]
 fn corpus_every_off_row_has_a_script() {
     let rows: BTreeSet<String> = read("SPEC.md").lines().filter_map(row_id).collect();
     assert!(!rows.is_empty(), "no OFF rows found in SPEC.md");
     let scripts: BTreeSet<String> = corpus_files()
         .into_iter()
         .filter_map(|(p, _)| {
-            p.strip_prefix("off/")?
-                .strip_suffix(".fountain")
-                .map(str::to_owned)
+            let stem = p.strip_prefix("off/")?.strip_suffix(".fountain")?;
+            // `off-<row>-<case>` is an extra script of row `off-<row>`.
+            Some(stem.splitn(3, '-').take(2).collect::<Vec<_>>().join("-"))
         })
         .collect();
     let missing: Vec<_> = rows.difference(&scripts).collect();

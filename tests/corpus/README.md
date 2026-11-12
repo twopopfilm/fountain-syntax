@@ -7,9 +7,9 @@ long as its row's test and the round-trip test (`WR-1`) still pass. Editing or a
 re-running `uv run --script scripts/screenplay-tools-diff.py` and classifying any new hunk in
 `docs/conformance/screenplay-tools.md` (see `screenplay-tools.json` below). The root `.gitattributes` sets
 `tests/corpus/** -text`, so line endings, trailing whitespace and a missing final newline survive any checkout:
-the `off/` scripts for the line-ending rows (`OFF-2a`, `OFF-2b`, `OFF-23e`) keep their CR and CRLF bytes and their
-missing final newline on every platform. The `twopop/` files are stored with LF line endings, and the hash tests would
-pass even if a checkout converted them, because scheme 1 ignores line endings (`SPEC.md` 11.7, G1).
+the `off/` scripts for the line-ending rows keep their bytes on every platform: `OFF-2a` and `OFF-23e` their CR and
+CRLF line endings, `OFF-2b` its missing final newline. The `twopop/` files are stored with LF line endings, and the
+hash tests would pass even if a checkout converted them, because scheme 1 ignores line endings (`SPEC.md` 11.7, G1).
 
 Every file here is original to the Twopop project, or used under terms that allow redistribution. Record each new
 file's source and licence in the table below.
@@ -32,18 +32,22 @@ The expected `hash_v1` values in the tests are the importer's stored `text_sha` 
 
 ## `off/`
 
-One script per `OFF` row of the decision table (`SPEC.md` 6.2), named by the row: `off/off-<n><letter>.fountain`, in
-lowercase and without zero-padding. Each script keeps its first block an ordinary Action paragraph (plain prose, no
-colon, no sigil), so that a diff of two parsers finds the difference in the row's case and not in the start of the
-file.
+At least one script per `OFF` row of the decision table (`SPEC.md` 6.2), named by the row: `off/off-<n><letter>.fountain`,
+in lowercase and without zero-padding (a row may add `off-<n><letter>-<case>.fountain` files, described below). Each
+script keeps its first block an ordinary Action paragraph (plain prose, no colon, no sigil), so that a diff of two
+parsers finds the difference in the row's case and not in the start of the file.
 
 | File | Source | Licence | Checked by |
 |---|---|---|---|
 | `off/off-*.fountain` | Written for this project, issue #15 | MIT OR Apache-2.0, original to the Twopop project | `WR-1`, `tests/corpus.rs`, `tests/screenplay_tools.rs` |
 
+A row whose cases must each be a first block may add `off/off-<row>-<case>.fountain` files (`<case>` is lowercase
+words joined by `-`); `tests/corpus.rs` reads such a file as belonging to row `off-<row>`.
+
 The exceptions are the rows about the start of the document, whose case has to be the first block. They are
-`OFF-6e`, `OFF-15f` (a Note in the title page) and `OFF-17a` to `OFF-17f`. The list is `START_OF_DOCUMENT` in
-`tests/corpus.rs`, which skips the first-block check for them.
+`OFF-6e`, `OFF-15f` (a Note in the title page) and `OFF-17a` to `OFF-17f`, plus the three extra `OFF-17a` files
+`off-17a-heading.fountain`, `off-17a-bare-key.fountain` and `off-17a-prose.fountain`. The list is `START_OF_DOCUMENT`
+in `tests/corpus.rs`, which skips the first-block check for them.
 
 ## `screenplay-tools.json`
 

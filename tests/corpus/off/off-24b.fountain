@@ -4,3 +4,18 @@ MARA
 I will stay.
 !He does not move.
 Then I will go.
+
+OTTO
+I will wait.
+.THE KITCHEN
+Then I will sit.
+
+MARA
+I will sing.
+>LATER
+Then I will stop.
+
+OTTO
+I will knock.
+@MARA
+Then I will open.

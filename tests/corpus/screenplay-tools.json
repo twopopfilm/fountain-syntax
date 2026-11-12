@@ -13,9 +13,10 @@
       "lines": [
         "ACTION The kettle clicks off and nobody moves.",
         "CENTERED FIN",
+        "CENTERED FIN",
         "CENTERED FIN"
       ],
-      "sha256": "1ee40391cb60eb1684ad717ec7c40563fef82603691ca4094c11ce952909f2e7"
+      "sha256": "728bcfd684f3ec3ff1e3394aba70167540081d4e30893783efde589c0d5c0461"
     },
     "off/off-10c.fountain": {
       "lines": [
@@ -109,9 +110,13 @@
       "lines": [
         "ACTION The kettle clicks off and nobody moves.",
         "CHARACTER MARA",
-        "DIALOGUE (whispering) and then speaks⏎(not closed⏎(two lines⏎of parenthesis)"
+        "DIALOGUE (whispering) and then speaks",
+        "CHARACTER OTTO",
+        "DIALOGUE (not closed",
+        "CHARACTER MARA",
+        "DIALOGUE (two lines⏎of parenthesis)"
       ],
-      "sha256": "8fc79dee5c40447e80a3e59f9d3893921a4229ad6c95ed226dbb549e6f5916f1"
+      "sha256": "c43f160bd6867261826cc5d76c938f85895cf72af7a7aa9ac55c0a6bec475952"
     },
     "off/off-12c.fountain": {
       "lines": [
@@ -270,6 +275,27 @@
       ],
       "sha256": "983bd0f98a2ab0090ad2c4409eedc1e9a0e42f7db7cf5cc2af8e6a1ed4e0408e"
     },
+    "off/off-17a-bare-key.fountain": {
+      "lines": [
+        "TITLE Title: ",
+        "ACTION The kettle clicks off and nobody moves."
+      ],
+      "sha256": "479695c304cf5e7765f1e63b284a47906d5de15fc55c36619dbf169a8d6fdde4"
+    },
+    "off/off-17a-heading.fountain": {
+      "lines": [
+        "TITLE INT HOUSE: KITCHEN",
+        "ACTION The kettle clicks off and nobody moves."
+      ],
+      "sha256": "7cc7ecd7bd8db3f6a929163ab2c0e1495d369a087340c1e51d57d89a8279dd35"
+    },
+    "off/off-17a-prose.fountain": {
+      "lines": [
+        "TITLE Note: the kettle clicks off and nobody moves.",
+        "ACTION The light stays off."
+      ],
+      "sha256": "0abbb95d545ce394bf6a0a5bed1b7adb8a98adfa22abd60744f11c1116ce249b"
+    },
     "off/off-17a.fountain": {
       "lines": [
         "TITLE Title: The Kettle",
@@ -309,9 +335,9 @@
       "lines": [
         "TITLE Title: The Kettle",
         "TITLE Contact: A. Writer",
-        "ACTION Street line⏎   Town line⏎Draft date: 5:30 pm⏎Source:⏎Credit: Written by⏎⏎The kettle clicks off and nobody moves.⏎⏎The lights hold."
+        "ACTION Street line⏎   Town line⏎Draft date: 5:30 pm⏎Source:⏎Credit: Written by⏎Notes:⏎   For the table read⏎⏎The kettle clicks off and nobody moves.⏎⏎The lights hold."
       ],
-      "sha256": "a370c6f931fb6f6ef2506020fcf3a976b3e21184b6a00dafb2419d7fbeabf562"
+      "sha256": "3fded706f63f32e843fd922458c6e2423a721f9f54f2ee2cde78ca70601f840c"
     },
     "off/off-17f.fountain": {
       "lines": [
@@ -326,9 +352,10 @@
         "CHARACTER MARA",
         "DIALOGUE I am here.",
         "TRANSITION CUT TO:",
-        "HASH_V1 70575fa1447d"
+        "ACTION OTTO⏎⏎Nobody answers.",
+        "HASH_V1 3e6599b7382e"
       ],
-      "sha256": "60600b833d597b73efba164328a13969d7e0378c1405e1b08789f7be38729f36"
+      "sha256": "caac2be730b2a1b46cdcce8a0a42723f17eb0b0faa6f8dd50ed8a9a53c58e2eb"
     },
     "off/off-18b.fountain": {
       "lines": [
@@ -506,9 +533,9 @@
     },
     "off/off-22a.fountain": {
       "lines": [
-        "ACTION The kettle clicks off and nobody moves.⏎⏎indented action"
+        "ACTION The kettle clicks off and nobody moves.⏎⏎indented action⏎⏎tabbed action"
       ],
-      "sha256": "325b0be45f5b2c6193e0f63d386d2e05e5a7773f49900a286f0564c870ccd20e"
+      "sha256": "8d79e1170880bdd257102a1c7fd4b255b9a809de34ec9ee2e67e1af69acd6dcf"
     },
     "off/off-22b.fountain": {
       "lines": [
@@ -578,9 +605,13 @@
         "CHARACTER OTTO",
         "DIALOGUE The tea is already cold.",
         "CHARACTER MARA ^",
-        "DIALOGUE So is the stove."
+        "DIALOGUE So is the stove.",
+        "CHARACTER OTTO",
+        "DIALOGUE The cups are out.",
+        "CHARACTER MARA ^",
+        "DIALOGUE So are the lights."
       ],
-      "sha256": "0ea435c3d3d1fe49a02a9229e0064897d9f35553737cf42908808cde453703fe"
+      "sha256": "0bfe1744246be23cb405b8e2784a5ff66a38e1dc7fbed4921f8d25dda2b5d6c3"
     },
     "off/off-23d.fountain": {
       "lines": [
@@ -596,7 +627,7 @@
         "TRANSITION SMASH CUT TO:",
         "ACTION The light fails."
       ],
-      "sha256": "5da1465b234180db1b471b54e3a00ca2192ccae0fe7f59b7e9eec7d9f3cb423f"
+      "sha256": "2311aa9f2945c9a824d53a5a967edf7c8743882d44594039fae4c96236ba4598"
     },
     "off/off-24a.fountain": {
       "lines": [
@@ -613,9 +644,22 @@
         "ACTION The kettle clicks off and nobody moves.",
         "CHARACTER MARA",
         "DIALOGUE I will stay.",
-        "ACTION He does not move.⏎Then I will go."
+        "ACTION He does not move.⏎Then I will go.",
+        "CHARACTER OTTO",
+        "DIALOGUE I will wait.",
+        "HEADING THE KITCHEN",
+        "ACTION Then I will sit.",
+        "CHARACTER MARA",
+        "DIALOGUE I will sing.",
+        "TRANSITION LATER",
+        "ACTION Then I will stop.",
+        "CHARACTER OTTO",
+        "DIALOGUE I will knock.",
+        "CHARACTER MARA",
+        "DIALOGUE Then I will open.",
+        "HASH_V1 ee4b04642907"
       ],
-      "sha256": "9bf23f2ebfaca97f26ab43d699bc1821c4261e9dd19255539f8d5d0dd846de27"
+      "sha256": "f5bf7f6166cb00c33041d7772316432b7bb6aeab91aa595d6a19d6e40174fb72"
     },
     "off/off-24c.fountain": {
       "lines": [
@@ -807,9 +851,12 @@
         "HASH_V1 bbc91cde19aa",
         "HEADING INT\tHOUSE",
         "ACTION She does not move.⏎⏎INT-HOUSE⏎⏎The light stays off.⏎⏎INTERIOR⏎⏎Nothing happens.",
-        "HASH_V1 4bfaa0248489"
+        "HASH_V1 4bfaa0248489",
+        "HEADING INT.HOUSE",
+        "ACTION The kettle is cold.⏎⏎I/EXT HOUSE⏎⏎No one answers.",
+        "HASH_V1 2e390238bbd9"
       ],
-      "sha256": "d0feb49e36b5600b9430d8a6c293e4e1422a6a05012971ac56c5cbafaa2e0de7"
+      "sha256": "8c16100af10208b9347e46e523f0ea5bd823311fbc9ad5bf9e87c2b085f6d1f9"
     },
     "off/off-6c.fountain": {
       "lines": [

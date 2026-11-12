@@ -5,8 +5,8 @@ It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and i
 
 - **Goals, milestones (F1–F5) and the "done when" checks:** `docs/brief.md`.
 - **Status:** F1 (the standards study, which ends in `SPEC.md`) is done. F4 is in progress: the corpus and the
-  `screenplay-tools` diff are in place, and what remains is the near misses left out of ten corpus scripts and the
-  OFF-11c caret ruling. F2 (parser, view, diagnostics, hashes) and F3 (writer, edits) are in progress.
+  `screenplay-tools` diff are in place, and what remains is the rulings listed under "Open for SPEC.md" in
+  `docs/conformance/screenplay-tools.md`. F2 (parser, view, diagnostics, hashes) and F3 (writer, edits) are in progress.
 - **Machine-specific context** is kept outside the repository, in `~/.config/twopop/agents.local.md`. Read it if it
   exists. The template is `docs/agents.local.example.md`.
 
