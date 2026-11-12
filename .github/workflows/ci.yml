@@ -1,6 +1,6 @@
 name: ci
 
-# Format, lint and test on the three platforms the library supports.
+# Format, lint, test and build the docs on the three platforms the library supports.
 on:
   pull_request:
   push:

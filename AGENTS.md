@@ -86,7 +86,8 @@ locally. Rules:
   `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
-  planned features as planned; never describe something as working before it does.
+  planned features as planned; never describe something as working before it does. Every code block in it is a
+  doctest (`src/lib.rs` includes it), so `cargo test` runs it and a broken example fails the build.
 
 ## /next: project rules
 

@@ -1,7 +1,8 @@
 # Changelog
 
 All notable changes to this project are recorded here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The crate is not released yet.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with one extra section, Deferred, for work postponed past a
+release. The crate is not released yet.
 
 ## [Unreleased]
 
@@ -13,7 +14,7 @@ All notable changes to this project are recorded here. The format follows
   dialogue, parentheticals and dual dialogue.
 - Diagnostics: `Document::diagnostics()` reports the 22 codes of `SPEC.md` section 7 without changing the tree.
 - A writer: `Document::write` gives the source back byte for byte, and `canonical` writes a view built in memory as
-  Fountain that parses back to the same view.
+  Fountain that parses back to the same view, except for the shapes listed in `SPEC.md` section 10.3.
 - Targeted edits: `Document::with_replaced` and the named edits `with_scene_number`, `with_synopsis`, `with_note` and
   `with_cue_renamed`, which return an `EditError` instead of an edit that would not read as intended.
 - Hashes behind the `hash` feature: scheme 2 hashes of elements, scenes, the document, the title page and source spans,
