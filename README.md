@@ -111,7 +111,7 @@ crate treats correctness as something to measure:
   both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13 and the
   corpus's OFF rows. Two extension IDs, `EXT-contd-2` and `EXT-locked-scene-numbers-4`, have no test that carries
   their name yet.
-- **A conformance corpus.** `tests/corpus/` holds one original script for each row of the decision table in
+- **A conformance corpus.** `tests/corpus/` holds at least one original script for each row of the decision table in
   [`SPEC.md`](SPEC.md) section 6.2, plus Twopop's own fixtures, each with its source and licence recorded. The spec's
   text has no licence, so it is not copied, and sample scripts would need written permission. Every script round-trips
   byte-for-byte through the writer (`WR-1`).
