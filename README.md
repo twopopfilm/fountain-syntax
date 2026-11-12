@@ -20,7 +20,8 @@ rest.
 > `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
 > standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
 > `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress. The usage examples are
-> compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
+> compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe the
+> planned 0.1 release. See the [roadmap](#roadmap).
 
 ## Usage
 
@@ -75,7 +76,8 @@ assert_eq!(doc.diagnostics()[0].code, DiagnosticCode::UnclosedNote);
 ### Edit
 
 A named edit changes one span of the source and re-parses. It returns an `EditError` instead of an edit that would not
-read as what it was meant to be. The original `Document` is not changed.
+read as what it was meant to be (`EditError::Invalid`), or `EditError::NotFound` for a span that is not an element of
+the kind the edit needs. The original `Document` is not changed.
 
 ```rust
 use fountain_syntax::{Element, parse};
@@ -99,7 +101,7 @@ assert_eq!(doc.source(), "INT. HOUSE - DAY\n\nMARA\nHello.\n");
 ### Write
 
 `write` gives the source back byte for byte, whatever its line endings or forced elements. `canonical` writes a view
-as Fountain, with a sigil only where one is needed, so its text can differ from the source.
+as Fountain, with a sigil only where one is needed and LF line endings, so its text can differ from the source.
 
 ```rust
 use fountain_syntax::{canonical, parse};

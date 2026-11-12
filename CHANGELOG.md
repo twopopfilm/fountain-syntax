@@ -16,7 +16,8 @@ release. The crate is not released yet.
 - A writer: `Document::write` gives the source back byte for byte, and `canonical` writes a view built in memory as
   Fountain that parses back to the same view, except for the shapes listed in `SPEC.md` section 10.3.
 - Targeted edits: `Document::with_replaced` and the named edits `with_scene_number`, `with_synopsis`, `with_note` and
-  `with_cue_renamed`, which return an `EditError` instead of an edit that would not read as intended.
+  `with_cue_renamed` (and `with_locked_scene_number` with the `locked-scene-numbers` feature), which return an
+  `EditError` instead of an edit that would not read as intended.
 - Hashes behind the `hash` feature: scheme 2 hashes of elements, scenes, the document, the title page and source spans,
   and the importer-compatible scheme 1 hash of a scene (`Scene::hash_v1`).
 - Four Cargo features, all off by default: `locked-scene-numbers`, `shot`, `serde` and `hash`.
