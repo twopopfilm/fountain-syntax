@@ -22,6 +22,14 @@ rest.
 > `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
+## Usage
+
+Every example here is compiled and run by `cargo test`, in the default build and with all features.
+
+### Parse
+
+`parse` never fails. The tree keeps every byte, so its source is the input.
+
 ```rust
 use fountain_syntax::{Child, NodeKind, parse};
 
@@ -38,24 +46,97 @@ assert_eq!(kinds, [NodeKind::TitlePage, NodeKind::SceneHeading]);
 assert_eq!(doc.source(), "Title: Big Fish\n\nINT. HOUSE - DAY\n");
 ```
 
+### Inspect
+
+`screenplay()` builds the typed view, and `diagnostics()` lists the cases the spec calls ambiguous, each with a code.
+Neither changes the tree.
+
+```rust
+use fountain_syntax::{DiagnosticCode, Element, parse};
+
+let doc = parse("Title: Big Fish\n\nINT. HOUSE - DAY\n\nMARA\nHello.\n\nEXT. YARD - NIGHT\n\nBob waits.\n");
+let screenplay = doc.screenplay();
+
+let title = screenplay.title_page.as_ref().and_then(|page| page.title());
+assert_eq!(title.unwrap().values[0].plain(), "Big Fish");
+
+assert_eq!(screenplay.scenes.len(), 2);
+assert_eq!(screenplay.scenes[0].heading.text.plain(), "INT. HOUSE - DAY");
+assert_eq!(screenplay.scenes[1].heading.text.plain(), "EXT. YARD - NIGHT");
+let Element::Dialogue(block) = &screenplay.scenes[0].elements[0] else { panic!("a cue") };
+assert_eq!(block.cue.name.plain(), "MARA");
+assert!(doc.diagnostics().is_empty());
+
+// A note that is never closed is kept as text and reported.
+let doc = parse("INT. HOUSE - DAY\n\nBob [[walks in.\n");
+assert_eq!(doc.diagnostics()[0].code, DiagnosticCode::UnclosedNote);
+```
+
+### Edit
+
+A named edit changes one span of the source and re-parses. It returns an `EditError` instead of an edit that would not
+read as what it was meant to be. The original `Document` is not changed.
+
+```rust
+use fountain_syntax::{Element, parse};
+
+let doc = parse("INT. HOUSE - DAY\n\nMARA\nHello.\n");
+let screenplay = doc.screenplay();
+
+let Element::Dialogue(block) = &screenplay.scenes[0].elements[0] else { panic!("a cue") };
+let renamed = doc.with_cue_renamed(block.cue.span.unwrap(), "JUNE").unwrap();
+assert_eq!(renamed.source(), "INT. HOUSE - DAY\n\nJUNE\nHello.\n");
+
+// Spans index the document they came from. The heading is before the renamed cue, so its span still fits.
+let heading = screenplay.scenes[0].heading.span.unwrap();
+let numbered = renamed.with_scene_number(heading, "12A").unwrap();
+assert_eq!(numbered.source(), "INT. HOUSE - DAY #12A#\n\nJUNE\nHello.\n");
+
+assert_eq!(doc.source(), "INT. HOUSE - DAY\n\nMARA\nHello.\n");
+```
+
+### Write
+
+`write` gives the source back byte for byte, whatever its line endings or forced elements. `canonical` writes a view
+as Fountain, with a sigil only where one is needed, so its text can differ from the source.
+
+```rust
+use fountain_syntax::{canonical, parse};
+
+// CRLF line endings, a forced Action (`!`) and a forced scene heading (`.`).
+let src = "INT. HOUSE - DAY\r\n\r\n!QUIET\r\n\r\n.roof\r\n";
+let doc = parse(src);
+assert_eq!(doc.write(), src);
+
+let view = doc.screenplay();
+let text = canonical(&view);
+assert_eq!(text, "INT. HOUSE - DAY\n\nQUIET\n\n.roof\n");
+assert_eq!(canonical(&parse(&text).screenplay()), text);
+```
+
+### Features and hashes
+
 The Cargo features `locked-scene-numbers` and `shot` exist and change how the tree reads those two extensions;
 `locked-scene-numbers` also adds `Document::with_locked_scene_number`.
 The `serde` feature exists too: a `Document` serialises as its source text and is parsed again when it is read back.
 The `hash` feature adds the scheme 2 hashes and the scheme 1 hash of a scene (and `sha2` and `unicode-normalization`):
 
 ```rust
-// needs the `hash` feature
 use fountain_syntax::parse;
 
 let doc = parse("INT. HOUSE - DAY\n\nBob walks in.\n");
 let screenplay = doc.screenplay();
-// A self-describing digest: `fs2:` plus 64 hexadecimal digits.
-assert!(screenplay.hash().to_string().starts_with("fs2:"));
-// A scene has one hash per element, to see which element changed.
 assert_eq!(screenplay.scenes.len(), 1);
-assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
-// The importer-compatible scheme 1 hash of a scene is the bare 64 digits.
-assert_eq!(screenplay.scenes[0].hash_v1().to_string().len(), 64);
+// The methods below need the `hash` feature.
+#[cfg(feature = "hash")]
+{
+    // A self-describing digest: `fs2:` plus 64 hexadecimal digits.
+    assert!(screenplay.hash().to_string().starts_with("fs2:"));
+    // A scene has one hash per element, to see which element changed.
+    assert_eq!(screenplay.scenes[0].element_hashes().len(), 1);
+    // The importer-compatible scheme 1 hash of a scene is the bare 64 digits.
+    assert_eq!(screenplay.scenes[0].hash_v1().to_string().len(), 64);
+}
 ```
 
 The text that scheme 1 hashes is available in every build, without the `hash` feature: `Scene::normalized_text_v1`,
