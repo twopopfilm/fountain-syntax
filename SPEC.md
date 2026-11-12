@@ -1854,8 +1854,8 @@ of an edge case as a title page (`OFF-17a`), and a difference found by the diff 
 file and not from the case. The exceptions are the rows about the start of the document (`OFF-6e`, `OFF-15f` and
 `OFF-17a` to `OFF-17f`): their case is the first block (a heading at the start of the file, a Note in the title page,
 the title page itself), so those scripts begin with it. The Twopop fixtures in `tests/corpus/twopop/` are byte-exact
-copies of the importer's captured scripts and are exempt: they open with a title page. The record of the differences from `screenplay-tools` on this corpus is
-`docs/conformance/screenplay-tools.md`.
+copies of the importer's captured scripts and are exempt: they open with a title page.
+The record of the differences from `screenplay-tools` on this corpus is `docs/conformance/screenplay-tools.md`.
 
 ### 12.1 Index of every ID
 

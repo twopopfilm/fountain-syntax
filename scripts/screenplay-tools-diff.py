@@ -120,6 +120,7 @@ def main() -> int:
         json.dumps({"tool": "screenplay-tools 0.0.10", "files": files}, indent=2, sort_keys=True, ensure_ascii=False)
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     print(f"wrote {SNAPSHOT.relative_to(ROOT)} ({len(files)} entries)")
     return subprocess.run(["cargo", "test", "--test", "screenplay_tools"], cwd=ROOT).returncode
