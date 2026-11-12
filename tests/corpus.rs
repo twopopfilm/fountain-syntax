@@ -157,6 +157,17 @@ fn corpus_off_scripts_fire_their_row_diagnostic() {
 }
 
 #[test]
+fn corpus_off_23e_uses_one_line_ending() {
+    // OFF-23e is about a carriage return as trailing whitespace; mixed endings are `off-2a`'s case.
+    let doc = parse(&read("tests/corpus/off/off-23e.fountain"));
+    let codes: Vec<&str> = doc.diagnostics().iter().map(|d| d.code.as_str()).collect();
+    assert!(
+        !codes.contains(&"mixed-line-endings"),
+        "off-23e mixes line endings: {codes:?}"
+    );
+}
+
+#[test]
 fn corpus_every_off_row_has_a_script() {
     let rows: BTreeSet<String> = read("SPEC.md").lines().filter_map(row_id).collect();
     assert!(!rows.is_empty(), "no OFF rows found in SPEC.md");
