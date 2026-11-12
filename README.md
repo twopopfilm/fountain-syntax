@@ -87,8 +87,9 @@ let Element::Dialogue(block) = &screenplay.scenes[0].elements[0] else { panic!("
 let renamed = doc.with_cue_renamed(block.cue.span.unwrap(), "JUNE").unwrap();
 assert_eq!(renamed.source(), "INT. HOUSE - DAY\n\nJUNE\nHello.\n");
 
-// Spans index the document they came from. The heading is before the renamed cue, so its span still fits.
-let heading = screenplay.scenes[0].heading.span.unwrap();
+// After an edit, take spans from the edited document, not the old one (SPEC.md section 10.2).
+let after = renamed.screenplay();
+let heading = after.scenes[0].heading.span.unwrap();
 let numbered = renamed.with_scene_number(heading, "12A").unwrap();
 assert_eq!(numbered.source(), "INT. HOUSE - DAY #12A#\n\nJUNE\nHello.\n");
 
