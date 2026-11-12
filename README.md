@@ -19,8 +19,8 @@ rest.
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
 > `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
 > standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
-> `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress.
-> The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
+> `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress. The usage examples are
+> compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ## Usage
 
@@ -176,8 +176,8 @@ The text that scheme 1 hashes is available in every build, without the `hash` fe
   whitespace and see which element changed. A second scheme, compatible with the Twopop importer (`Scene::hash_v1`,
   scenes only), lets hashes it stored be checked and migrated.
 - **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
-  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features exist. An optional
-  WASM build for a browser playground is being considered.
+  optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features exist. A WASM build
+  for a browser playground is deferred until after 0.1.
 
 ## Correctness
 
@@ -216,7 +216,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 | F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
 | F4        | Conformance corpus and differential testing                                        | In progress |
-| F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |
+| F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | In progress |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
 

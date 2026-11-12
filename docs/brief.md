@@ -44,7 +44,7 @@ for each. See [SPEC.md](../SPEC.md) section 5.3 for what is and is not supported
 
 - A lossless syntax tree with spans, plus a typed screenplay view (title page, scenes, elements); serde for both.
 - A Fountain writer that round-trips byte-for-byte when nothing has changed.
-- An optional WASM build for a web playground.
+- A WASM build for a web playground is deferred until after 0.1 (decided in #18).
 - MIT/Apache-2.0.
 
 ## Conformance
