@@ -286,6 +286,23 @@ impl Preamble {
 impl Screenplay {
     /// The scheme 2 document hash: the preamble hash and the scene hashes, in order. The title
     /// page is not part of it.
+    ///
+    /// ```
+    /// use fountain_syntax::parse;
+    ///
+    /// let hash = |source: &str| parse(source).screenplay().hash();
+    /// let plain = hash("INT. HOUSE - DAY\n\nOtto waits here.\n");
+    ///
+    /// // `fs2:` and 64 lowercase hexadecimal digits.
+    /// let text = plain.to_string();
+    /// assert_eq!(text.len(), 4 + 64);
+    /// assert!(text.starts_with("fs2:"));
+    ///
+    /// // Line endings and the amount of white space are normalised away (`SPEC.md` 11.3).
+    /// assert_eq!(plain, hash("INT. HOUSE  -  DAY\r\n\r\n\r\nOtto   waits\there. \r\n"));
+    /// // A different word is a different hash.
+    /// assert_ne!(plain, hash("INT. HOUSE - DAY\n\nOtto waits there.\n"));
+    /// ```
     pub fn hash(&self) -> Digest {
         let scenes: Vec<Digest> = self.scenes.iter().map(Scene::hash).collect();
         hash_of(

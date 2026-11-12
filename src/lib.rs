@@ -83,6 +83,15 @@ struct ReadmeDoctests;
 
 /// Parses any text. It never fails and never panics.
 /// The returned tree reproduces `source` exactly.
+///
+/// ```
+/// use fountain_syntax::parse;
+///
+/// // Not Fountain at all, but it still parses, and writes back unchanged.
+/// let source = "]] [[ >\n\n( ** /* \n";
+/// let doc = parse(source);
+/// assert_eq!(doc.write(), source);
+/// ```
 pub fn parse(source: &str) -> Document {
     parse::document(source)
 }
