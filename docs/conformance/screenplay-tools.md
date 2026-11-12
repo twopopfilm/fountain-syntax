@@ -20,6 +20,8 @@ or `ours-wrong`.
   stripped; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. For a
   run of merged Actions the rule applies to the whole run: an empty Action inside it stays as an empty paragraph, and
   the line is dropped only when the run is empty. Our `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
+  A `HASH_V1` hunk is classified by the element difference it follows from and cites `SPEC.md` 11.7's known-cases
+  row for it; that table has no row for `OFF-7`, `OFF-8` or `OFF-16e`, so those hash hunks cite the §6 row.
 - **The diff.** A longest-common-subsequence line diff of ours against theirs per file. Adjacent changes form one hunk.
   An entry shows `-` for our lines and `+` for theirs.
 
@@ -55,10 +57,25 @@ Each change makes our output match screenplay-tools' representation. A differenc
 
 ## The classes
 
-- `theirs-wrong`: screenplay-tools disagrees with the Fountain format or with a ruling of `SPEC.md`.
-- `ours-wrong`: this crate is wrong. It is a bug: it needs an issue and a fix, and the entry is removed with the fix.
-- `documented-choice`: both are defensible and `SPEC.md` rules for ours.
-- `todo`: not classified yet.
+- `theirs-wrong`: the official Fountain syntax settles the point the hunk turns on, `SPEC.md` follows it, and
+  screenplay-tools departs from it.
+- `documented-choice`: the official syntax leaves the point open, or this project's own ruling decides it, and
+  `SPEC.md` rules for ours, whichever way the two parsers differ.
+- `ours-wrong`: this crate does not do what `SPEC.md` says. It is a bug: it needs an issue and a fix, and the entry is
+  removed with the fix.
+- `todo`: no `SPEC.md` ruling covers the hunk yet.
+
+## Open for SPEC.md
+
+- **The caret that is not last.** The carve-out in §4.0 reads as if `NAME ^ (V.O.)` falls through to Action, while
+  row `OFF-11c` and this crate make it a cue whose name holds the caret. Ruled in #16: the row wins and the §4.0 prose
+  is to be corrected. This touches the unforced half of off-11c.
+- **A bare prefix with a trailing space.** §3.3 says trailing whitespace is not significant apart from `OFF-23a`, which
+  would read `INT ` as a bare `INT` with no separator, while row `OFF-6d` makes `INT ` a heading and this crate follows
+  the row. Ruled in #16: the row wins and the §3.3 prose is to be corrected. This touches off-6d.
+- **Indentation before a forcing `!`.** off-22a is recorded as `theirs-wrong`, because §4.3 and `OFF-18b` keep the
+  indentation in Action text, but no test yet pins the two spaces before a forcing `!` in the view's text. A pinning
+  test is a follow-up.
 
 An entry is a heading with the file, a line with the class, the `SPEC.md` rulings and the section of
 `docs/research/reference-parser.md` that covers the point (or "not covered"), a one-line reason, and the hunk in a
@@ -205,9 +222,9 @@ An unclosed `/*`: ours keeps it as plain text and the rest of the file stays vis
 
 ### off/off-16e.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-16e, OFF-9c · **Reference parser:** OFF-16
+**Class:** documented-choice · **Ruling:** OFF-16e, OFF-9c · **Reference parser:** OFF-16
 
-Ours removes the Boneyards first: `/* x */INT. A - DAY` is a framed heading, and the whole-line Boneyard is invisible, so `CUT TO:` sits directly above `INT. B - NIGHT` and is a cue with that line as Dialogue; theirs makes the first heading Action and treats the Boneyard's gap as a blank line, so `INT. B - NIGHT` is a heading.
+Ours deletes hidden spans before reading the lines: `/* x */INT. A - DAY` is a framed heading, and the whole-line Boneyard leaves no blank line, so `CUT TO:` sits directly above `INT. B - NIGHT` and is a cue with that line as Dialogue; theirs makes the first heading Action and counts the Boneyard's place as a blank line, so `INT. B - NIGHT` is a heading. The official syntax leaves open whether a span is removed before detection.
 
 ````diff
 -ACTION The kettle clicks off and nobody moves.
@@ -220,7 +237,7 @@ Ours removes the Boneyards first: `/* x */INT. A - DAY` is a framed heading, and
 
 ### off/off-16e.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-16e, OFF-9c (11.7 has no row for OFF-16e; closest: `CUT TO:` forms) · **Reference parser:** OFF-16
+**Class:** documented-choice · **Ruling:** OFF-16e, OFF-9c; 11.7 row `CUT TO:` forms · **Reference parser:** OFF-16
 
 The scene hash differs only because the elements do (above); it follows the OFF-16e difference, where `INT. B - NIGHT` is Dialogue in ours and a heading in theirs.
 
@@ -231,9 +248,9 @@ The scene hash differs only because the elements do (above); it follows the OFF-
 
 ### off/off-17d.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-17d · **Reference parser:** OFF-17
+**Class:** documented-choice · **Ruling:** OFF-17d · **Reference parser:** OFF-17
 
-One- and two-space lines in the title page: ours keeps them as stray lines (not in the line form, which writes only keys) and `Author` stays a key; theirs ends the title page there and makes the rest Action.
+One- and two-space lines in the title page: ours keeps them as stray lines attached to no key (not in the line form, which writes only keys) and reads `Author` as a key; theirs ends the title page there and makes the rest Action. The official syntax asks for three spaces or a tab to continue a value but leaves open what a less-indented line is.
 
 ````diff
 -TITLE Author: A. Writer
@@ -283,9 +300,9 @@ Whitespace-only lines between paragraphs: ours reads them as blank; theirs keeps
 
 ### off/off-1b.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-1b · **Reference parser:** OFF-1
+**Class:** documented-choice · **Ruling:** OFF-1a, OFF-1b · **Reference parser:** OFF-1
 
-A one-space line in a Dialogue block: ours ends the block (only exactly two spaces continue it) and the next line is Action; theirs continues the Dialogue.
+A one-space line in a Dialogue block: ours reads it as blank, so it ends the block and the next line is Action; theirs keeps it as a line and the Dialogue goes on. Only the two-space line is literal text; what a one-space line is, the official syntax leaves open.
 
 ````diff
 -DIALOGUE I said no.
@@ -295,9 +312,9 @@ A one-space line in a Dialogue block: ours ends the block (only exactly two spac
 
 ### off/off-1b.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-1b · **Reference parser:** OFF-1
+**Class:** documented-choice · **Ruling:** OFF-1a, OFF-1b · **Reference parser:** OFF-1
 
-A three-space line in a Dialogue block: ours ends the block and the next line is Action; theirs continues the Dialogue.
+A three-space line in a Dialogue block: ours reads it as blank, so it ends the block and the next line is Action; theirs keeps it as a line and the Dialogue goes on. What a whitespace-only line other than two spaces is, the official syntax leaves open.
 
 ````diff
 -DIALOGUE One more.
@@ -307,9 +324,9 @@ A three-space line in a Dialogue block: ours ends the block and the next line is
 
 ### off/off-1b.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-1b · **Reference parser:** OFF-1
+**Class:** documented-choice · **Ruling:** OFF-1a, OFF-1b · **Reference parser:** OFF-1
 
-A tab line in a Dialogue block: ours ends the block and the next line is Action; theirs continues the Dialogue.
+A tab-only line in a Dialogue block: ours reads it as blank, so it ends the block and the next line is Action; theirs keeps it as a line and the Dialogue goes on. What a tab-only line is, the official syntax leaves open.
 
 ````diff
 -DIALOGUE Last.
@@ -330,9 +347,9 @@ The same as off-15g: ours keeps `[[This note` with no closer before the blank li
 
 ### off/off-20c.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-20c · **Reference parser:** OFF-20
+**Class:** documented-choice · **Ruling:** OFF-20c · **Reference parser:** OFF-20
 
-A ten-`#` Section: ours has depth 10 (no maximum); theirs stops at depth 7 and puts the other three `#` in the text.
+A ten-`#` Section: ours has depth 10; theirs stops at depth 7 and puts the other three `#` in the text. The official syntax gives no maximum depth, so a cap is open; SPEC.md sets none.
 
 ````diff
 -SECTION 10 Ten
@@ -428,7 +445,7 @@ The second half of the same split: theirs makes `She opens it at last.` its own 
 
 **Class:** theirs-wrong · **Ruling:** OFF-23a · **Reference parser:** OFF-23
 
-`CUT TO: ` with a trailing space: ours makes it Action, joined to the paragraphs around it; theirs makes it a Transition.
+`CUT TO: ` with a trailing space: ours makes it an Action of its own (the line form's Action merge joins it with the Actions around it); theirs makes it a Transition. The official syntax says spaces after the colon make Action.
 
 ````diff
 -ACTION The kettle clicks off and nobody moves.⏎⏎CUT TO:⏎⏎Mara sets the cup down.
@@ -573,9 +590,9 @@ Two headings missing a blank line, one before and one after: ours keeps both in 
 
 ### off/off-6b.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-6b; 11.7 row `OFF-6` · **Reference parser:** OFF-6
+**Class:** documented-choice · **Ruling:** OFF-6b; 11.7 row `OFF-6` · **Reference parser:** OFF-6
 
-`INT<tab>HOUSE`: ours makes it Action (only a period or a space may follow the prefix); theirs makes it a heading. The hash lines follow from that.
+`INT<tab>HOUSE`: ours makes it Action, since only a period or a space may follow the prefix; theirs takes the tab as a separator and makes it a heading. The official syntax does not address a tab after the prefix. The hash lines follow from that.
 
 ````diff
 -ACTION Mara stands in the doorway.⏎⏎INT    HOUSE⏎⏎She does not move.⏎⏎INT-HOUSE⏎⏎The light stays off.⏎⏎INTERIOR⏎⏎Nothing happens.
@@ -589,9 +606,9 @@ Two headings missing a blank line, one before and one after: ours keeps both in 
 
 ### off/off-6d.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-6d; 11.7 row `OFF-6` · **Reference parser:** OFF-6
+**Class:** documented-choice · **Ruling:** OFF-6d; 11.7 row `OFF-6` · **Reference parser:** OFF-6
 
-`INT ` with a trailing space: ours makes it a heading with the text `INT`; theirs makes it Action. The hash lines follow from that.
+`INT ` with a trailing space: ours makes it a heading with the text `INT`; theirs makes it Action. The official syntax leaves open a prefix followed by a line end, and what trailing whitespace counts for. The hash lines follow from that.
 
 ````diff
 -ACTION A bare prefix with a period.
@@ -632,9 +649,9 @@ Two headings missing a blank line, one before and one after: ours keeps both in 
 
 ### off/off-8c.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-8c (11.7 has no row for OFF-8) · **Reference parser:** OFF-8
+**Class:** documented-choice · **Ruling:** OFF-8c (11.7 has no row for OFF-8) · **Reference parser:** OFF-8
 
-`MORNING#7#` with no space before the marks: ours leaves `#7#` in the heading text; theirs takes it as the number. The hash follows from the heading text.
+`MORNING#7#` with no space before the marks: ours leaves `#7#` in the heading text, because OFF-8c asks for a space or tab before the number; theirs takes it as the number. The official syntax only says the number is appended, so the space is this project's choice. The hash follows from the heading text.
 
 ````diff
 -HEADING INT. HOUSE - MORNING#7#
@@ -645,9 +662,9 @@ Two headings missing a blank line, one before and one after: ours keeps both in 
 
 ### off/off-8g.fountain
 
-**Class:** theirs-wrong · **Ruling:** OFF-8g (11.7 has no row for OFF-8) · **Reference parser:** not covered
+**Class:** documented-choice · **Ruling:** OFF-8g, OFF-8c (11.7 has no row for OFF-8) · **Reference parser:** not covered
 
-`##12A#` without the `locked-scene-numbers` feature: ours keeps it as heading text; theirs takes `12A` as the number and leaves a `#` in the text. The hash follows from the heading text.
+`##12A#` without the `locked-scene-numbers` feature: ours keeps it as heading text, because no space or tab stands before the last `#` pair; theirs takes `12A` as the number and leaves a `#` in the text. The space-or-tab requirement is OFF-8c's own, not the official syntax's. The hash follows from the heading text.
 
 ````diff
 -HEADING INT. HOUSE - DAY ##12A#
