@@ -9,6 +9,9 @@ Run: `uv run --script scripts/screenplay-tools-diff.py`. It rewrites `tests/corp
 `cargo test --test screenplay_tools` (which flattens this crate's typed view into the same line form and diffs it
 against the snapshot) and exits with cargo's status.
 
+Each file is decoded from its raw bytes (strict UTF-8, no newline translation), so screenplay-tools sees the CR and CRLF
+bytes and does its own line splitting.
+
 Line form: one string per element, in document order; U+23CE stands for an embedded line break.
   TITLE <key>: <value>      each line of a multi-line value stripped, empty ones dropped, joined with the break
   HEADING <text>[ #<num>]   CENTERED <text> (a centered Action)     ACTION <text>
@@ -111,7 +114,7 @@ def main() -> int:
         data = path.read_bytes()
         files[path.relative_to(CORPUS).as_posix()] = {
             "sha256": hashlib.sha256(data).hexdigest(),
-            "lines": line_form(path.read_text(encoding="utf-8")),
+            "lines": line_form(data.decode("utf-8")),  # real bytes: no CR/CRLF translation, as in the Rust side
         }
     SNAPSHOT.write_text(
         json.dumps({"tool": "screenplay-tools 0.0.10", "files": files}, indent=2, sort_keys=True, ensure_ascii=False)

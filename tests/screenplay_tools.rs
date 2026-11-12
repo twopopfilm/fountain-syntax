@@ -479,12 +479,22 @@ fn lines_keep_a_two_space_continuation_line_in_dialogue() {
 #[test]
 fn snapshot_covers_the_line_ending_rows() {
     let snapshot = load_snapshot();
+    // The rows about line endings are only compared on their real bytes if the corpus files still hold the CR bytes
+    // (the exporter once read them in text mode, which dropped them) and the snapshot holds a reading of each row.
+    for f in ["off/off-2a.fountain", "off/off-23e.fountain"] {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/corpus")
+            .join(f);
+        let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{f}: {e}"));
+        assert!(bytes.contains(&b'\r'), "{f} has no CR byte");
+    }
     for f in [
         "off/off-2a.fountain",
         "off/off-2b.fountain",
         "off/off-23e.fountain",
     ] {
-        assert!(snapshot["files"][f]["lines"].is_array(), "{f}");
+        let lines = snapshot["files"][f]["lines"].as_array();
+        assert!(lines.is_some_and(|l| !l.is_empty()), "{f}");
     }
 }
 
