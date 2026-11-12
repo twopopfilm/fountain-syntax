@@ -4,8 +4,9 @@ A Rust library for parsing and writing Fountain screenplays: lossless, spec-comp
 It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and is meant to be useful on its own.
 
 - **Goals, milestones (F1–F5) and the "done when" checks:** `docs/brief.md`.
-- **Status:** F1 (the standards study, which ends in `SPEC.md`) is in progress, and there's still no code. Write no
-  parser code until `SPEC.md` is merged.
+- **Status:** F1 (the standards study, which ends in `SPEC.md`) is done. F4 is in progress: the corpus and the
+  `screenplay-tools` diff are in place, and what remains is the near misses left out of ten corpus scripts and the
+  OFF-11c caret ruling. F2 (parser, view, diagnostics, hashes) and F3 (writer, edits) are in progress.
 - **Machine-specific context** is kept outside the repository, in `~/.config/twopop/agents.local.md`. Read it if it
   exists. The template is `docs/agents.local.example.md`.
 
@@ -71,6 +72,13 @@ locally. Rules:
   features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and
   `shot` (no dependency). All four exist.
 - **Every `SPEC.md` decision has a test** that names it.
+- **The `screenplay-tools` diff** (issue #16): `tests/screenplay_tools.rs` compares the typed view of each corpus
+  script with the committed snapshot `tests/corpus/screenplay-tools.json` and checks every difference against
+  `docs/conformance/screenplay-tools.md`, so CI's `cargo test` enforces the record without Python. It is compiled out
+  under `--all-features`. After editing a corpus script or changing the parser, run
+  `uv run --script scripts/screenplay-tools-diff.py` (local only, not part of the gate; needs `uv` and a network),
+  commit the regenerated snapshot, and classify any new hunk in the record (the test prints each unrecorded hunk ready
+  to paste).
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
   `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and

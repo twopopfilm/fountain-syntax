@@ -18,7 +18,8 @@ rest.
 > view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
 > `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
-> standards study, is done ([`SPEC.md`](SPEC.md)); F2, F3 and F4 are in progress.
+> standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
+> `screenplay-tools` are in place, and some corpus additions and rulings are still open. F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
@@ -107,14 +108,21 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13. The rest
-  are planned for F2 to F4.
+  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13 and the
+  corpus's OFF rows. Two extension IDs, `EXT-contd-2` and `EXT-locked-scene-numbers-4`, have no test that carries
+  their name yet.
 - **A conformance corpus.** `tests/corpus/` holds one original script for each row of the decision table in
   [`SPEC.md`](SPEC.md) section 6.2, plus Twopop's own fixtures, each with its source and licence recorded. The spec's
   text has no licence, so it is not copied, and sample scripts would need written permission. Every script round-trips
   byte-for-byte through the writer (`WR-1`).
-- **Differential testing (planned, F4).** Parses will be compared with `screenplay-tools`, an established Fountain
-  parser. Every difference will be classified as theirs-wrong, ours-wrong or a documented choice.
+- **Differential testing.** The typed view of every corpus script is compared with the reading of
+  [`screenplay-tools`](https://pypi.org/project/screenplay-tools/) 0.0.10, an established Fountain parser. Every
+  difference is classified as theirs-wrong or a documented choice in
+  [`docs/conformance/screenplay-tools.md`](docs/conformance/screenplay-tools.md), and `cargo test` fails on one that
+  is not recorded. The test reads `tests/corpus/screenplay-tools.json`, a committed snapshot of their output, so it
+  needs neither Python nor a network. `uv run --script scripts/screenplay-tools-diff.py` regenerates the snapshot after
+  a corpus or parser change, and needs `uv` and a network. The test is skipped under `--all-features`, because the
+  `shot` and `locked-scene-numbers` features change the view.
 
 ## Roadmap
 

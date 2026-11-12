@@ -1770,7 +1770,7 @@ Scheme 1 tests, `HASH1-n`. Methods are those of 11.7. Tests marked `hash` need t
 | `HASH1-19` | Dual dialogue hashes the left block, then the right, with no marker. |
 | `HASH1-20` | A known-answer test: the text `HEADING ONLY` plus a newline (13 bytes) gives `f7eb426cff87a0a1af2b2d5390cc9a2477df78d309f88f77f176751c57863e6f`, as the text form of `hash_v1`. Needs `hash`. |
 | `HASH1-21` | Parity with the importer on `edge_cases.fountain`, a fixture original to the Twopop project (MIT OR Apache-2.0; the corpus README records its source and licence). The `THE ROOF AT DAWN` scene's `hash_v1` is `6601466ae39394c1f0dfed5d957f82226c7609b2ad63a9aaa17728e28c10e625` and the `INT. LAUNDERETTE - DAY` scene's is `7f243b3424fe00de4b1dc7bc2ae3e735aa7eee24297afa2f8b0df943b1443508`. Needs `hash`. |
-| `HASH1-22` | Parity with the importer on its other captured scripts, by the same method: each scene's `hash_v1` equals the stored value, and each difference is classified in the F4 diff harness as a parsing difference (11.7). Needs `hash`. |
+| `HASH1-22` | Parity with the importer on its other captured scripts, by the same method: each scene's `hash_v1` equals the stored value, and the F4 diff harness (`tests/screenplay_tools.rs`) asserts that no `HASH_V1` difference remains for the three `twopop/` scripts (`screenplay_tools_every_difference_is_classified`). The harness classifies the hash differences on the rest of the corpus (11.7). Needs `hash`. |
 | `HASH1-23` | A Parenthetical line is the text inside the parentheses, trimmed and collapsed: `(quietly)` gives `quietly`, and `( quietly )` gives the same. |
 | `HASH1-24` | Lyrics give one line per `~` line, not one per run: two `~` lines are two lines in the text. |
 | `HASH1-25` | The line shapes: a cue line is the name only, upper-cased (no extension, no caret); a centered Action line has no `>` or `<`; a Shot line (with the `shot` flag) has no `!!`; no line has a kind prefix; `#prop-coin` stays in the text. |
@@ -1834,7 +1834,8 @@ Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash
 Every decision, element, extension, diagnostic, hash rule and writer property in this file has an ID. **Each ID names a
 test**, written in F2 to F4 (README.md says which exist): the parser, view, diagnostics and scheme 2 hash tests in F2
 (issues #7 to #10), the scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and the conformance corpus in
-F4 (#15, #16). The test carries the ID in its name, so `grep` finds the test for any decision.
+F4 (#15). The test carries the ID in its name, so `grep` finds the test for any decision. The comparison with
+`screenplay-tools` (#16, recorded in `docs/conformance/screenplay-tools.md`) has no ID of its own.
 
 | Scheme | Meaning | Where defined |
 |---|---|---|
@@ -1854,6 +1855,7 @@ file and not from the case. The exceptions are the rows about the start of the d
 `OFF-17a` to `OFF-17f`): their case is the first block (a heading at the start of the file, a Note in the title page,
 the title page itself), so those scripts begin with it. The Twopop fixtures in `tests/corpus/twopop/` are byte-exact
 copies of the importer's captured scripts and are exempt: they open with a title page.
+The record of the differences from `screenplay-tools` on this corpus is `docs/conformance/screenplay-tools.md`.
 
 ### 12.1 Index of every ID
 
