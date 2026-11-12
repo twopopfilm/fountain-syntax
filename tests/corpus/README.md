@@ -3,7 +3,9 @@
 Scripts that the integration tests read: `WR-1` lists the directory, and other tests use `include_str!` or
 `corpus_files()`. **Do not edit the `twopop/` files**: they are byte-exact copies, and the tests pin the importer's
 digests for them. The `off/` files are original to this project, neither copies nor digest-pinned: you may edit one, as
-long as its row's test and the round-trip test (`WR-1`) still pass. The root `.gitattributes` sets
+long as its row's test and the round-trip test (`WR-1`) still pass. Editing or adding an `off/` script also means
+re-running `uv run --script scripts/screenplay-tools-diff.py` and classifying any new hunk in
+`docs/conformance/screenplay-tools.md` (see `screenplay-tools.json` below). The root `.gitattributes` sets
 `tests/corpus/** -text`, so line endings, trailing whitespace and a missing final newline survive any checkout:
 the `off/` scripts for the line-ending rows (`OFF-2a`, `OFF-2b`, `OFF-23e`) keep their CR and CRLF bytes and their
 missing final newline on every platform. The `twopop/` files are stored with LF line endings, and the hash tests would
@@ -37,7 +39,7 @@ file.
 
 | File | Source | Licence | Checked by |
 |---|---|---|---|
-| `off/off-*.fountain` | Written for this project, issue #15 | MIT OR Apache-2.0, original to the Twopop project | `WR-1`, `tests/corpus.rs` |
+| `off/off-*.fountain` | Written for this project, issue #15 | MIT OR Apache-2.0, original to the Twopop project | `WR-1`, `tests/corpus.rs`, `tests/screenplay_tools.rs` |
 
 The exceptions are the rows about the start of the document, whose case has to be the first block. They are
 `OFF-6e`, `OFF-15f` (a Note in the title page) and `OFF-17a` to `OFF-17f`. The list is `START_OF_DOCUMENT` in
@@ -49,7 +51,9 @@ The reading of every script above by [screenplay-tools](https://pypi.org/project
 per element (the "line form" described at the top of the script), plus the SHA-256 of each file's bytes. Issue #16's
 diff test reads it and compares it with this crate's typed view. It is generated, never edited by hand: after adding or
 changing a script, run `uv run --script scripts/screenplay-tools-diff.py`, which rewrites the snapshot and then runs the
-test (`cargo test --test screenplay_tools`).
+test (`cargo test --test screenplay_tools`). The test fails when the snapshot's file list or any file hash differs from
+the corpus, so a script edited without re-running the command is caught. Running the command needs `uv` and a network;
+the test alone does not.
 
 | File | Source | Licence | Checked by |
 |---|---|---|---|
