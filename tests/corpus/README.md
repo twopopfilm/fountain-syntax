@@ -41,9 +41,13 @@ file.
 |---|---|---|---|
 | `off/off-*.fountain` | Written for this project, issue #15 | MIT OR Apache-2.0, original to the Twopop project | `WR-1`, `tests/corpus.rs`, `tests/screenplay_tools.rs` |
 
+A row whose cases must each be a first block may add `off/off-<row>-<case>.fountain` files (`<case>` is lowercase
+words joined by `-`); `tests/corpus.rs` reads such a file as belonging to row `off-<row>`.
+
 The exceptions are the rows about the start of the document, whose case has to be the first block. They are
-`OFF-6e`, `OFF-15f` (a Note in the title page) and `OFF-17a` to `OFF-17f`. The list is `START_OF_DOCUMENT` in
-`tests/corpus.rs`, which skips the first-block check for them.
+`OFF-6e`, `OFF-15f` (a Note in the title page) and `OFF-17a` to `OFF-17f`, plus the three extra `OFF-17a` files
+`off-17a-heading.fountain`, `off-17a-bare-key.fountain` and `off-17a-prose.fountain`. The list is `START_OF_DOCUMENT`
+in `tests/corpus.rs`, which skips the first-block check for them.
 
 ## `screenplay-tools.json`
 

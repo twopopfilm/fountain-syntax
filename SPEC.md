@@ -1848,12 +1848,14 @@ F4 (#15). The test carries the ID in its name, so `grep` finds the test for any 
 | `WR-n` | A writer property. | Section 10 |
 
 **The conformance corpus (issue #15).** Each `OFF` row gets a corpus script that exercises it. The scripts are
-`tests/corpus/off/off-<row>.fountain`, one per row of 6.2. **Every `OFF` script keeps its first block ordinary** (a
+`tests/corpus/off/off-<row>.fountain`, one per row of 6.2; a row whose cases must each be a first block may add
+`off-<row>-<case>.fountain` files. **Every `OFF` script keeps its first block ordinary** (a
 plain Action paragraph, with no colon), and puts the case after it. Otherwise another parser may read the opening lines
 of an edge case as a title page (`OFF-17a`), and a difference found by the diff harness would come from the start of the
 file and not from the case. The exceptions are the rows about the start of the document (`OFF-6e`, `OFF-15f` and
-`OFF-17a` to `OFF-17f`): their case is the first block (a heading at the start of the file, a Note in the title page,
-the title page itself), so those scripts begin with it. The Twopop fixtures in `tests/corpus/twopop/` are byte-exact
+`OFF-17a` to `OFF-17f`, and the extra `off-17a-heading`, `off-17a-bare-key` and `off-17a-prose` files): their case is
+the first block (a heading at the start of the file, a Note in the title page, the title page itself), so those scripts
+begin with it. The Twopop fixtures in `tests/corpus/twopop/` are byte-exact
 copies of the importer's captured scripts and are exempt: they open with a title page.
 The record of the differences from `screenplay-tools` on this corpus is `docs/conformance/screenplay-tools.md`.
 
