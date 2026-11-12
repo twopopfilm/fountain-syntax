@@ -19,7 +19,8 @@ or `ours-wrong`.
   scene. A line break inside a text is written U+23CE. Text with its note and boneyard markers removed and its ends
   stripped; a text element that is then empty is dropped, but `PAGEBREAK`, `CHARACTER` and `HEADING` never are. For a
   run of merged Actions the rule applies to the whole run: an empty Action inside it stays as an empty paragraph, and
-  the line is dropped only when the run is empty. Our `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
+  the line is dropped only when the run is empty.
+  Our `HASH_V1` is the first 12 hex digits of the SHA-256 of `Scene::normalized_text_v1()`.
   A `HASH_V1` hunk is classified by the element difference it follows from and cites `SPEC.md` 11.7's known-cases
   row for it; that table has no row for `OFF-7`, `OFF-8` or `OFF-16e`, so those hash hunks cite the §6 row.
 - **The diff.** A longest-common-subsequence line diff of ours against theirs per file. Adjacent changes form one hunk.

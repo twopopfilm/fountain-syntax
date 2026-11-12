@@ -396,7 +396,9 @@ These are places where an app treats input that 1.1 covers in a way the literal 
     ([OFF-10](official.md#off-10-centered-text-versus-forced-transition)); the forcing sigils are checked in a fixed order
     ([OFF-22](official.md#off-22-forcing-sigils-leading-whitespace-stacking-and-lines-starting-with-)).
   - Sections go to seven levels, and notes close at an empty line (both above).
-  - The project is the planned conformance oracle ([brief.md](../brief.md)), so these show up as diffs in F4.
+  - The project is the F4 diff's reference ([brief.md](../brief.md)), so these show up as diffs there. The diff and its
+    record are `docs/conformance/screenplay-tools.md`. This study read a git commit of the repository, and the diff uses
+    the PyPI release 0.0.10, so a behaviour read here can differ from the one diffed (the record says so too).
 
 ## Ranking
 
@@ -511,8 +513,9 @@ Points for `SPEC.md`:
 - The writer must not add or strip `(CONT'D)` in the lossless tree ([OFF-3](official.md#off-3-character-cue-with-extensions-such-as-contd-or-vo)).
 - `OFF-8` (scene-number characters and `##`), `OFF-15` (unclosed notes), `OFF-17` (title-page keys and indents) and
   `OFF-22` (stacked sigils, `!!`) are the cases this survey touches most.
-- screenplay-tools is the planned oracle for F4 ([brief.md](../brief.md)). Its divergences listed above will appear as
-  diffs: `FADE IN:` as a heading, notes closed at an empty line, seven-level sections, `CONT'D` stripped on read and added
+- screenplay-tools is the reference of the F4 diff ([brief.md](../brief.md)), recorded in
+  `docs/conformance/screenplay-tools.md`. Its divergences listed above are the kind of difference the diff shows:
+  `FADE IN:` as a heading, notes closed at an empty line, seven-level sections, `CONT'D` stripped on read and added
   on write, tab indentation on write, and an FDX layer that drops notes, sections, synopses, lyrics and dual dialogue.
 
 ### Not determined from public sources

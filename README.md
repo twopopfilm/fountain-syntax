@@ -18,8 +18,8 @@ rest.
 > view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
 > `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
-> standards study, is done ([`SPEC.md`](SPEC.md)), and so is F4, the conformance corpus and the comparison with
-> `screenplay-tools`; F2 and F3 are in progress.
+> standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
+> `screenplay-tools` are in place, and some corpus additions and rulings are still open. F2 and F3 are in progress.
 > The goals below describe the planned 0.1 release. See the [roadmap](#roadmap).
 
 ```rust
@@ -134,7 +134,7 @@ Work is tracked on the [Twopop Studio project board](https://github.com/orgs/two
 | F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
 | F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
 | F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
-| F4        | Conformance corpus and differential testing                                        | **Done**    |
+| F4        | Conformance corpus and differential testing                                        | In progress |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | Planned     |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
