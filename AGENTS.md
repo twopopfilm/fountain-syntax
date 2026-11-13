@@ -66,8 +66,9 @@ change one span and re-parse. The features `locked-scene-numbers`, `shot`, `serd
 hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`,
 `cargo clippy --all-targets -- -D warnings` and `cargo test` on Linux, macOS and Windows, then
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
-`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. Run the same commands
-locally. Rules:
+`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job also runs
+`cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
+`rust-version` in `Cargo.toml`). Run the same commands locally. Rules:
 
 - **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the optional Cargo
   features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and
