@@ -68,9 +68,11 @@ hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
 `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job also runs
 `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
-`rust-version` in `Cargo.toml`). Run the same commands locally. Rules:
+`rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
+`rustup run 1.85 cargo check --locked --all-targets`); it is optional locally, since CI runs it. Run the same commands
+locally. Rules:
 
-- **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the optional Cargo
+- **Rust stable, minimum supported version 1.85;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the optional Cargo
   features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`), `locked-scene-numbers` and
   `shot` (no dependency). All four exist.
 - **Every `SPEC.md` decision has a test** that names it.

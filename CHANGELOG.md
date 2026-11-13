@@ -22,7 +22,7 @@ release. The crate is not released yet.
   and the importer-compatible scheme 1 hash of a scene (`Scene::hash_v1`).
 - Four Cargo features, all off by default: `locked-scene-numbers`, `shot`, `serde` and `hash`.
 - Usage examples in the README, compiled and run by `cargo test`, and examples in the API documentation.
-- Rust 1.85 or later: the minimum supported version, checked in CI.
+- Minimum supported Rust version 1.85, declared in `Cargo.toml` and checked by the `msrv` job in CI.
 
 ### Deferred
 
