@@ -44,7 +44,7 @@ for each. See [SPEC.md](../SPEC.md) section 5.3 for what is and is not supported
 
 - A lossless syntax tree with spans, plus a typed screenplay view (title page, scenes, elements); serde for both.
 - A Fountain writer that round-trips byte-for-byte when nothing has changed.
-- An optional WASM build for a web playground.
+- A WASM build for a web playground is deferred until after 0.1 (decided in #18).
 - MIT/Apache-2.0.
 
 ## Conformance
@@ -66,7 +66,7 @@ project's test files before reusing them.
 - **F2:** lossless parser, typed view, diagnostics and hashes.
 - **F3:** writer and round-trip.
 - **F4:** conformance corpus and `screenplay-tools` diff.
-- **F5:** publish 0.1 to crates.io (on the maintainer's OK).
+- **F5:** docs, compiled examples and a changelog (#18), then publish 0.1 to crates.io (on the maintainer's OK).
 
 ## Done when
 

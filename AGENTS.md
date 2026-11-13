@@ -65,7 +65,8 @@ a view built in memory (`SPEC.md` §10). `Document::with_replaced` and the named
 change one span and re-parse. The features `locked-scene-numbers`, `shot`, `serde` and `hash` exist, and
 hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`,
 `cargo clippy --all-targets -- -D warnings` and `cargo test` on Linux, macOS and Windows, then
-`cargo clippy --all-targets --all-features -- -D warnings` and `cargo test --all-features`. Run the same commands
+`cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
+`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. Run the same commands
 locally. Rules:
 
 - **Rust stable;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists the optional Cargo
@@ -81,11 +82,12 @@ locally. Rules:
   to paste).
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
-  `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
-  `scripts/check-public.sh`.
+  `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features`,
+  `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
-  planned features as planned; never describe something as working before it does.
+  planned features as planned; never describe something as working before it does. Every code block in it is a
+  doctest (`src/lib.rs` includes it), so `cargo test` runs it and a broken example fails the build.
 
 ## /next: project rules
 
