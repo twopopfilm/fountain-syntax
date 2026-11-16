@@ -67,9 +67,11 @@ hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `
 `cargo clippy --all-targets -- -D warnings` and `cargo test` on Linux, macOS and Windows, then
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
 `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job runs
-`cargo hack clippy --feature-powerset --all-targets -- -D warnings` and `cargo hack test --feature-powerset`, which
-lint and test every combination of the four features (install it with `cargo install cargo-hack --locked`). A Linux
-job also runs `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
+`cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings` and
+`cargo hack test --feature-powerset --exclude-features default`, which lint and test every combination of the four
+features (install it with `cargo install cargo-hack --locked`; `default = []` is declared explicitly, so without the
+exclusion cargo-hack would count it as a fifth feature and run every build twice). A Linux job also runs
+`cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
 `rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
 `rustup run 1.85 cargo check --locked --all-targets`). CI has not been able to run it yet, so run it locally when you
 have a 1.85 toolchain, before relying on the declared minimum. Run the same commands locally. Rules:
@@ -88,7 +90,8 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
   `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features`,
-  `cargo hack clippy --feature-powerset --all-targets -- -D warnings`, `cargo hack test --feature-powerset`,
+  `cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings`,
+  `cargo hack test --feature-powerset --exclude-features default`,
   `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label

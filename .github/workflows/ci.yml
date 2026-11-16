@@ -56,9 +56,9 @@ jobs:
         with:
           tool: cargo-hack@0.6.46
       - name: Clippy with every feature combination
-        run: cargo hack clippy --feature-powerset --all-targets -- -D warnings
+        run: cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings
       - name: Test with every feature combination
-        run: cargo hack test --feature-powerset
+        run: cargo hack test --feature-powerset --exclude-features default
 
   # The oldest Rust the crate promises to build on.
   msrv:
