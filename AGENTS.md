@@ -66,11 +66,12 @@ change one span and re-parse. The features `locked-scene-numbers`, `shot`, `serd
 hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`,
 `cargo clippy --all-targets -- -D warnings` and `cargo test` on Linux, macOS and Windows, then
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
-`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job runs
+`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. The Linux `features` job runs
 `cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings` and
 `cargo hack test --feature-powerset --exclude-features default`, which lint and test every combination of the four
-features (install it with `cargo install cargo-hack --locked --version 0.6.46`; `default = []` is declared explicitly,
-so without the exclusion cargo-hack would count it as a fifth feature and run every build twice). A Linux job also runs
+features. Install cargo-hack with `cargo install cargo-hack --locked --version 0.6.46`. The exclusion is there
+because `default = []` is declared explicitly, so cargo-hack would otherwise count it as a fifth feature and run every
+build twice. The Linux `msrv` job runs
 `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
 `rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
 `rustup run 1.85 cargo check --locked --all-targets`). CI has not been able to run it yet, so run it locally when you
