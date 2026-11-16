@@ -5,6 +5,11 @@ edition = "2024"
 description = "A lossless, spec-complete parser and writer for Fountain screenplays"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/twopopfilm/fountain-syntax"
+rust-version = "1.85"
+readme = "README.md"
+keywords = ["fountain", "screenplay", "screenwriting", "parser", "lossless"]
+categories = ["parser-implementations", "text-processing"]
+exclude = [".claude/", ".github/", "AGENTS.md", "CLAUDE.md", "scripts/", "docs/agents.local.example.md"]
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -180,7 +180,8 @@ The text that scheme 1 hashes is available in every build, without the `hash` fe
   scenes only), lets hashes it stored be checked and migrated.
 - **Small and safe.** No `unsafe`. The core needs no dependencies. The optional `serde` feature adds `serde`, and the
   optional `hash` feature adds `sha2` and `unicode-normalization` (for the hashes). Both features exist. A WASM build
-  for a browser playground is deferred until after 0.1.
+  for a browser playground is deferred until after 0.1. The minimum supported Rust version is 1.85, as declared in
+  `Cargo.toml`.
 
 ## Correctness
 

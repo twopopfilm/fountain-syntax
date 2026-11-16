@@ -1,6 +1,7 @@
 name: ci
 
-# Format, lint, test and build the docs on the three platforms the library supports.
+# The `rust` job formats, lints, tests and builds the docs on the three platforms the library supports; the `msrv`
+# job checks the build on the minimum supported Rust.
 on:
   pull_request:
   push:
@@ -39,3 +40,18 @@ jobs:
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
+
+  # The oldest Rust the crate promises to build on.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the minimum supported toolchain
+        # Must match rust-version in Cargo.toml.
+        run: |
+          rustup toolchain install 1.85 --profile minimal
+          rustup default 1.85
+      - name: Check
+        run: cargo check --locked --all-targets
+      - name: Check with all features
+        run: cargo check --locked --all-targets --all-features
