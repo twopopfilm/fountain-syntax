@@ -1,7 +1,8 @@
 name: ci
 
-# The `rust` job formats, lints, tests and builds the docs on the three platforms the library supports; the `msrv`
-# job checks the build on the minimum supported Rust.
+# The `rust` job formats, lints, tests and builds the docs on the three platforms the library supports; the `features`
+# job lints and tests every combination of the Cargo features; the `msrv` job checks the build on the minimum
+# supported Rust.
 on:
   pull_request:
   push:
@@ -40,6 +41,24 @@ jobs:
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
+
+  # Every combination of the four Cargo features, on Linux.
+  features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        with:
+          tool: cargo-hack@0.6.46
+      - name: Clippy with every feature combination
+        run: cargo hack clippy --feature-powerset --all-targets -- -D warnings
+      - name: Test with every feature combination
+        run: cargo hack test --feature-powerset
 
   # The oldest Rust the crate promises to build on.
   msrv:
