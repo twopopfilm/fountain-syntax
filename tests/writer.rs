@@ -273,7 +273,21 @@ fn wr_5_canonical_reparses_to_an_equal_view() {
         let text = canonical(&view);
         let back = parse_checked(&text).screenplay();
         same(&view, &back, &text);
-        #[cfg(feature = "hash")]
+    }
+}
+
+/// Without `serde`, the scene hashes still show that `canonical` keeps what the hash reads.
+#[cfg(feature = "hash")]
+#[test]
+fn wr_5_canonical_keeps_the_scene_hashes() {
+    for view in views() {
+        let text = canonical(&view);
+        let back = parse_checked(&text).screenplay();
+        assert_eq!(
+            view.scenes.len(),
+            back.scenes.len(),
+            "canonical text:\n{text}"
+        );
         for (a, b) in view.scenes.iter().zip(&back.scenes) {
             assert_eq!(a.hash_v1(), b.hash_v1(), "canonical text:\n{text}");
         }
@@ -401,4 +415,66 @@ fn wr_8_sigil_only_where_needed() {
         preamble(vec![action("Time: 5pm")], Some(page)),
         "Title: T\n\nTime: 5pm\n"
     );
+}
+
+/// The cue extension texts of every Dialogue block, in source order.
+fn cue_extensions(view: &Screenplay) -> Vec<Vec<String>> {
+    let elements = view
+        .preamble
+        .elements
+        .iter()
+        .chain(view.scenes.iter().flat_map(|s| &s.elements));
+    elements
+        .filter_map(|e| match e {
+            Element::Dialogue(b) => Some(b.cue.extensions.iter().map(|x| x.text.plain()).collect()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// EXT-contd-2
+#[test]
+fn ext_contd_2() {
+    for src in [
+        "\nMARA\nHi.\n",
+        "\nMARA (CONT'D)\nHi.\n",
+        "\nMARA (cont'd)\nHi.\n",
+        "\nMARA (CONT\u{2019}D)\nHi.\n",
+        "\nMARA\nHi.\n\nOTTO\nHey.\n\nMARA\nBye.\n",
+    ] {
+        assert_round_trips(src);
+        let view = parse_checked(src).screenplay();
+        let back = parse_checked(&canonical(&view)).screenplay();
+        assert_eq!(
+            cue_extensions(&view),
+            cue_extensions(&back),
+            "canonical changed the cue extensions of {src:?}"
+        );
+    }
+}
+
+/// EXT-locked-scene-numbers-4
+#[cfg(feature = "locked-scene-numbers")]
+#[test]
+fn ext_locked_scene_numbers_4() {
+    let numbered = "INT. A ##12A#\n\nMara waits.\n\nEXT. B #3#\n\nx\n";
+    assert_round_trips(numbered);
+    let view = parse_checked(numbered).screenplay();
+    let numbers: Vec<_> = view
+        .scenes
+        .iter()
+        .map(|s| s.number.as_ref().map(|n| (n.text.as_str(), n.locked)))
+        .collect();
+    assert_eq!(numbers, [Some(("12A", true)), Some(("3", false))]);
+
+    #[cfg(feature = "hash")]
+    {
+        let plain = parse_checked("INT. A\n\nMara waits.\n\nEXT. B\n\nx\n").screenplay();
+        assert_eq!(view.scenes.len(), plain.scenes.len());
+        for (a, b) in view.scenes.iter().zip(&plain.scenes) {
+            assert_eq!(a.hash(), b.hash());
+            assert_eq!(a.hash_v1(), b.hash_v1());
+        }
+        assert_eq!(view.hash(), plain.hash());
+    }
 }

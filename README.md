@@ -191,11 +191,11 @@ crate treats correctness as something to measure:
 - **A written spec first.** Milestone F1 studied the official syntax and the extensions apps use in practice, and
   ended in [`SPEC.md`](SPEC.md). It states what is standard, which extensions are supported, and how each ambiguous
   case is decided.
-- **Every decision is tested.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that the test will carry in its
+- **Every decision gets a test.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that its test carries in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  both hash schemes are written, which is every HASH1 and HASH2 test, and so are the writer's WR-1 to WR-13 and the
-  corpus's OFF rows. Two extension IDs, `EXT-contd-2` and `EXT-locked-scene-numbers-4`, have no test that carries
-  their name yet.
+  both hash schemes are written, and so are the writer's WR-1 to WR-13 and the corpus's OFF rows. Seven IDs have no
+  test that carries their name yet: `EL-action-4`, `EL-emphasis-1`, `EL-emphasis-2`, `EXT-contd-1`,
+  `EXT-open-keys-2`, `HASH2-31` and `OFF-14b`.
 - **A conformance corpus.** `tests/corpus/` holds at least one original script for each row of the decision table in
   [`SPEC.md`](SPEC.md) section 6.2, plus Twopop's own fixtures, each with its source and licence recorded. The spec's
   text has no licence, so it is not copied, and sample scripts would need written permission. Every script round-trips
