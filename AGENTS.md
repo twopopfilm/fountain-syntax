@@ -69,8 +69,8 @@ hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `
 `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job runs
 `cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings` and
 `cargo hack test --feature-powerset --exclude-features default`, which lint and test every combination of the four
-features (install it with `cargo install cargo-hack --locked`; `default = []` is declared explicitly, so without the
-exclusion cargo-hack would count it as a fifth feature and run every build twice). A Linux job also runs
+features (install it with `cargo install cargo-hack --locked --version 0.6.46`; `default = []` is declared explicitly,
+so without the exclusion cargo-hack would count it as a fifth feature and run every build twice). A Linux job also runs
 `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
 `rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
 `rustup run 1.85 cargo check --locked --all-targets`). CI has not been able to run it yet, so run it locally when you
@@ -83,7 +83,8 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 - **The `screenplay-tools` diff** (issue #16): `tests/screenplay_tools.rs` compares the typed view of each corpus
   script with the committed snapshot `tests/corpus/screenplay-tools.json` and checks every difference against
   `docs/conformance/screenplay-tools.md`, so CI's `cargo test` enforces the record without Python. It is compiled out
-  under `--all-features`. After editing a corpus script or changing the parser, run
+  whenever `shot` or `locked-scene-numbers` is on, because those features change the
+  view. After editing a corpus script or changing the parser, run
   `uv run --script scripts/screenplay-tools-diff.py` (local only, not part of the gate; needs `uv` and a network),
   commit the regenerated snapshot, and classify any new hunk in the record (the test prints each unrecorded hunk ready
   to paste).

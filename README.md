@@ -206,8 +206,8 @@ crate treats correctness as something to measure:
   [`docs/conformance/screenplay-tools.md`](docs/conformance/screenplay-tools.md), and `cargo test` fails on one that
   is not recorded. The test reads `tests/corpus/screenplay-tools.json`, a committed snapshot of their output, so it
   needs neither Python nor a network. `uv run --script scripts/screenplay-tools-diff.py` regenerates the snapshot after
-  a corpus or parser change, and needs `uv` and a network. The test is skipped under `--all-features`, because the
-  `shot` and `locked-scene-numbers` features change the view.
+  a corpus or parser change, and needs `uv` and a network. The test is compiled out whenever `shot` or
+  `locked-scene-numbers` is on, because those features change the view.
 
 ## Roadmap
 
