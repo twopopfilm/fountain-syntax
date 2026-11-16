@@ -292,9 +292,7 @@ impl Document {
         let note = format!("[[{text}]]");
         let mut edit = format!("{nl}{nl}{note}");
         // One line break and then another element: keep a blank line between the note and it.
-        if let (Some(gap), Some(_)) = (top.get(i + 1), top.get(i + 2))
-            && is_one_break(*gap)
-        {
+        if top.get(i + 2).is_some() && top.get(i + 1).is_some_and(|gap| is_one_break(*gap)) {
             edit.push_str(nl);
         }
         let edited = self.with_replaced(Span::new(after.end, after.end), &edit);
