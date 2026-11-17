@@ -48,8 +48,8 @@ pub enum DiagnosticCode {
     PeriodNotForcing,
     /// A heading ends with something shaped like `#...#` that is not a scene number.
     SceneNumberRejected,
-    /// A framed, uppercase, one-line paragraph that is exactly `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.`
-    /// or `CUT TO BLACK.`.
+    /// A framed, uppercase, one-line paragraph that is exactly `FADE OUT.`, `FADE TO BLACK.` or
+    /// `CUT TO BLACK.`. `FADE IN:` is Action in every reading, so it stays quiet.
     TransitionLookalike,
     /// An uppercase line ending in `TO:` that is not a Transition because a blank line is missing.
     UnframedTransition,

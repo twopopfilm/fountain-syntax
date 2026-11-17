@@ -94,7 +94,7 @@ fn look_alikes(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         if plain
             && matches!(
                 t.trim_end_matches([' ', '\t']),
-                "FADE IN:" | "FADE OUT." | "FADE TO BLACK." | "CUT TO BLACK."
+                "FADE OUT." | "FADE TO BLACK." | "CUT TO BLACK."
             )
             && framing(i).framed
         {

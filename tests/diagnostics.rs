@@ -179,7 +179,8 @@ fn diag_scene_number_rejected() {
 #[test]
 fn diag_transition_lookalike() {
     fires("a\n\nFADE OUT.\n\nb", C::TransitionLookalike, "FADE OUT.");
-    fires("FADE IN:\n\nb", C::TransitionLookalike, "FADE IN:");
+    quiet("FADE IN:\n\nb", C::TransitionLookalike);
+    quiet("a\n\nFADE IN:\n\nb", C::TransitionLookalike);
     fires(
         "a\n\nFADE TO BLACK.\n\nb",
         C::TransitionLookalike,
