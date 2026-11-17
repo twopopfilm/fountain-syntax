@@ -328,7 +328,8 @@ fn wr_11_adds_a_note_block_after_an_element() {
     }
 }
 
-/// WR-11: empty text gives the empty note `[[]]`, and a single `[` is allowed (issue #61).
+/// WR-11: empty text gives the empty note `[[]]`, a single `[` is allowed (issue #61), and so is a
+/// line of exactly two spaces, which is not blank inside a Note (`OFF-1c`, issue #83).
 #[test]
 fn wr_11_accepts_empty_text_and_single_brackets() {
     let src = "INT. A\n\nHi.\n";
@@ -338,6 +339,16 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         ("", "INT. A\n\nHi.\n\n[[]]\n"),
         ("[x", "INT. A\n\nHi.\n\n[[[x]]\n"),
         ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
+        ("[1] see", "INT. A\n\nHi.\n\n[[[1] see]]\n"),
+        ("a\n  \nb", "INT. A\n\nHi.\n\n[[a\n  \nb]]\n"),
+        // The first and last lines of the text join `[[` and `]]`, so they never stand alone.
+        ("\nb", "INT. A\n\nHi.\n\n[[\nb]]\n"),
+        ("a\n", "INT. A\n\nHi.\n\n[[a\n]]\n"),
+        ("\n", "INT. A\n\nHi.\n\n[[\n]]\n"),
+        (" \nb", "INT. A\n\nHi.\n\n[[ \nb]]\n"),
+        ("\t\nb", "INT. A\n\nHi.\n\n[[\t\nb]]\n"),
+        ("a\n ", "INT. A\n\nHi.\n\n[[a\n ]]\n"),
+        ("a\n\t", "INT. A\n\nHi.\n\n[[a\n\t]]\n"),
     ] {
         let edited = doc.with_note(hi, text).unwrap();
         assert_eq!(edited.source(), expected, "{text:?}");
@@ -346,6 +357,60 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         };
         assert_eq!(note.text, text);
         assert!(edited.diagnostics().is_empty(), "{text:?}");
+    }
+}
+
+/// WR-11, issue #83: a line of exactly two spaces inside the text of a note in a CRLF document.
+#[test]
+fn wr_11_accepts_two_space_line_in_crlf_document() {
+    let doc = parse_checked("INT. A\r\n\r\nHi.\r\n");
+    let hi = find(&doc, NodeKind::Action)[0].span();
+    let text = "a\r\n  \r\nb";
+    let edited = doc.with_note(hi, text).unwrap();
+    assert_eq!(
+        edited.source(),
+        "INT. A\r\n\r\nHi.\r\n\r\n[[a\r\n  \r\nb]]\r\n"
+    );
+    let Element::Note(note) = &edited.screenplay().scenes[0].elements[1] else {
+        panic!()
+    };
+    assert_eq!(note.text, text);
+    assert!(edited.diagnostics().is_empty());
+}
+
+/// WR-11: an empty note at the edges of a document: end of file without a final newline, after a
+/// Scene Heading, and in a CRLF document (issue #83).
+#[test]
+fn wr_11_pins_empty_notes_at_the_edges() {
+    for (src, at_heading, expected) in [
+        ("INT. A\n\nHi.", false, "INT. A\n\nHi.\n\n[[]]"),
+        ("INT. A\n\nHi.\n", true, "INT. A\n\n[[]]\n\nHi.\n"),
+        (
+            "INT. A\r\n\r\nHi.\r\n",
+            false,
+            "INT. A\r\n\r\nHi.\r\n\r\n[[]]\r\n",
+        ),
+    ] {
+        let doc = parse_checked(src);
+        let target = if at_heading {
+            heading_span(&doc, 0)
+        } else {
+            find(&doc, NodeKind::Action)[0].span()
+        };
+        let edited = doc.with_note(target, "").unwrap();
+        assert_eq!(edited.source(), expected, "{src:?}");
+        let edited = parse_checked(edited.source());
+        let notes: Vec<_> = edited
+            .screenplay()
+            .scenes
+            .iter()
+            .flat_map(|s| s.elements.iter())
+            .filter_map(|e| match e {
+                Element::Note(n) => Some(n.text.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(notes, [""], "{src:?}");
     }
 }
 
@@ -382,6 +447,15 @@ fn wr_13_synopsis_and_note_refusals() {
         "[[x",
         "a[[b",
         "x[[",
+        // issue #83: text ending in `]`, and `[[` after a line break.
+        "x]",
+        "]",
+        "see [1]",
+        "a\n[[b",
+        // A blank line: a line of only spaces or tabs is blank unless it is exactly two spaces.
+        "a\n \nb",
+        "a\n   \nb",
+        "a\n\t\nb",
     ] {
         assert_eq!(
             doc.with_note(heading, text).err(),
@@ -461,7 +535,8 @@ fn wr_12_keeps_sigil_and_caret() {
     assert_eq!(dual.right.cue.name.plain(), "CAL");
 }
 
-/// WR-12: a new name may hold a Note or Boneyard the caller wrote; nothing is dropped (issue #61).
+/// WR-12: a new name may hold a Note or Boneyard between its characters; the caller wrote it and
+/// nothing is dropped (issue #61).
 #[test]
 fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
@@ -472,6 +547,31 @@ fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
             panic!("{name:?}")
         };
         assert_eq!(block.cue.name.plain(), "JUNE");
+    }
+}
+
+/// WR-12: a new name with a Note or Boneyard at either end, or that is only one, is refused
+/// (issue #83). At an end the span would read back beside the name, not in it; a name that is
+/// only one would no longer read as a cue.
+#[test]
+fn wr_12_refuses_a_new_name_with_a_hidden_span_at_an_edge_or_all_of_it() {
+    for src in ["INT. A\n\nMARA\nHi.\n", "INT. A\n\nMARA (V.O.)\nHi.\n"] {
+        let doc = parse_checked(src);
+        for name in [
+            "[[n]]",
+            "/*b*/",
+            "JUNE[[n]]",
+            "[[n]]JUNE",
+            "JUNE/*b*/",
+            "/*b*/JUNE",
+            "JUNE [[n]]",
+        ] {
+            assert_eq!(
+                doc.with_cue_renamed(cue_span(&doc, 0), name).err(),
+                Some(EditError::Invalid),
+                "{src:?} {name:?}"
+            );
+        }
     }
 }
 

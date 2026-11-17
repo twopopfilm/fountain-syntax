@@ -19,8 +19,8 @@ pub enum EditError {
     /// No element of the kind the edit needs has exactly this span.
     NotFound,
     /// The text cannot be written as the element it was meant to be: it would not parse as that
-    /// element, or it holds a mark the element cannot hold (`[[` or `]]` in a Note). Or the edit
-    /// would drop a Note or Boneyard.
+    /// element, or it holds a mark the element cannot hold (for example `[[` or `]]` in a Note).
+    /// Or the edit would drop a Note or Boneyard.
     Invalid,
 }
 
@@ -274,10 +274,15 @@ impl Document {
     /// After a Scene Heading that a Synopsis follows directly, the note goes between them, so
     /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
-    /// A `text` that holds `[[`, `]]` or a blank line, or that would not read back as a Note,
-    /// gives [`EditError::Invalid`]: Notes don't nest (`SPEC.md` OFF-15a). Empty text gives the
-    /// empty note `[[]]`. A span that is not a top-level element of the document (a cue, a
-    /// title page entry, the blank lines between elements) gives [`EditError::NotFound`].
+    /// A `text` that holds `[[` or `]]` gives [`EditError::Invalid`], since Notes don't nest
+    /// (`SPEC.md` OFF-15a). So does a `text` that holds an inner blank line (a line between two
+    /// line breaks of the text that is empty or only spaces and tabs, except one of exactly two
+    /// spaces, `SPEC.md` OFF-1c; the first and last lines join `[[` and `]]`, so they never
+    /// stand alone), one that ends with `]`
+    /// (`[[see [1]]]` closes at its first `]]`, one byte early), and one that would not read back
+    /// as a Note. Empty text gives the empty note `[[]]`. A span that is not a top-level element
+    /// of the document (a cue, a title page entry, the blank lines between elements) gives
+    /// [`EditError::NotFound`].
     ///
     /// ```
     /// use fountain_syntax::{Child, NodeKind, parse};
@@ -327,9 +332,11 @@ impl Document {
     /// `name` must read back as exactly the name of that cue: a lowercase name on a cue without
     /// `@`, a name with a trailing space, a line break, an extension or a caret in it, or an empty
     /// name gives [`EditError::Invalid`]. So does a cue whose current name holds a Note or Boneyard
-    /// (`MA[[n]]RA`), which the rename would drop. A new name may hold one (`JU[[n]]NE`): it is
-    /// written as given, and the view's name leaves it out. A span that is not a Character cue
-    /// gives [`EditError::NotFound`].
+    /// (`MA[[n]]RA`), which the rename would drop. A new name may hold one between its characters
+    /// (`JU[[n]]NE`): it is written as given, and the view's name leaves it out. One at either
+    /// end of the name (`JUNE[[n]]`, `[[n]]JUNE`), or a name that is only one (`[[n]]`), gives
+    /// [`EditError::Invalid`]: it would read back as beside the name, not in it.
+    /// A span that is not a Character cue gives [`EditError::NotFound`].
     ///
     /// ```
     /// use fountain_syntax::{Element, parse};
