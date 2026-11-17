@@ -335,8 +335,9 @@ impl Document {
     /// name gives [`EditError::Invalid`]. So does a cue whose current name holds a Note or Boneyard
     /// (`MA[[n]]RA`), which the rename would drop. A new name may hold one between its characters
     /// (`JU[[n]]NE`): it is written as given, and the view's name leaves it out. One at either
-    /// end of the name (`JUNE[[n]]`, `[[n]]JUNE`), or a name that is only one (`[[n]]`), gives
-    /// [`EditError::Invalid`]: it would read back as beside the name, not in it.
+    /// end of the name (`JUNE[[n]]`, `[[n]]JUNE`) gives [`EditError::Invalid`]: it would read back
+    /// as beside the name, not in it. So does a name that is only one (`[[n]]`): the line would
+    /// not read as a cue at all.
     /// A span that is not a Character cue gives [`EditError::NotFound`].
     ///
     /// ```

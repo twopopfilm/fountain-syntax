@@ -1114,8 +1114,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   whitespace (such as a no-break space, 3.3) is not blank and is accepted (issue #85).
 - `with_cue_renamed` accepts a new name that holds a Note or Boneyard between its characters (`JU[[n]]NE`): the caller
   wrote it and nothing is dropped; the view's name leaves it out (issue #61). A new name with one at either end
-  (`JUNE[[n]]`, `[[n]]JUNE`), or that is only one, is refused (`Invalid`): it would read back as beside the name, not
-  in it (issue #83).
+  (`JUNE[[n]]`, `[[n]]JUNE`) is refused (`Invalid`): it would read back as beside the name, not in it. So is a name
+  that is only one (`[[n]]`): the line would not read as a cue at all (issues #83 and #85).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be. A wrapper also refuses (`Invalid`) to replace a node
   that holds a Note or Boneyard, since that would drop the hidden text; a Note or Boneyard beside the node is kept.
