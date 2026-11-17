@@ -192,7 +192,8 @@ impl Document {
 
     /// Sets the one-line Synopsis of the scene whose Scene Heading has the span `heading`: puts
     /// `= text` on the line right after the heading, or, when a Synopsis is already there,
-    /// replaces it. The new line uses the document's line break. Any other Synopsis of the scene
+    /// replaces it. Replacing keeps the whitespace before its `=` and rewrites the rest of its line
+    /// as `= text`. The new line uses the document's line break. Any other Synopsis of the scene
     /// stays as it is.
     ///
     /// A `text` that holds a line break, or that would not read back as a Synopsis of this
@@ -221,16 +222,25 @@ impl Document {
             return Err(EditError::Invalid);
         }
         let line = format!("= {text}");
-        let (span, edit) = match (top.get(i + 1), top.get(i + 2)) {
+        let (span, edit, expected) = match (top.get(i + 1), top.get(i + 2)) {
             (Some(gap), Some(syn)) if is_one_break(*gap) && syn.kind() == NodeKind::Synopsis => {
                 if hides(*syn) {
                     return Err(EditError::Invalid);
                 }
-                (syn.span(), line.clone())
+                // The node's span holds the indent before its `=`; keep it and replace the rest.
+                let span = syn.span();
+                let old = syn.text();
+                let indent = &old[..old.len() - old.trim_start_matches([' ', '\t']).len()];
+                (
+                    Span::new(span.start + indent.len(), span.end),
+                    line.clone(),
+                    format!("{indent}{line}"),
+                )
             }
             _ => (
                 Span::new(heading.end, heading.end),
                 format!("{}{line}", self.line_break()),
+                line,
             ),
         };
         let edited = self.with_replaced(span, &edit);
@@ -245,7 +255,7 @@ impl Document {
                     && top.get(i + 1).is_some_and(|g| is_one_break(*g))
                     && top
                         .get(i + 2)
-                        .is_some_and(|n| n.kind() == NodeKind::Synopsis && n.text() == line)
+                        .is_some_and(|n| n.kind() == NodeKind::Synopsis && n.text() == expected)
             });
         if ok {
             Ok(edited)

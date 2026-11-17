@@ -257,6 +257,26 @@ fn wr_10_replaces_the_synopsis_directly_after_the_heading() {
     assert_eq!(edited.source(), "= lead\n\nINT. A\n= new\n\nHi.\n");
 }
 
+/// WR-10: replacing a Synopsis keeps the whitespace before its `=` (issue #61).
+#[test]
+fn wr_10_keeps_the_indent_of_a_replaced_synopsis() {
+    for (src, text, expected) in [
+        ("INT. A\n  = old  \n", "new", "INT. A\n  = new\n"),
+        ("INT. A\n\t=old\n\nHi.\n", "new", "INT. A\n\t= new\n\nHi.\n"),
+        ("INT. A\r\n  = old\r\n", "new", "INT. A\r\n  = new\r\n"),
+        ("INT. A\n  = old\n", "", "INT. A\n  = \n"),
+    ] {
+        let doc = parse_checked(src);
+        let edited = doc.with_synopsis(heading_span(&doc, 0), text).unwrap();
+        assert_eq!(edited.source(), expected, "{src:?}");
+        assert_eq!(edited.screenplay().scenes[0].synopses.len(), 1, "{src:?}");
+    }
+    let src = "INT. A\n  = old  \n";
+    let doc = parse_checked(src);
+    let edited = doc.with_synopsis(heading_span(&doc, 0), "new").unwrap();
+    assert_only_span_changed(src, &edited, Span::new(9, 16), "= new");
+}
+
 #[test]
 fn wr_11_adds_a_note_block_after_an_element() {
     let src = "INT. A\n\nHi.\n\nBYE.\n";
