@@ -1110,7 +1110,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   don't nest, OFF-15a: `]]` would end the Note early and `[[` would raise `nested-opener`), text that holds a blank
   line, and text that ends with `]` (the Note would close one byte early) (issues #61 and #83).
 - `with_cue_renamed` accepts a new name that holds a Note or Boneyard: the caller wrote it and nothing is dropped; the
-  view's name leaves it out (issue #61).
+  view's name leaves it out (issue #61). A new name that is only a Note or Boneyard is refused (`Invalid`), since the
+  line would no longer read as a cue (issue #83).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be. A wrapper also refuses (`Invalid`) to replace a node
   that holds a Note or Boneyard, since that would drop the hidden text; a Note or Boneyard beside the node is kept.
@@ -1184,7 +1185,7 @@ views don't round-trip:
 | `WR-9` | `with_scene_number` writes `#n#` on a heading with or without a number and changes no other byte; `with_locked_scene_number` writes `##n#` (`locked-scene-numbers`). |
 | `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break; a replaced Synopsis keeps its indent. |
 | `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. Empty text writes `[[]]`. |
-| `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, a current name holding a Note or Boneyard is refused, and a new name holding one is written as given. |
+| `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, a current name holding a Note or Boneyard is refused, and a new name holding one is written as given, unless the name is only a Note or Boneyard (refused). |
 | `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[`, `]]` or a blank line, or ends with `]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a current cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents

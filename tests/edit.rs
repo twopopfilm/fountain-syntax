@@ -516,6 +516,21 @@ fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
     }
 }
 
+/// WR-12: a new name that is only a Note or Boneyard is refused (issue #83).
+#[test]
+fn wr_12_refuses_a_new_name_that_is_only_a_hidden_span() {
+    for src in ["INT. A\n\nMARA\nHi.\n", "INT. A\n\nMARA (V.O.)\nHi.\n"] {
+        let doc = parse_checked(src);
+        for name in ["[[n]]", "/*b*/"] {
+            assert_eq!(
+                doc.with_cue_renamed(cue_span(&doc, 0), name).err(),
+                Some(EditError::Invalid),
+                "{src:?} {name:?}"
+            );
+        }
+    }
+}
+
 #[test]
 fn wr_13_cue_refusals() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
