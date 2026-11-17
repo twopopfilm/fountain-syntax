@@ -50,7 +50,8 @@ pub enum DiagnosticCode {
     /// A heading ends with something shaped like `#...#` that is not a scene number.
     SceneNumberRejected,
     /// A framed, uppercase, one-line paragraph that is exactly `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.`
-    /// or `CUT TO BLACK.`.
+    /// or `CUT TO BLACK.`. `FADE IN:` opens most scripts and fires on purpose, because another tool reads
+    /// it as a scene heading.
     TransitionLookalike,
     /// An uppercase line ending in `TO:` that is not a Transition because a blank line is missing.
     UnframedTransition,
