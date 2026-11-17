@@ -702,14 +702,14 @@ The six candidates listed in issue #9 are covered as follows.
 | `cue-needs-force` | Info | A line with a blank line before and a text line after, with no lowercase letter and no uppercase letter, but with a digit or a caseless letter. | OFF-4b, OFF-4c | `DIAG-cue-needs-force` |
 | `unframed-heading` | Info | A line that starts with a heading prefix and a period or space, and is not a heading only because a blank line is missing before or after it. | OFF-6a | `DIAG-unframed-heading` |
 | `empty-heading` | Info | A heading that is only a prefix and its period or space. | OFF-6d | `DIAG-empty-heading` |
-| `period-not-forcing` | Info | A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`. | OFF-7b, OFF-22e | `DIAG-period-not-forcing` |
+| `period-not-forcing` | Info | A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`, outside the title page. | OFF-7b, OFF-22e | `DIAG-period-not-forcing` |
 | `scene-number-rejected` | Info | A heading line ends with something shaped like `#...#` that is not a scene number: a bad character, or a good number that is followed by text. | OFF-8b, OFF-8c, OFF-8e | `DIAG-scene-number-rejected` |
-| `transition-lookalike` | Info | A framed, uppercase, one-line paragraph that is `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.` or `CUT TO BLACK.`. | OFF-9a | `DIAG-transition-lookalike` |
+| `transition-lookalike` | Info | A framed, uppercase, one-line paragraph that is `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.` or `CUT TO BLACK.`. `FADE IN:` opens most scripts and fires on purpose, because another tool reads it as a scene heading. | OFF-9a | `DIAG-transition-lookalike` |
 | `unframed-transition` | Warning | An uppercase line ending in exactly `TO:` that is not a Transition because a blank line is missing before or after it. | OFF-9b, OFF-9c | `DIAG-unframed-transition` |
 | `to-trailing-space` | Warning | An uppercase line ending in `TO:` followed by spaces or tabs, with a blank line before it. | OFF-23a, OFF-23b | `DIAG-to-trailing-space` |
 | `lone-caret` | Warning | A Character cue with a caret that has no partner: no directly preceding Dialogue block, or one that is already a right half. | OFF-11a, OFF-11d | `DIAG-lone-caret` |
 | `caret-not-last` | Info | A cue line that has a `^` followed by more text, such as `NAME ^ (V.O.)`. | OFF-11c | `DIAG-caret-not-last` |
-| `partial-parenthetical` | Info | A line inside a Dialogue block that starts with `(` and does not end with `)`, or that ends with `)` and contains no `(`. | OFF-12b | `DIAG-partial-parenthetical` |
+| `partial-parenthetical` | Info | A line inside a Dialogue block that starts with `(` and does not end with `)`, or that ends with `)`, contains no `(`, and closes such a line earlier in the same block (no line ending in `)` between them). | OFF-12b | `DIAG-partial-parenthetical` |
 | `emphasis-line-break` | Info | An emphasis opener with no closer on its line, and a matching closer on a later line of the same paragraph. | OFF-14b | `DIAG-emphasis-line-break` |
 | `nested-opener` | Info | A `[[` inside a Note, or a `/*` inside a Boneyard. | OFF-15a, OFF-16b | `DIAG-nested-opener` |
 | `unclosed-note` | Warning | A `[[` with no `]]` before the next blank line. | OFF-15b | `DIAG-unclosed-note` |

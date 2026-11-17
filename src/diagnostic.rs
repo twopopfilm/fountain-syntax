@@ -44,12 +44,14 @@ pub enum DiagnosticCode {
     UnframedHeading,
     /// A heading that is only a prefix and its period or space.
     EmptyHeading,
-    /// A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`.
+    /// A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`,
+    /// outside the title page.
     PeriodNotForcing,
     /// A heading ends with something shaped like `#...#` that is not a scene number.
     SceneNumberRejected,
     /// A framed, uppercase, one-line paragraph that is exactly `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.`
-    /// or `CUT TO BLACK.`.
+    /// or `CUT TO BLACK.`. `FADE IN:` opens most scripts and fires on purpose, because another tool reads
+    /// it as a scene heading.
     TransitionLookalike,
     /// An uppercase line ending in `TO:` that is not a Transition because a blank line is missing.
     UnframedTransition,
@@ -59,7 +61,8 @@ pub enum DiagnosticCode {
     LoneCaret,
     /// A cue line with a `^` followed by more text.
     CaretNotLast,
-    /// A Dialogue line that starts with `(` and does not end with `)`, or that ends with `)` and contains no `(`.
+    /// A Dialogue line that starts with `(` and does not end with `)`, or that ends with `)`, contains no `(`,
+    /// and closes such a line earlier in the same block (no line ending in `)` between them).
     PartialParenthetical,
     /// An emphasis opener with no closer on its line and a closer on a later line.
     EmphasisLineBreak,

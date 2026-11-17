@@ -30,6 +30,15 @@ fn quiet(src: &str, code: C) {
     );
 }
 
+/// Asserts that `code` is not reported on the line whose source text is `text`.
+fn quiet_on(src: &str, code: C, text: &str) {
+    let all = diags(src);
+    assert!(
+        all.iter().all(|(c, t)| *c != code || t != text),
+        "{src:?}: unexpected {code:?} on {text:?} in {all:?}"
+    );
+}
+
 #[test]
 fn diag_codes_match_section_7() {
     let rows = [
@@ -154,6 +163,19 @@ fn diag_period_not_forcing() {
     quiet("..DOUBLE", C::PeriodNotForcing);
     quiet("...trailing off", C::PeriodNotForcing);
     quiet(".", C::PeriodNotForcing);
+    // Inside the title page a leading period is a value or a stray line, not a forced heading.
+    quiet(
+        "Title: X\n    . a dotted value\n\nINT. A\n\nx",
+        C::PeriodNotForcing,
+    );
+    let stray = "Title: X\n. stray\n\nINT. A\n\nx";
+    fires(stray, C::TitlePageStrayLine, ". stray");
+    quiet(stray, C::PeriodNotForcing);
+    fires(
+        "Title: X\n\n. SPACE AFTER",
+        C::PeriodNotForcing,
+        ". SPACE AFTER",
+    );
 }
 
 /// DIAG-scene-number-rejected
@@ -263,11 +285,6 @@ fn diag_partial_parenthetical() {
         "(whispering) and then speaks",
     );
     fires("MARA\n(not closed", C::PartialParenthetical, "(not closed");
-    fires(
-        "MARA\nhi\nparagraph)",
-        C::PartialParenthetical,
-        "paragraph)",
-    );
     quiet("MARA\n(softly)\nhi", C::PartialParenthetical);
     quiet("(not closed\nx", C::PartialParenthetical);
     // The reverse half needs a line that ends with `)` and has no `(` at all (#49).
@@ -286,9 +303,24 @@ fn diag_partial_parenthetical() {
         C::PartialParenthetical,
         "door)",
     );
-    fires("MARA\nhi\n)", C::PartialParenthetical, ")");
+    // The reverse half is contextual: a line ending in `)` with no `(` fires only when an earlier
+    // line of the same block opened a parenthesis that nothing has closed since (#47).
+    quiet("MARA\nDone :)", C::PartialParenthetical);
+    quiet("MARA\nOk :-)", C::PartialParenthetical);
+    quiet("MARA\nhi\nparagraph)", C::PartialParenthetical);
+    quiet("MARA\nhi\n)", C::PartialParenthetical);
+    quiet_on("MARA\n(a\nb)\nc)", C::PartialParenthetical, "c)"); // closed already
+    quiet_on("MARA\n(open\n\nOTTO\nhi)", C::PartialParenthetical, "hi)"); // a new block
+    quiet_on("MARA\n(open\n@OTTO\nhi)", C::PartialParenthetical, "hi)"); // a forced cue
+    quiet_on("MARA\n(a\n(b)\nc)", C::PartialParenthetical, "c)"); // a Parenthetical line closes it
     fires(
-        "MARA\nhi\ndoor) [[ (note ]]",
+        "MARA\n(looking at\nthe old\ndoor)",
+        C::PartialParenthetical,
+        "door)",
+    );
+    // A Note's `(` is not a `(` on the line.
+    fires(
+        "MARA\n(looking at the\ndoor) [[ (note ]]",
         C::PartialParenthetical,
         "door) [[ (note ]]",
     );

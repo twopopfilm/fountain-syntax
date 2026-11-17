@@ -80,9 +80,10 @@ fn look_alikes(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         {
             codes.push(C::EmptyHeading);
         }
-        if t.strip_prefix('.')
-            .and_then(|rest| rest.chars().next())
-            .is_some_and(|c| !classify::is_alnum(c) && c != '.')
+        if !matches!(role, Role::TitleKey | Role::TitleValue | Role::TitleStray)
+            && t.strip_prefix('.')
+                .and_then(|rest| rest.chars().next())
+                .is_some_and(|c| !classify::is_alnum(c) && c != '.')
         {
             codes.push(C::PeriodNotForcing);
         }
@@ -124,6 +125,8 @@ fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
     let roles = input.roles;
     let outline = |r: Role| matches!(r, Role::Shaped(s) if parse::is_outline(s));
     let mut in_block = false;
+    // An earlier line of this block opened a parenthesis that no line has closed yet.
+    let mut open_paren = false;
     let mut left: Option<usize> = None;
     let mut lone: Vec<usize> = Vec::new();
     for (i, (line, &role)) in input.lines.iter().zip(roles).enumerate() {
@@ -151,6 +154,7 @@ fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
                     push(C::BlankLookalike);
                 }
                 in_block = false;
+                open_paren = false;
             }
             Role::Cue | Role::Shaped(LineShape::ForcedCue) => {
                 let forced = matches!(role, Role::Shaped(_));
@@ -175,27 +179,36 @@ fn blocks_and_layout(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
                     left = Some(i);
                 }
                 in_block = true;
+                open_paren = false;
             }
             Role::Dialogue => {
                 let text = t.trim_end_matches([' ', '\t']);
-                // A trailing aside (`Call me (later)`) is ordinary dialogue: the reverse half fires
-                // only when the line has no `(` at all.
-                if (text.starts_with('(') && !text.ends_with(')'))
-                    || (text.ends_with(')') && !text.contains('('))
-                {
+                // A trailing aside (`Call me (later)`) and a smiley (`Done :)`) are ordinary
+                // dialogue: the reverse half fires only on a line with no `(` at all, and only
+                // while an earlier line of the block is still open.
+                let opens = text.starts_with('(') && !text.ends_with(')');
+                if opens || (open_paren && text.ends_with(')') && !text.contains('(')) {
                     push(C::PartialParenthetical);
                 }
+                if opens {
+                    open_paren = true;
+                } else if text.ends_with(')') {
+                    open_paren = false;
+                }
             }
+            Role::Parenthetical => open_paren = false,
             Role::Shaped(s) if classify::ends_block(s) => {
                 if in_block {
                     push(C::SigilInDialogue);
                 }
                 in_block = false;
+                open_paren = false;
                 left = None;
             }
             Role::Shaped(LineShape::Lyrics) => left = left.filter(|_| in_block),
             Role::Shaped(LineShape::Plain | LineShape::PrefixHeading) | Role::Transition => {
                 in_block = false;
+                open_paren = false;
                 left = None;
             }
             _ => {}
