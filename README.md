@@ -75,9 +75,9 @@ assert_eq!(doc.diagnostics()[0].code, DiagnosticCode::UnclosedNote);
 
 ### Edit
 
-A named edit changes one span of the source and re-parses. It returns an `EditError` instead of an edit that would not
-read as what it was meant to be (`EditError::Invalid`), or `EditError::NotFound` for a span that is not an element of
-the kind the edit needs. The original `Document` is not changed.
+A named edit changes one span of the source and re-parses. It returns `EditError::Invalid` instead of an edit that
+would not read as what it was meant to be, or text the element cannot hold, and `EditError::NotFound` for a span that
+is not an element of the kind the edit needs. The original `Document` is not changed.
 
 ```rust
 use fountain_syntax::{Element, parse};

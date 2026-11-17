@@ -18,8 +18,9 @@ use crate::{Child, Document, Node, NodeKind, Span, TokenKind, parse};
 pub enum EditError {
     /// No element of the kind the edit needs has exactly this span.
     NotFound,
-    /// The edited text would not parse as the element it was meant to be, or the edit would drop
-    /// a Note or Boneyard.
+    /// The text cannot be written as the element it was meant to be: it would not parse as that
+    /// element, or it holds a mark the element cannot hold (`[[` or `]]` in a Note). Or the edit
+    /// would drop a Note or Boneyard.
     Invalid,
 }
 
@@ -28,7 +29,7 @@ impl fmt::Display for EditError {
         f.write_str(match self {
             EditError::NotFound => "no element of the needed kind has this span",
             EditError::Invalid => {
-                "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+                "the text cannot be written as the intended element, or the edit would drop a Note or Boneyard"
             }
         })
     }
@@ -273,8 +274,9 @@ impl Document {
     /// After a Scene Heading that a Synopsis follows directly, the note goes between them, so
     /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
-    /// A `text` that holds `]]` or a blank line, or that would not read back as a Note, gives
-    /// [`EditError::Invalid`]. A span that is not a top-level element of the document (a cue, a
+    /// A `text` that holds `[[`, `]]` or a blank line, or that would not read back as a Note,
+    /// gives [`EditError::Invalid`]: Notes don't nest (`SPEC.md` OFF-15a). Empty text gives the
+    /// empty note `[[]]`. A span that is not a top-level element of the document (a cue, a
     /// title page entry, the blank lines between elements) gives [`EditError::NotFound`].
     ///
     /// ```
@@ -295,7 +297,7 @@ impl Document {
             .position(|n| n.kind() != NodeKind::Gap && n.span() == after)
             .ok_or(EditError::NotFound)?;
         let unix = text.replace("\r\n", "\n").replace('\r', "\n");
-        if text.contains("]]") || unix.contains("\n\n") {
+        if text.contains("[[") || text.contains("]]") || unix.contains("\n\n") {
             return Err(EditError::Invalid);
         }
         let nl = self.line_break();

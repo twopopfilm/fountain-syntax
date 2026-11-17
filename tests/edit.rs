@@ -328,6 +328,27 @@ fn wr_11_adds_a_note_block_after_an_element() {
     }
 }
 
+/// WR-11: empty text gives the empty note `[[]]`, and a single `[` is allowed (issue #61).
+#[test]
+fn wr_11_accepts_empty_text_and_single_brackets() {
+    let src = "INT. A\n\nHi.\n";
+    let doc = parse_checked(src);
+    let hi = find(&doc, NodeKind::Action)[0].span();
+    for (text, expected) in [
+        ("", "INT. A\n\nHi.\n\n[[]]\n"),
+        ("[x", "INT. A\n\nHi.\n\n[[[x]]\n"),
+        ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
+    ] {
+        let edited = doc.with_note(hi, text).unwrap();
+        assert_eq!(edited.source(), expected, "{text:?}");
+        let Element::Note(note) = &edited.screenplay().scenes[0].elements[1] else {
+            panic!("{text:?}")
+        };
+        assert_eq!(note.text, text);
+        assert!(edited.diagnostics().is_empty(), "{text:?}");
+    }
+}
+
 #[test]
 fn wr_13_synopsis_and_note_refusals() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
@@ -353,7 +374,15 @@ fn wr_13_synopsis_and_note_refusals() {
             "{text:?}"
         );
     }
-    for text in ["a]]b", "a\n\nb", "a\r\n\r\nb", "a\r\rb"] {
+    for text in [
+        "a]]b",
+        "a\n\nb",
+        "a\r\n\r\nb",
+        "a\r\rb",
+        "[[x",
+        "a[[b",
+        "x[[",
+    ] {
         assert_eq!(
             doc.with_note(heading, text).err(),
             Some(EditError::Invalid),
@@ -482,7 +511,7 @@ fn edit_error_display_names_both_cases() {
     );
     assert_eq!(
         EditError::Invalid.to_string(),
-        "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+        "the text cannot be written as the intended element, or the edit would drop a Note or Boneyard"
     );
     let _: &dyn std::error::Error = &EditError::Invalid;
 }
