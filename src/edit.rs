@@ -278,9 +278,10 @@ impl Document {
     /// (`SPEC.md` OFF-15a). So does a `text` that holds an inner blank line (a line between two
     /// line breaks of the text that is empty or only spaces and tabs, except one of exactly two
     /// spaces, `SPEC.md` OFF-1c; the first and last lines join `[[` and `]]`, so they never
-    /// stand alone), one that ends with `]`
-    /// (`[[see [1]]]` closes at its first `]]`, one byte early), and one that would not read back
-    /// as a Note. Empty text gives the empty note `[[]]`. A span that is not a top-level element
+    /// stand alone), one that ends with `]` (`[[see [1]]]` closes at its first `]]`, one byte
+    /// early), and one that would not read back as a Note. Only spaces and tabs count, so a line
+    /// of other whitespace (such as a no-break space, `SPEC.md` 3.3) is not blank and is
+    /// accepted. Empty text gives the empty note `[[]]`. A span that is not a top-level element
     /// of the document (a cue, a title page entry, the blank lines between elements) gives
     /// [`EditError::NotFound`].
     ///

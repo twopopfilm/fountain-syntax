@@ -329,7 +329,8 @@ fn wr_11_adds_a_note_block_after_an_element() {
 }
 
 /// WR-11: empty text gives the empty note `[[]]`, a single `[` is allowed (issue #61), and so is a
-/// line of exactly two spaces, which is not blank inside a Note (`OFF-1c`, issue #83).
+/// line of exactly two spaces, which is not blank inside a Note (`OFF-1c`, issue #83). A line of
+/// other whitespace, such as a no-break space, is not blank either (`SPEC.md` 3.3, issue #85).
 #[test]
 fn wr_11_accepts_empty_text_and_single_brackets() {
     let src = "INT. A\n\nHi.\n";
@@ -349,6 +350,8 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         ("\t\nb", "INT. A\n\nHi.\n\n[[\t\nb]]\n"),
         ("a\n ", "INT. A\n\nHi.\n\n[[a\n ]]\n"),
         ("a\n\t", "INT. A\n\nHi.\n\n[[a\n\t]]\n"),
+        // A no-break space is not whitespace (`SPEC.md` 3.3), so that line is not blank.
+        ("a\n\u{a0}\nb", "INT. A\n\nHi.\n\n[[a\n\u{a0}\nb]]\n"),
     ] {
         let edited = doc.with_note(hi, text).unwrap();
         assert_eq!(edited.source(), expected, "{text:?}");
@@ -456,6 +459,11 @@ fn wr_13_synopsis_and_note_refusals() {
         "a\n \nb",
         "a\n   \nb",
         "a\n\t\nb",
+        // Only spaces and tabs count, and only exactly two spaces is spared.
+        "a\n \t\nb",
+        "a\n\t \nb",
+        "a\n  \t\nb",
+        "a\r\n \t\r\nb",
     ] {
         assert_eq!(
             doc.with_note(heading, text).err(),

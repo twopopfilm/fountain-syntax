@@ -1110,7 +1110,8 @@ pub fn canonical(screenplay: &Screenplay) -> String;
   don't nest, OFF-15a: `]]` would end the Note early and `[[` would raise `nested-opener`), text that holds an inner
   blank line (a line between two line breaks of the text that is empty or only spaces and tabs, except one of exactly
   two spaces, OFF-1c; the first and last lines join `[[` and `]]`, so they never stand alone), and text that ends
-  with `]` (the Note would close one byte early) (issues #61 and #83).
+  with `]` (the Note would close one byte early) (issues #61 and #83). Only spaces and tabs count, so a line of other
+  whitespace (such as a no-break space, 3.3) is not blank and is accepted (issue #85).
 - `with_cue_renamed` accepts a new name that holds a Note or Boneyard between its characters (`JU[[n]]NE`): the caller
   wrote it and nothing is dropped; the view's name leaves it out (issue #61). A new name with one at either end
   (`JUNE[[n]]`, `[[n]]JUNE`), or that is only one, is refused (`Invalid`): it would read back as beside the name, not
