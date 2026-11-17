@@ -275,8 +275,10 @@ impl Document {
     /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
     /// A `text` that holds `[[` or `]]` gives [`EditError::Invalid`], since Notes don't nest
-    /// (`SPEC.md` OFF-15a). So does a `text` that holds a blank line (a line that is empty or
-    /// only spaces and tabs, except one of exactly two spaces, `OFF-1c`), one that ends with `]`
+    /// (`SPEC.md` OFF-15a). So does a `text` that holds an inner blank line (a line between two
+    /// line breaks of the text that is empty or only spaces and tabs, except one of exactly two
+    /// spaces, `SPEC.md` OFF-1c; the first and last lines join `[[` and `]]`, so they never
+    /// stand alone), one that ends with `]`
     /// (`[[see [1]]]` closes at its first `]]`, one byte early), and one that would not read back
     /// as a Note. Empty text gives the empty note `[[]]`. A span that is not a top-level element
     /// of the document (a cue, a title page entry, the blank lines between elements) gives

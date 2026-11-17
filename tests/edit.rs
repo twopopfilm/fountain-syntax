@@ -341,6 +341,14 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
         ("[1] see", "INT. A\n\nHi.\n\n[[[1] see]]\n"),
         ("a\n  \nb", "INT. A\n\nHi.\n\n[[a\n  \nb]]\n"),
+        // The first and last lines of the text join `[[` and `]]`, so they never stand alone.
+        ("\nb", "INT. A\n\nHi.\n\n[[\nb]]\n"),
+        ("a\n", "INT. A\n\nHi.\n\n[[a\n]]\n"),
+        ("\n", "INT. A\n\nHi.\n\n[[\n]]\n"),
+        (" \nb", "INT. A\n\nHi.\n\n[[ \nb]]\n"),
+        ("\t\nb", "INT. A\n\nHi.\n\n[[\t\nb]]\n"),
+        ("a\n ", "INT. A\n\nHi.\n\n[[a\n ]]\n"),
+        ("a\n\t", "INT. A\n\nHi.\n\n[[a\n\t]]\n"),
     ] {
         let edited = doc.with_note(hi, text).unwrap();
         assert_eq!(edited.source(), expected, "{text:?}");
@@ -350,6 +358,24 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         assert_eq!(note.text, text);
         assert!(edited.diagnostics().is_empty(), "{text:?}");
     }
+}
+
+/// WR-11, issue #83: a line of exactly two spaces inside the text of a note in a CRLF document.
+#[test]
+fn wr_11_accepts_two_space_line_in_crlf_document() {
+    let doc = parse_checked("INT. A\r\n\r\nHi.\r\n");
+    let hi = find(&doc, NodeKind::Action)[0].span();
+    let text = "a\r\n  \r\nb";
+    let edited = doc.with_note(hi, text).unwrap();
+    assert_eq!(
+        edited.source(),
+        "INT. A\r\n\r\nHi.\r\n\r\n[[a\r\n  \r\nb]]\r\n"
+    );
+    let Element::Note(note) = &edited.screenplay().scenes[0].elements[1] else {
+        panic!()
+    };
+    assert_eq!(note.text, text);
+    assert!(edited.diagnostics().is_empty());
 }
 
 /// WR-11: an empty note at the edges of a document: end of file without a final newline, after a
@@ -421,6 +447,7 @@ fn wr_13_synopsis_and_note_refusals() {
         "[[x",
         "a[[b",
         "x[[",
+        // issue #83: text ending in `]`, and `[[` after a line break.
         "x]",
         "]",
         "see [1]",
