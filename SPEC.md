@@ -1106,8 +1106,9 @@ pub fn canonical(screenplay: &Screenplay) -> String;
 - New lines use the first line break found in the document (`\n` if there is none).
 - `with_synopsis` replacing a Synopsis keeps the whitespace before its `=` and rewrites the rest of the line as `= text`
   (issue #61).
-- `with_note` accepts empty text, which writes `[[]]`, and refuses (`Invalid`) text that holds `[[` or `]]`: Notes
-  don't nest (OFF-15a), so `]]` would end the Note early and `[[` would raise `nested-opener` (issue #61).
+- `with_note` accepts empty text, which writes `[[]]`. It refuses (`Invalid`) text that holds `[[` or `]]` (Notes
+  don't nest, OFF-15a: `]]` would end the Note early and `[[` would raise `nested-opener`), text that holds a blank
+  line, and text that ends with `]` (the Note would close one byte early) (issues #61 and #83).
 - `with_cue_renamed` accepts a new name that holds a Note or Boneyard: the caller wrote it and nothing is dropped; the
   view's name leaves it out (issue #61).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
@@ -1184,7 +1185,7 @@ views don't round-trip:
 | `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break; a replaced Synopsis keeps its indent. |
 | `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. Empty text writes `[[]]`. |
 | `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, a current name holding a Note or Boneyard is refused, and a new name holding one is written as given. |
-| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[` or `]]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a current cue name that holds one); the document is unchanged. |
+| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[`, `]]` or a blank line, or ends with `]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a current cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
 

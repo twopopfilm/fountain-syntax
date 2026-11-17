@@ -274,9 +274,10 @@ impl Document {
     /// After a Scene Heading that a Synopsis follows directly, the note goes between them, so
     /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
-    /// A `text` that holds `[[`, `]]` or a blank line, or that would not read back as a Note,
-    /// gives [`EditError::Invalid`]: Notes don't nest (`SPEC.md` OFF-15a). Empty text gives the
-    /// empty note `[[]]`. A span that is not a top-level element of the document (a cue, a
+    /// A `text` that holds `[[` or `]]` gives [`EditError::Invalid`], since Notes don't nest
+    /// (`SPEC.md` OFF-15a). So does a `text` that holds a blank line, one that ends with `]`
+    /// (`[[see [1]]]` closes at its first `]]`, one byte early), and one that would not read back
+    /// as a Note. Empty text gives the empty note `[[]]`. A span that is not a top-level element of the document (a cue, a
     /// title page entry, the blank lines between elements) gives [`EditError::NotFound`].
     ///
     /// ```

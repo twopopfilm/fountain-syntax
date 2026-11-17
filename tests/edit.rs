@@ -338,6 +338,7 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         ("", "INT. A\n\nHi.\n\n[[]]\n"),
         ("[x", "INT. A\n\nHi.\n\n[[[x]]\n"),
         ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
+        ("[1] see", "INT. A\n\nHi.\n\n[[[1] see]]\n"),
     ] {
         let edited = doc.with_note(hi, text).unwrap();
         assert_eq!(edited.source(), expected, "{text:?}");
@@ -346,6 +347,42 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         };
         assert_eq!(note.text, text);
         assert!(edited.diagnostics().is_empty(), "{text:?}");
+    }
+}
+
+/// WR-11: an empty note at the edges of a document: end of file without a final newline, after a
+/// Scene Heading, and in a CRLF document (issue #83).
+#[test]
+fn wr_11_pins_empty_notes_at_the_edges() {
+    for (src, at_heading, expected) in [
+        ("INT. A\n\nHi.", false, "INT. A\n\nHi.\n\n[[]]"),
+        ("INT. A\n\nHi.\n", true, "INT. A\n\n[[]]\n\nHi.\n"),
+        (
+            "INT. A\r\n\r\nHi.\r\n",
+            false,
+            "INT. A\r\n\r\nHi.\r\n\r\n[[]]\r\n",
+        ),
+    ] {
+        let doc = parse_checked(src);
+        let target = if at_heading {
+            heading_span(&doc, 0)
+        } else {
+            find(&doc, NodeKind::Action)[0].span()
+        };
+        let edited = doc.with_note(target, "").unwrap();
+        assert_eq!(edited.source(), expected, "{src:?}");
+        let edited = parse_checked(edited.source());
+        let notes: Vec<_> = edited
+            .screenplay()
+            .scenes
+            .iter()
+            .flat_map(|s| s.elements.iter())
+            .filter_map(|e| match e {
+                Element::Note(n) => Some(n.text.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(notes, [""], "{src:?}");
     }
 }
 
@@ -382,6 +419,10 @@ fn wr_13_synopsis_and_note_refusals() {
         "[[x",
         "a[[b",
         "x[[",
+        "x]",
+        "]",
+        "see [1]",
+        "a\n[[b",
     ] {
         assert_eq!(
             doc.with_note(heading, text).err(),
