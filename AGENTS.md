@@ -66,7 +66,12 @@ change one span and re-parse. The features `locked-scene-numbers`, `shot`, `serd
 hash scheme 1 (issue #35) is implemented. CI (`.github/workflows/ci.yml`) runs `cargo fmt --check`,
 `cargo clippy --all-targets -- -D warnings` and `cargo test` on Linux, macOS and Windows, then
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features` and
-`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. A Linux job also runs
+`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`. The Linux `features` job runs
+`cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings` and
+`cargo hack test --feature-powerset --exclude-features default`, which lint and test every combination of the four
+features. Install cargo-hack with `cargo install cargo-hack --locked --version 0.6.46`. The exclusion is there
+because `default = []` is declared explicitly, so cargo-hack would otherwise count it as a fifth feature and run every
+build twice. The Linux `msrv` job runs
 `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
 `rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
 `rustup run 1.85 cargo check --locked --all-targets`). CI has not been able to run it yet, so run it locally when you
@@ -79,13 +84,16 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 - **The `screenplay-tools` diff** (issue #16): `tests/screenplay_tools.rs` compares the typed view of each corpus
   script with the committed snapshot `tests/corpus/screenplay-tools.json` and checks every difference against
   `docs/conformance/screenplay-tools.md`, so CI's `cargo test` enforces the record without Python. It is compiled out
-  under `--all-features`. After editing a corpus script or changing the parser, run
+  whenever `shot` or `locked-scene-numbers` is on, because those features change the
+  view. After editing a corpus script or changing the parser, run
   `uv run --script scripts/screenplay-tools-diff.py` (local only, not part of the gate; needs `uv` and a network),
   commit the regenerated snapshot, and classify any new hunk in the record (the test prints each unrecorded hunk ready
   to paste).
 - **The writer must round-trip unchanged input byte-for-byte.**
 - **Before every PR:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`,
   `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features`,
+  `cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings`,
+  `cargo hack test --feature-powerset --exclude-features default`,
   `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
