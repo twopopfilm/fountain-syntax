@@ -1099,4 +1099,10 @@ fn hash2_31_domain_separation() {
             assert_ne!(a, b);
         }
     }
+    // A scene with no elements and a preamble with no elements differ.
+    let empty = scene(&format!("{H}\n"));
+    assert!(empty.elements.is_empty());
+    let pre = [u32be(H.len()), H.as_bytes().to_vec(), u32be(0)].concat();
+    assert_eq!(empty.hash().to_string(), sha("scene", &pre));
+    assert_ne!(empty.hash(), Preamble::default().hash());
 }
