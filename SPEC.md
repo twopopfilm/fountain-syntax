@@ -1066,7 +1066,8 @@ impl Document {
 pub enum EditError {
     /// No element of the kind the edit needs has exactly this span.
     NotFound,
-    /// The edited text would not parse as the intended element, or the edit would drop a Note or Boneyard.
+    /// The text cannot be written as the intended element: it would not parse as that element, or it holds a
+    /// mark the element cannot hold (`[[` or `]]` in a Note). Or the edit would drop a Note or Boneyard.
     Invalid,
 }
 
@@ -1183,7 +1184,7 @@ views don't round-trip:
 | `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break; a replaced Synopsis keeps its indent. |
 | `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. Empty text writes `[[]]`. |
 | `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, a current name holding a Note or Boneyard is refused, and a new name holding one is written as given. |
-| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[` or `]]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a cue name that holds one); the document is unchanged. |
+| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[` or `]]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a current cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
 
