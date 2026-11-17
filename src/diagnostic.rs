@@ -44,7 +44,8 @@ pub enum DiagnosticCode {
     UnframedHeading,
     /// A heading that is only a prefix and its period or space.
     EmptyHeading,
-    /// A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`.
+    /// A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`,
+    /// outside the title page.
     PeriodNotForcing,
     /// A heading ends with something shaped like `#...#` that is not a scene number.
     SceneNumberRejected,

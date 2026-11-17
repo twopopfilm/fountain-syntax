@@ -154,6 +154,19 @@ fn diag_period_not_forcing() {
     quiet("..DOUBLE", C::PeriodNotForcing);
     quiet("...trailing off", C::PeriodNotForcing);
     quiet(".", C::PeriodNotForcing);
+    // Inside the title page a leading period is a value or a stray line, not a forced heading.
+    quiet(
+        "Title: X\n    . a dotted value\n\nINT. A\n\nx",
+        C::PeriodNotForcing,
+    );
+    let stray = "Title: X\n. stray\n\nINT. A\n\nx";
+    fires(stray, C::TitlePageStrayLine, ". stray");
+    quiet(stray, C::PeriodNotForcing);
+    fires(
+        "Title: X\n\n. SPACE AFTER",
+        C::PeriodNotForcing,
+        ". SPACE AFTER",
+    );
 }
 
 /// DIAG-scene-number-rejected

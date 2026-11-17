@@ -80,9 +80,10 @@ fn look_alikes(input: &Input<'_>, out: &mut Vec<Diagnostic>) {
         {
             codes.push(C::EmptyHeading);
         }
-        if t.strip_prefix('.')
-            .and_then(|rest| rest.chars().next())
-            .is_some_and(|c| !classify::is_alnum(c) && c != '.')
+        if !matches!(role, Role::TitleKey | Role::TitleValue | Role::TitleStray)
+            && t.strip_prefix('.')
+                .and_then(|rest| rest.chars().next())
+                .is_some_and(|c| !classify::is_alnum(c) && c != '.')
         {
             codes.push(C::PeriodNotForcing);
         }
