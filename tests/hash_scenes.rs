@@ -1046,3 +1046,26 @@ fn degenerate_input_hashes() {
         sha("source", b"")
     );
 }
+
+/// HASH2-31
+#[test]
+fn hash2_31_domain_separation() {
+    let names = [
+        "element",
+        "scene",
+        "preamble",
+        "document",
+        "title-page",
+        "source",
+    ];
+    let digests: Vec<String> = names.iter().map(|n| sha(n, b"payload")).collect();
+    for (i, a) in digests.iter().enumerate() {
+        for b in &digests[i + 1..] {
+            assert_ne!(a, b);
+        }
+    }
+    // A scene with no elements and a preamble with no elements differ.
+    let empty_scene = scene("INT. A - DAY\n");
+    assert!(empty_scene.elements.is_empty());
+    assert_ne!(empty_scene.hash(), Preamble::default().hash());
+}

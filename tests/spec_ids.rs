@@ -3,17 +3,6 @@
 
 use std::path::Path;
 
-/// IDs still without a test, kept only until their tests land (issue #79).
-const ALLOWLIST: [&str; 7] = [
-    "EL-action-4",
-    "EL-emphasis-1",
-    "EL-emphasis-2",
-    "EXT-contd-1",
-    "EXT-open-keys-2",
-    "HASH2-31",
-    "OFF-14b",
-];
-
 fn read(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()))
 }
@@ -73,7 +62,7 @@ fn every_spec_id_is_named_by_a_test() {
     let missing: Vec<&str> = ids
         .iter()
         .copied()
-        .filter(|id| !ALLOWLIST.contains(id) && !names(&tests, &id.to_lowercase()))
+        .filter(|id| !names(&tests, &id.to_lowercase()))
         .collect();
     assert!(
         missing.is_empty(),
