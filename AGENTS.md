@@ -80,7 +80,8 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 - **Rust stable, minimum supported version 1.85;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists
   the optional Cargo features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`),
   `locked-scene-numbers` and `shot` (no dependency). All four exist.
-- **Every `SPEC.md` decision has a test** that names it.
+- **Every `SPEC.md` decision has a test** that names it. `tests/spec_ids.rs` enforces this, so a new ID needs a test in
+  `tests/*.rs`.
 - **The `screenplay-tools` diff** (issue #16): `tests/screenplay_tools.rs` compares the typed view of each corpus
   script with the committed snapshot `tests/corpus/screenplay-tools.json` and checks every difference against
   `docs/conformance/screenplay-tools.md`, so CI's `cargo test` enforces the record without Python. It is compiled out
