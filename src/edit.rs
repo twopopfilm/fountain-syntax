@@ -326,9 +326,10 @@ impl Document {
     ///
     /// `name` must read back as exactly the name of that cue: a lowercase name on a cue without
     /// `@`, a name with a trailing space, a line break, an extension or a caret in it, or an empty
-    /// name gives [`EditError::Invalid`]. So does a cue whose name holds a Note or Boneyard
-    /// (`MA[[n]]RA`), which the rename would drop. A span that is not a Character cue gives
-    /// [`EditError::NotFound`].
+    /// name gives [`EditError::Invalid`]. So does a cue whose current name holds a Note or Boneyard
+    /// (`MA[[n]]RA`), which the rename would drop. A new name may hold one (`JU[[n]]NE`): it is
+    /// written as given, and the view's name leaves it out. A span that is not a Character cue
+    /// gives [`EditError::NotFound`].
     ///
     /// ```
     /// use fountain_syntax::{Element, parse};

@@ -461,6 +461,20 @@ fn wr_12_keeps_sigil_and_caret() {
     assert_eq!(dual.right.cue.name.plain(), "CAL");
 }
 
+/// WR-12: a new name may hold a Note or Boneyard the caller wrote; nothing is dropped (issue #61).
+#[test]
+fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
+    let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
+    for name in ["JU[[n]]NE", "JU/*b*/NE"] {
+        let edited = doc.with_cue_renamed(cue_span(&doc, 0), name).unwrap();
+        assert_eq!(edited.source(), format!("INT. A\n\n{name}\nHi.\n"));
+        let Element::Dialogue(block) = &edited.screenplay().scenes[0].elements[0] else {
+            panic!("{name:?}")
+        };
+        assert_eq!(block.cue.name.plain(), "JUNE");
+    }
+}
+
 #[test]
 fn wr_13_cue_refusals() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
