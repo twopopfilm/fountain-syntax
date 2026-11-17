@@ -18,8 +18,9 @@ use crate::{Child, Document, Node, NodeKind, Span, TokenKind, parse};
 pub enum EditError {
     /// No element of the kind the edit needs has exactly this span.
     NotFound,
-    /// The edited text would not parse as the element it was meant to be, or the edit would drop
-    /// a Note or Boneyard.
+    /// The text cannot be written as the element it was meant to be: it would not parse as that
+    /// element, or it holds a mark the element cannot hold (`[[` or `]]` in a Note). Or the edit
+    /// would drop a Note or Boneyard.
     Invalid,
 }
 
@@ -28,7 +29,7 @@ impl fmt::Display for EditError {
         f.write_str(match self {
             EditError::NotFound => "no element of the needed kind has this span",
             EditError::Invalid => {
-                "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+                "the text cannot be written as the intended element, or the edit would drop a Note or Boneyard"
             }
         })
     }
@@ -192,7 +193,8 @@ impl Document {
 
     /// Sets the one-line Synopsis of the scene whose Scene Heading has the span `heading`: puts
     /// `= text` on the line right after the heading, or, when a Synopsis is already there,
-    /// replaces it. The new line uses the document's line break. Any other Synopsis of the scene
+    /// replaces it. Replacing keeps the whitespace before its `=` and rewrites the rest of its line
+    /// as `= text`. The new line uses the document's line break. Any other Synopsis of the scene
     /// stays as it is.
     ///
     /// A `text` that holds a line break, or that would not read back as a Synopsis of this
@@ -221,16 +223,25 @@ impl Document {
             return Err(EditError::Invalid);
         }
         let line = format!("= {text}");
-        let (span, edit) = match (top.get(i + 1), top.get(i + 2)) {
+        let (span, edit, expected) = match (top.get(i + 1), top.get(i + 2)) {
             (Some(gap), Some(syn)) if is_one_break(*gap) && syn.kind() == NodeKind::Synopsis => {
                 if hides(*syn) {
                     return Err(EditError::Invalid);
                 }
-                (syn.span(), line.clone())
+                // The node's span holds the indent before its `=`; keep it and replace the rest.
+                let span = syn.span();
+                let old = syn.text();
+                let indent = &old[..old.len() - old.trim_start_matches([' ', '\t']).len()];
+                (
+                    Span::new(span.start + indent.len(), span.end),
+                    line.clone(),
+                    format!("{indent}{line}"),
+                )
             }
             _ => (
                 Span::new(heading.end, heading.end),
                 format!("{}{line}", self.line_break()),
+                line,
             ),
         };
         let edited = self.with_replaced(span, &edit);
@@ -245,7 +256,7 @@ impl Document {
                     && top.get(i + 1).is_some_and(|g| is_one_break(*g))
                     && top
                         .get(i + 2)
-                        .is_some_and(|n| n.kind() == NodeKind::Synopsis && n.text() == line)
+                        .is_some_and(|n| n.kind() == NodeKind::Synopsis && n.text() == expected)
             });
         if ok {
             Ok(edited)
@@ -263,8 +274,9 @@ impl Document {
     /// After a Scene Heading that a Synopsis follows directly, the note goes between them, so
     /// the view then reads that Synopsis as an element of the scene, not as its `synopses`.
     ///
-    /// A `text` that holds `]]` or a blank line, or that would not read back as a Note, gives
-    /// [`EditError::Invalid`]. A span that is not a top-level element of the document (a cue, a
+    /// A `text` that holds `[[`, `]]` or a blank line, or that would not read back as a Note,
+    /// gives [`EditError::Invalid`]: Notes don't nest (`SPEC.md` OFF-15a). Empty text gives the
+    /// empty note `[[]]`. A span that is not a top-level element of the document (a cue, a
     /// title page entry, the blank lines between elements) gives [`EditError::NotFound`].
     ///
     /// ```
@@ -285,7 +297,7 @@ impl Document {
             .position(|n| n.kind() != NodeKind::Gap && n.span() == after)
             .ok_or(EditError::NotFound)?;
         let unix = text.replace("\r\n", "\n").replace('\r', "\n");
-        if text.contains("]]") || unix.contains("\n\n") {
+        if text.contains("[[") || text.contains("]]") || unix.contains("\n\n") {
             return Err(EditError::Invalid);
         }
         let nl = self.line_break();
@@ -314,9 +326,10 @@ impl Document {
     ///
     /// `name` must read back as exactly the name of that cue: a lowercase name on a cue without
     /// `@`, a name with a trailing space, a line break, an extension or a caret in it, or an empty
-    /// name gives [`EditError::Invalid`]. So does a cue whose name holds a Note or Boneyard
-    /// (`MA[[n]]RA`), which the rename would drop. A span that is not a Character cue gives
-    /// [`EditError::NotFound`].
+    /// name gives [`EditError::Invalid`]. So does a cue whose current name holds a Note or Boneyard
+    /// (`MA[[n]]RA`), which the rename would drop. A new name may hold one (`JU[[n]]NE`): it is
+    /// written as given, and the view's name leaves it out. A span that is not a Character cue
+    /// gives [`EditError::NotFound`].
     ///
     /// ```
     /// use fountain_syntax::{Element, parse};

@@ -75,9 +75,9 @@ assert_eq!(doc.diagnostics()[0].code, DiagnosticCode::UnclosedNote);
 
 ### Edit
 
-A named edit changes one span of the source and re-parses. It returns an `EditError` instead of an edit that would not
-read as what it was meant to be (`EditError::Invalid`), or `EditError::NotFound` for a span that is not an element of
-the kind the edit needs. The original `Document` is not changed.
+A named edit changes one span of the source and re-parses. It returns `EditError::Invalid` instead of an edit that
+would not read as what it was meant to be, or text the element cannot hold, and `EditError::NotFound` for a span that
+is not an element of the kind the edit needs. The original `Document` is not changed.
 
 ```rust
 use fountain_syntax::{Element, parse};
@@ -171,9 +171,9 @@ The text that scheme 1 hashes is available in every build, without the `hash` fe
   the tree and the view.
 - **Targeted edits.** Set a scene number as `#12A#` (`with_scene_number`), set a `= synopsis` line (`with_synopsis`),
   add a `[[note]]` block (`with_note`) or rename a character cue (`with_cue_renamed`), and only that text changes.
-  The named edits return an `EditError` instead of an edit that would not parse as what it was meant to be;
-  `with_replaced` replaces any span, checks nothing, and panics on a span that is out of range
-  or not on character boundaries.
+  The named edits return an `EditError` instead of an edit that would not read as what it was meant to be, or text
+  the element cannot hold; `with_replaced` replaces any span, checks nothing, and panics on a span that is out of
+  range or not on character boundaries.
 - **Draft comparison.** With the `hash` feature, self-describing scheme 2 hashes at three levels (element, scene and
   document) and over the exact bytes of any span, so tools can match scenes across drafts, tell real changes from
   whitespace and see which element changed. A second scheme, compatible with the Twopop importer (`Scene::hash_v1`,

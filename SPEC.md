@@ -1066,7 +1066,8 @@ impl Document {
 pub enum EditError {
     /// No element of the kind the edit needs has exactly this span.
     NotFound,
-    /// The edited text would not parse as the intended element, or the edit would drop a Note or Boneyard.
+    /// The text cannot be written as the intended element: it would not parse as that element, or it holds a
+    /// mark the element cannot hold (`[[` or `]]` in a Note). Or the edit would drop a Note or Boneyard.
     Invalid,
 }
 
@@ -1103,6 +1104,12 @@ pub fn canonical(screenplay: &Screenplay) -> String;
 - An edit returns a new document. After an edit, take spans from it, not from the old document or its view: their spans
   refer to the old source and can match a different element of the new one.
 - New lines use the first line break found in the document (`\n` if there is none).
+- `with_synopsis` replacing a Synopsis keeps the whitespace before its `=` and rewrites the rest of the line as `= text`
+  (issue #61).
+- `with_note` accepts empty text, which writes `[[]]`, and refuses (`Invalid`) text that holds `[[` or `]]`: Notes
+  don't nest (OFF-15a), so `]]` would end the Note early and `[[` would raise `nested-opener` (issue #61).
+- `with_cue_renamed` accepts a new name that holds a Note or Boneyard: the caller wrote it and nothing is dropped; the
+  view's name leaves it out (issue #61).
 - After an edit the document is re-parsed. Spans outside the edit move by the length difference; the wrappers check that
   the edited text still parses as the element it was meant to be. A wrapper also refuses (`Invalid`) to replace a node
   that holds a Note or Boneyard, since that would drop the hidden text; a Note or Boneyard beside the node is kept.
@@ -1174,10 +1181,10 @@ views don't round-trip:
 | `WR-7` | `with_replaced` changes only the replaced span: every other byte is identical, and spans after the edit are shifted correctly. |
 | `WR-8` | `canonical` uses a sigil only where the text would otherwise re-parse as a different element. |
 | `WR-9` | `with_scene_number` writes `#n#` on a heading with or without a number and changes no other byte; `with_locked_scene_number` writes `##n#` (`locked-scene-numbers`). |
-| `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break. |
-| `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. |
-| `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, and a name holding a Note or Boneyard is refused. |
-| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element or when the edit would drop a Note or Boneyard (a number, a synopsis or a cue name that holds one); the document is unchanged. |
+| `WR-10` | `with_synopsis` inserts `= text` on the line after a heading, or replaces the Synopsis already there, using the document's line break; a replaced Synopsis keeps its indent. |
+| `WR-11` | `with_note` adds `[[text]]` as its own block after a top-level element, with a blank line before it. Empty text writes `[[]]`. |
+| `WR-12` | `with_cue_renamed` replaces only the name of one cue; its `@`, extensions and caret are kept, a current name holding a Note or Boneyard is refused, and a new name holding one is written as given. |
+| `WR-13` | Each named edit returns `NotFound` for a span that is not its target kind and `Invalid` when the edited text would not parse as that element, when a note's text holds `[[` or `]]`, or when the edit would drop a Note or Boneyard (a number, a synopsis or a current cue name that holds one); the document is unchanged. |
 
 ## 11. Hashes: elements, scenes and documents
 

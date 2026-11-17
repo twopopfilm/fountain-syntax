@@ -257,6 +257,26 @@ fn wr_10_replaces_the_synopsis_directly_after_the_heading() {
     assert_eq!(edited.source(), "= lead\n\nINT. A\n= new\n\nHi.\n");
 }
 
+/// WR-10: replacing a Synopsis keeps the whitespace before its `=` (issue #61).
+#[test]
+fn wr_10_keeps_the_indent_of_a_replaced_synopsis() {
+    for (src, text, expected) in [
+        ("INT. A\n  = old  \n", "new", "INT. A\n  = new\n"),
+        ("INT. A\n\t=old\n\nHi.\n", "new", "INT. A\n\t= new\n\nHi.\n"),
+        ("INT. A\r\n  = old\r\n", "new", "INT. A\r\n  = new\r\n"),
+        ("INT. A\n  = old\n", "", "INT. A\n  = \n"),
+    ] {
+        let doc = parse_checked(src);
+        let edited = doc.with_synopsis(heading_span(&doc, 0), text).unwrap();
+        assert_eq!(edited.source(), expected, "{src:?}");
+        assert_eq!(edited.screenplay().scenes[0].synopses.len(), 1, "{src:?}");
+    }
+    let src = "INT. A\n  = old  \n";
+    let doc = parse_checked(src);
+    let edited = doc.with_synopsis(heading_span(&doc, 0), "new").unwrap();
+    assert_only_span_changed(src, &edited, Span::new(9, 16), "= new");
+}
+
 #[test]
 fn wr_11_adds_a_note_block_after_an_element() {
     let src = "INT. A\n\nHi.\n\nBYE.\n";
@@ -308,6 +328,27 @@ fn wr_11_adds_a_note_block_after_an_element() {
     }
 }
 
+/// WR-11: empty text gives the empty note `[[]]`, and a single `[` is allowed (issue #61).
+#[test]
+fn wr_11_accepts_empty_text_and_single_brackets() {
+    let src = "INT. A\n\nHi.\n";
+    let doc = parse_checked(src);
+    let hi = find(&doc, NodeKind::Action)[0].span();
+    for (text, expected) in [
+        ("", "INT. A\n\nHi.\n\n[[]]\n"),
+        ("[x", "INT. A\n\nHi.\n\n[[[x]]\n"),
+        ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
+    ] {
+        let edited = doc.with_note(hi, text).unwrap();
+        assert_eq!(edited.source(), expected, "{text:?}");
+        let Element::Note(note) = &edited.screenplay().scenes[0].elements[1] else {
+            panic!("{text:?}")
+        };
+        assert_eq!(note.text, text);
+        assert!(edited.diagnostics().is_empty(), "{text:?}");
+    }
+}
+
 #[test]
 fn wr_13_synopsis_and_note_refusals() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
@@ -333,7 +374,15 @@ fn wr_13_synopsis_and_note_refusals() {
             "{text:?}"
         );
     }
-    for text in ["a]]b", "a\n\nb", "a\r\n\r\nb", "a\r\rb"] {
+    for text in [
+        "a]]b",
+        "a\n\nb",
+        "a\r\n\r\nb",
+        "a\r\rb",
+        "[[x",
+        "a[[b",
+        "x[[",
+    ] {
         assert_eq!(
             doc.with_note(heading, text).err(),
             Some(EditError::Invalid),
@@ -412,6 +461,20 @@ fn wr_12_keeps_sigil_and_caret() {
     assert_eq!(dual.right.cue.name.plain(), "CAL");
 }
 
+/// WR-12: a new name may hold a Note or Boneyard the caller wrote; nothing is dropped (issue #61).
+#[test]
+fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
+    let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
+    for name in ["JU[[n]]NE", "JU/*b*/NE"] {
+        let edited = doc.with_cue_renamed(cue_span(&doc, 0), name).unwrap();
+        assert_eq!(edited.source(), format!("INT. A\n\n{name}\nHi.\n"));
+        let Element::Dialogue(block) = &edited.screenplay().scenes[0].elements[0] else {
+            panic!("{name:?}")
+        };
+        assert_eq!(block.cue.name.plain(), "JUNE");
+    }
+}
+
 #[test]
 fn wr_13_cue_refusals() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
@@ -462,7 +525,7 @@ fn edit_error_display_names_both_cases() {
     );
     assert_eq!(
         EditError::Invalid.to_string(),
-        "the edited text would not parse as the intended element, or the edit would drop a Note or Boneyard"
+        "the text cannot be written as the intended element, or the edit would drop a Note or Boneyard"
     );
     let _: &dyn std::error::Error = &EditError::Invalid;
 }
