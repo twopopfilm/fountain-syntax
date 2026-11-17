@@ -1,7 +1,8 @@
 # SPEC: how fountain-syntax reads and writes Fountain
 
 **Status: accepted for 0.1 (issue #4).** The maintainer approved it on 2026-11-05. The code follows it: tests carry
-the IDs of this file, and README.md says which are written. Section 13 lists what is still open.
+the IDs of this file, and `tests/spec_ids.rs` fails `cargo test` if one has no test. Section 13 lists what is still
+open.
 
 This is the contract for the 0.1 release. It states what the library treats as standard, which extensions it supports,
 how every ambiguous case is decided, and the shape of the API and of the hashes. It is written in our own words:
@@ -1845,10 +1846,10 @@ Scheme 2 tests, `HASH2-n`. Methods are those of 11.2, and every test needs `hash
 ## 12. Test IDs
 
 Every decision, element, extension, diagnostic, hash rule and writer property in this file has an ID. **Each ID names a
-test**, written in F2 to F4 (README.md says which exist): the parser, view, diagnostics and scheme 2 hash tests in F2
-(issues #7 to #10), the scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and the conformance corpus in
-F4 (#15). The test carries the ID in its name, so `grep` finds the test for any decision. The comparison with
-`screenplay-tools` (#16, recorded in `docs/conformance/screenplay-tools.md`) has no ID of its own.
+test**, written in F2 to F4 (`tests/spec_ids.rs` fails `cargo test` if one has none): the parser, view, diagnostics and
+scheme 2 hash tests in F2 (issues #7 to #10), the scheme 1 hash tests in F2 (#35), the writer tests in F3 (#12, #13) and
+the conformance corpus in F4 (#15). The test carries the ID in its name, so `grep` finds the test for any decision. The
+comparison with `screenplay-tools` (#16, recorded in `docs/conformance/screenplay-tools.md`) has no ID of its own.
 
 | Scheme | Meaning | Where defined |
 |---|---|---|
