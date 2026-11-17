@@ -328,7 +328,8 @@ fn wr_11_adds_a_note_block_after_an_element() {
     }
 }
 
-/// WR-11: empty text gives the empty note `[[]]`, and a single `[` is allowed (issue #61).
+/// WR-11: empty text gives the empty note `[[]]`, a single `[` is allowed (issue #61), and so is a
+/// line of exactly two spaces, which is not blank inside a Note (`OFF-1c`, issue #83).
 #[test]
 fn wr_11_accepts_empty_text_and_single_brackets() {
     let src = "INT. A\n\nHi.\n";
@@ -339,6 +340,7 @@ fn wr_11_accepts_empty_text_and_single_brackets() {
         ("[x", "INT. A\n\nHi.\n\n[[[x]]\n"),
         ("x[", "INT. A\n\nHi.\n\n[[x[]]\n"),
         ("[1] see", "INT. A\n\nHi.\n\n[[[1] see]]\n"),
+        ("a\n  \nb", "INT. A\n\nHi.\n\n[[a\n  \nb]]\n"),
     ] {
         let edited = doc.with_note(hi, text).unwrap();
         assert_eq!(edited.source(), expected, "{text:?}");
@@ -423,6 +425,10 @@ fn wr_13_synopsis_and_note_refusals() {
         "]",
         "see [1]",
         "a\n[[b",
+        // A blank line: a line of only spaces or tabs is blank unless it is exactly two spaces.
+        "a\n \nb",
+        "a\n   \nb",
+        "a\n\t\nb",
     ] {
         assert_eq!(
             doc.with_note(heading, text).err(),
@@ -502,7 +508,8 @@ fn wr_12_keeps_sigil_and_caret() {
     assert_eq!(dual.right.cue.name.plain(), "CAL");
 }
 
-/// WR-12: a new name may hold a Note or Boneyard the caller wrote; nothing is dropped (issue #61).
+/// WR-12: a new name may hold a Note or Boneyard between its characters; the caller wrote it and
+/// nothing is dropped (issue #61).
 #[test]
 fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
     let doc = parse_checked("INT. A\n\nMARA\nHi.\n");
@@ -516,12 +523,22 @@ fn wr_12_accepts_a_new_name_holding_a_hidden_span() {
     }
 }
 
-/// WR-12: a new name that is only a Note or Boneyard is refused (issue #83).
+/// WR-12: a new name with a Note or Boneyard at either end, or that is only one, is refused
+/// (issue #83). At an end the span would read back beside the name, not in it; a name that is
+/// only one would no longer read as a cue.
 #[test]
-fn wr_12_refuses_a_new_name_that_is_only_a_hidden_span() {
+fn wr_12_refuses_a_new_name_with_a_hidden_span_at_an_edge_or_all_of_it() {
     for src in ["INT. A\n\nMARA\nHi.\n", "INT. A\n\nMARA (V.O.)\nHi.\n"] {
         let doc = parse_checked(src);
-        for name in ["[[n]]", "/*b*/"] {
+        for name in [
+            "[[n]]",
+            "/*b*/",
+            "JUNE[[n]]",
+            "[[n]]JUNE",
+            "JUNE/*b*/",
+            "/*b*/JUNE",
+            "JUNE [[n]]",
+        ] {
             assert_eq!(
                 doc.with_cue_renamed(cue_span(&doc, 0), name).err(),
                 Some(EditError::Invalid),
