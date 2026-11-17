@@ -704,7 +704,7 @@ The six candidates listed in issue #9 are covered as follows.
 | `empty-heading` | Info | A heading that is only a prefix and its period or space. | OFF-6d | `DIAG-empty-heading` |
 | `period-not-forcing` | Info | A line that starts with a single `.` followed by a character that is neither alphanumeric nor `.`, outside the title page. | OFF-7b, OFF-22e | `DIAG-period-not-forcing` |
 | `scene-number-rejected` | Info | A heading line ends with something shaped like `#...#` that is not a scene number: a bad character, or a good number that is followed by text. | OFF-8b, OFF-8c, OFF-8e | `DIAG-scene-number-rejected` |
-| `transition-lookalike` | Info | A framed, uppercase, one-line paragraph that is `FADE OUT.`, `FADE TO BLACK.` or `CUT TO BLACK.` (`FADE IN:` is left out on purpose: it opens most scripts, so firing on it would be noise, although another tool may read it differently). | OFF-9a | `DIAG-transition-lookalike` |
+| `transition-lookalike` | Info | A framed, uppercase, one-line paragraph that is `FADE OUT.`, `FADE TO BLACK.` or `CUT TO BLACK.` (`FADE IN:` is Action in every reading, so it stays quiet). | OFF-9a | `DIAG-transition-lookalike` |
 | `unframed-transition` | Warning | An uppercase line ending in exactly `TO:` that is not a Transition because a blank line is missing before or after it. | OFF-9b, OFF-9c | `DIAG-unframed-transition` |
 | `to-trailing-space` | Warning | An uppercase line ending in `TO:` followed by spaces or tabs, with a blank line before it. | OFF-23a, OFF-23b | `DIAG-to-trailing-space` |
 | `lone-caret` | Warning | A Character cue with a caret that has no partner: no directly preceding Dialogue block, or one that is already a right half. | OFF-11a, OFF-11d | `DIAG-lone-caret` |
