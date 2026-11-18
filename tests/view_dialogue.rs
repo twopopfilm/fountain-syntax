@@ -289,6 +289,17 @@ fn off_3e_view_contd_kept() {
     assert!(b.cue.extensions[1].is_contd());
 }
 
+/// EXT-contd-1
+#[test]
+fn ext_contd_1_kept_as_written() {
+    for contd in ["CONT'D", "cont'd", "CONT\u{2019}D"] {
+        let b = only_block(&format!("MARA ({contd})\nhi"));
+        assert_eq!(b.cue.extensions.len(), 1, "{contd}");
+        assert_eq!(b.cue.extensions[0].text.plain(), contd);
+        assert!(b.cue.extensions[0].is_contd(), "{contd}");
+    }
+}
+
 #[test]
 fn off_1b_view_two_space_line() {
     let b = only_block("MARA\nhi\n  \nyo");

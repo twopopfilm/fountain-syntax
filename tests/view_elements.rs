@@ -336,6 +336,90 @@ fn off_16a_view_plain_text() {
     assert!(matches!(&a.text.runs[1], Run::Boneyard(b) if b.text == " aside "));
 }
 
+/// The runs of the preamble's first Action.
+fn runs(src: &str) -> Vec<Run> {
+    action(&pre(src)[0]).text.runs.clone()
+}
+
+fn plain_run(s: &str) -> Run {
+    Run::Plain(s.to_owned())
+}
+
+fn em(bold: bool, italic: bool, underline: bool, runs: Vec<Run>) -> Run {
+    Run::Emphasis {
+        bold,
+        italic,
+        underline,
+        runs,
+    }
+}
+
+/// EL-action-4
+#[test]
+fn el_action_4_tab_expansion_is_display_only() {
+    let src = "\tHe waits.\tAlone.\n";
+    let doc = parse(src);
+    let v = doc.screenplay();
+    let a = action(&v.preamble.elements[0]);
+    assert_eq!(a.display(), "    He waits.    Alone.");
+    assert_eq!(a.text.plain(), "\tHe waits.\tAlone.");
+    assert_eq!(doc.write(), src);
+}
+
+/// EL-emphasis-1
+#[test]
+fn el_emphasis_1_each_style_and_nesting() {
+    assert_eq!(runs("*a*"), [em(false, true, false, vec![plain_run("a")])]);
+    assert_eq!(
+        runs("**a**"),
+        [em(true, false, false, vec![plain_run("a")])]
+    );
+    assert_eq!(
+        runs("***a***"),
+        [em(true, true, false, vec![plain_run("a")])]
+    );
+    assert_eq!(runs("_a_"), [em(false, false, true, vec![plain_run("a")])]);
+    assert_eq!(
+        runs("*a **b** c*"),
+        [em(
+            false,
+            true,
+            false,
+            vec![
+                plain_run("a "),
+                em(true, false, false, vec![plain_run("b")]),
+                plain_run(" c"),
+            ]
+        )]
+    );
+}
+
+/// EL-emphasis-2
+#[test]
+fn el_emphasis_2_escapes_and_unmatched_literal() {
+    assert_eq!(
+        runs("\\*not italic*"),
+        [Run::Escaped('*'), plain_run("not italic*")]
+    );
+    assert_eq!(runs("*open"), [plain_run("*open")]);
+    assert_eq!(runs("****a****"), [plain_run("****a****")]);
+    assert_eq!(runs("__a__"), [plain_run("__a__")]);
+}
+
+/// OFF-14b
+#[test]
+fn off_14b_no_span_across_line_break() {
+    assert_eq!(runs("*across\nlines*"), [plain_run("*across\nlines*")]);
+    assert_eq!(
+        runs("*a*\n*b*"),
+        [
+            em(false, true, false, vec![plain_run("a")]),
+            plain_run("\n"),
+            em(false, true, false, vec![plain_run("b")]),
+        ]
+    );
+}
+
 #[test]
 fn off_14f_bold_heading_is_action() {
     let v = view("\n**INT. X**\n\n");
@@ -430,6 +514,22 @@ fn el_title_page_3_typed_access_through_parse() {
     assert_eq!(titles, ["a", "b"]);
     assert_eq!(p.title().map(|e| e.key.plain()).as_deref(), Some("TITLE"));
     assert_eq!(p.get("revision").count(), 1);
+}
+
+/// EXT-open-keys-2
+#[test]
+fn ext_open_keys_2_typed_accessors_ignore_case() {
+    let p = title_page(
+        "AUTHORS: A and B\ndraft DATE: 1 May\nnotes: n\nCOPYRIGHT: c\ndate: d\n\nINT. A\n",
+    );
+    let first = |e: Option<&fountain_syntax::TitleEntry>| e.map(|e| e.values[0].plain());
+    assert_eq!(first(p.author()).as_deref(), Some("A and B"));
+    assert_eq!(first(p.draft_date()).as_deref(), Some("1 May"));
+    assert_eq!(first(p.notes()).as_deref(), Some("n"));
+    assert_eq!(first(p.copyright()).as_deref(), Some("c"));
+    assert_eq!(first(p.date()).as_deref(), Some("d"));
+    let p = title_page("Author: Me\n\nINT. A\n");
+    assert_eq!(first(p.author()).as_deref(), Some("Me"));
 }
 
 #[test]

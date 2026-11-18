@@ -290,6 +290,7 @@ fn wr_5_canonical_keeps_the_scene_hashes() {
         );
         for (a, b) in view.scenes.iter().zip(&back.scenes) {
             assert_eq!(a.hash_v1(), b.hash_v1(), "canonical text:\n{text}");
+            assert_eq!(a.hash(), b.hash(), "canonical text:\n{text}");
         }
     }
 }
@@ -435,6 +436,9 @@ fn cue_extensions(view: &Screenplay) -> Vec<Vec<String>> {
 /// EXT-contd-2
 #[test]
 fn ext_contd_2() {
+    // The extension must be parsed at all, or the strip check below passes vacuously.
+    let contd = parse_checked("\nMARA (CONT'D)\nHi.\n").screenplay();
+    assert_eq!(cue_extensions(&contd), [["CONT'D"]]);
     for src in [
         "\nMARA\nHi.\n",
         "\nMARA (CONT'D)\nHi.\n",

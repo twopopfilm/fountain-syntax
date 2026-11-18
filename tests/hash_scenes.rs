@@ -1046,3 +1046,63 @@ fn degenerate_input_hashes() {
         sha("source", b"")
     );
 }
+
+/// HASH2-31
+#[test]
+fn hash2_31_domain_separation() {
+    let doc = parse(TEA);
+    let sp = doc.screenplay();
+    let s = &sp.scenes[0];
+    let element = s.element_hashes().remove(0);
+    // Each library digest is the SHA-256 of its own domain and the payload of 11.4.
+    let text = b"Mara fills the kettle.";
+    let action = [vec![0x01], u32be(text.len()), text.to_vec(), vec![0x00]].concat();
+    let scene_payload = [
+        u32be(H.len()),
+        H.as_bytes().to_vec(),
+        u32be(1),
+        raw(&element),
+    ]
+    .concat();
+    let page = [
+        u32be(1),
+        u32be(5),
+        b"TITLE".to_vec(),
+        u32be(1),
+        u32be(8),
+        b"Tea Time".to_vec(),
+    ]
+    .concat();
+    let digests = [
+        (element.to_string(), sha("element", &action)),
+        (s.hash().to_string(), sha("scene", &scene_payload)),
+        (sp.preamble.hash().to_string(), sha("preamble", &u32be(0))),
+        (
+            sp.hash().to_string(),
+            sha(
+                "document",
+                &[raw(&sp.preamble.hash()), u32be(1), raw(&s.hash())].concat(),
+            ),
+        ),
+        (sp.title_page_hash().to_string(), sha("title-page", &page)),
+        (
+            sp.source_hash(&doc).to_string(),
+            sha("source", TEA.as_bytes()),
+        ),
+    ];
+    for (library, spec) in &digests {
+        assert_eq!(library, spec);
+    }
+    // Six domains, six different digests.
+    for (i, (a, _)) in digests.iter().enumerate() {
+        for (b, _) in &digests[i + 1..] {
+            assert_ne!(a, b);
+        }
+    }
+    // A scene with no elements and a preamble with no elements differ.
+    let empty = scene(&format!("{H}\n"));
+    assert!(empty.elements.is_empty());
+    let pre = [u32be(H.len()), H.as_bytes().to_vec(), u32be(0)].concat();
+    assert_eq!(empty.hash().to_string(), sha("scene", &pre));
+    assert_ne!(empty.hash(), Preamble::default().hash());
+}

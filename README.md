@@ -193,9 +193,8 @@ crate treats correctness as something to measure:
   case is decided.
 - **Every decision gets a test.** Each ruling in [`SPEC.md`](SPEC.md) has a test ID that its test carries in its
   name. The tests for the syntax tree, the typed view (elements, scenes, dialogue and `serde`), the diagnostics and
-  both hash schemes are written, and so are the writer's WR-1 to WR-13 and the corpus's OFF rows. Seven IDs have no
-  test that carries their name yet: `EL-action-4`, `EL-emphasis-1`, `EL-emphasis-2`, `EXT-contd-1`,
-  `EXT-open-keys-2`, `HASH2-31` and `OFF-14b`.
+  both hash schemes are written, and so are the writer's WR-1 to WR-13 and the corpus's OFF rows. `tests/spec_ids.rs`
+  fails `cargo test` if an ID in `SPEC.md` section 12.1 has no test that names it.
 - **A conformance corpus.** `tests/corpus/` holds at least one original script for each row of the decision table in
   [`SPEC.md`](SPEC.md) section 6.2, plus Twopop's own fixtures, each with its source and licence recorded. The spec's
   text has no licence, so it is not copied, and sample scripts would need written permission. Every script round-trips
