@@ -2,9 +2,11 @@
 
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with one extra section, Deferred, for work postponed past a
-release. The crate is not released yet.
+release. 0.1.0 is the first release.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-20
 
 ### Added
 
@@ -27,3 +29,6 @@ release. The crate is not released yet.
 ### Deferred
 
 - A WASM build for a browser playground, until after 0.1.
+
+[Unreleased]: https://github.com/twopopfilm/fountain-syntax/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/twopopfilm/fountain-syntax/releases/tag/v0.1.0

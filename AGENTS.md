@@ -98,8 +98,9 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
   `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
-  planned features as planned; never describe something as working before it does. Every code block in it is a
-  doctest (`src/lib.rs` includes it), so `cargo test` runs it and a broken example fails the build.
+  planned features as planned; never describe something as working before it does. Every Rust code block in it
+  is a doctest (`src/lib.rs` includes it), so `cargo test` runs it and a broken example fails the build. The `sh`
+  install line is not run.
 
 ## /next: project rules
 
