@@ -8,7 +8,7 @@ back out unchanged, and writes a screenplay built in memory as canonical Fountai
 editors, linters, converters and production tools that need to change one detail of a script without disturbing the
 rest.
 
-> **Status: pre-alpha.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
+> **Status: 0.1.** The lossless syntax tree exists: `parse` turns any text into a tree with a span on every
 > node whose tokens reproduce the source exactly, and it covers every block element, including the title page.
 > `Document::screenplay()` builds the typed view: the title page, the scenes and their elements, including
 > dialogue lines, parentheticals and dual-dialogue pairs. `Document::diagnostics()` reports the 22 diagnostic
@@ -17,15 +17,20 @@ rest.
 > values on its captured scripts. `Document::write` gives the source back byte for byte, and `canonical` writes a
 > view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
-> `with_note` and `with_cue_renamed`). The crate is not on crates.io. Milestone F1, the
-> standards study, is done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with
-> `screenplay-tools` are in place, and some rulings are still open. F2 and F3 are in progress. The usage examples are
-> compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe the
-> planned 0.1 release. See the [roadmap](#roadmap).
+> `with_note` and `with_cue_renamed`). 0.1 is the first release on crates.io. Milestone F1, the standards study, is
+> done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with `screenplay-tools` are
+> in place, and some rulings are still open. F2 and F3 are in progress. The usage examples are compiled and run as
+> tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe 0.1. See the
+> [roadmap](#roadmap).
 
 ## Usage
 
-Every example here is compiled and run by `cargo test`, in the default build and with all features.
+Every example here is compiled and run by `cargo test`, in the default build and with all features. The install line
+is the one block that is not run.
+
+```sh
+cargo add fountain-syntax
+```
 
 ### Parse
 

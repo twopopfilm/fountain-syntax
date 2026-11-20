@@ -1,6 +1,6 @@
 //! A lossless, spec-complete parser and writer for [Fountain](https://fountain.io) screenplays.
 //!
-//! Pre-alpha. [`parse`] returns a [`Document`]: the source text and a syntax tree over it whose
+//! [`parse`] returns a [`Document`]: the source text and a syntax tree over it whose
 //! tokens, in order, reproduce the source exactly. The tree covers every block element: the title
 //! page, scene headings with their scene numbers, action, cues, dialogue and parentheticals,
 //! dual-dialogue carets, transitions, centered text, lyrics, sections, synopses and page breaks
