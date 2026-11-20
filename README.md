@@ -20,13 +20,13 @@ rest.
 > `with_note` and `with_cue_renamed`). 0.1 is the first release on crates.io. Milestone F1, the standards study, is
 > done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with `screenplay-tools` are
 > in place, and some rulings are still open. F2 and F3 are in progress. The usage examples are compiled and run as
-> tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what works so far. The goals below describe 0.1. See the
+> tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what each release adds. The goals below describe 0.1. See the
 > [roadmap](#roadmap).
 
 ## Usage
 
-Every example here is compiled and run by `cargo test`, in the default build and with all features. The install line
-is the one block that is not run.
+Every Rust example here is compiled and run by `cargo test`, in the default build and with all features. The `sh`
+install line is not run.
 
 ```sh
 cargo add fountain-syntax
