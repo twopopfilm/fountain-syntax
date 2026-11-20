@@ -454,6 +454,7 @@ fn lines_flatten_a_small_script() {
     );
 }
 
+/// OFF-18c: a tab in Action text is four spaces in the display text.
 #[test]
 fn lines_keep_indentation_and_expand_action_tabs() {
     let src = "INT. ROOM - DAY\n\n  He stands.\n\tShe  sits.\n\n   Later.\n\n\tTabbed.\n";

@@ -9,7 +9,10 @@ fn read(path: &Path) -> String {
 }
 
 /// The lines of one test file that can name an ID: doc lines (`///`, `//!`) and `fn` lines, lower-cased and
-/// joined by `\n`. A `//` comment, a string in a table and a trailing comment on a code line are dropped.
+/// joined by `\n`. A `//` comment and a string in a table are dropped, and so is a trailing comment on any line that
+/// does not start with `fn ` / `pub fn `; such a line is kept whole. It does not tell a test from a helper: any `fn`
+/// line or doc line counts.
+// shortcut: a `fn` line is kept whole, so a trailing comment on it counts; upgrade if one ever hides an ID.
 fn naming_lines(source: &str) -> String {
     let kept: Vec<&str> = source
         .lines()
@@ -83,7 +86,8 @@ fn every_spec_id_is_named_by_a_test() {
     assert_eq!(
         shared_prefix_pair(&ids),
         None,
-        "an ID is a hyphen-prefix of another, and `names` treats `-` as a boundary, so the longer would count for the shorter"
+        "an ID is a hyphen-prefix of another, and `names` treats `-` and `_` as boundaries, so the longer would \
+         count for the shorter"
     );
 
     let mut tests = String::new();
@@ -103,7 +107,7 @@ fn every_spec_id_is_named_by_a_test() {
         .collect();
     assert!(
         missing.is_empty(),
-        "{} SPEC.md ID(s) are named by no test function name or `///` line in tests/*.rs: {}",
+        "{} SPEC.md ID(s) are named by no function name or `///` / `//!` line in tests/*.rs: {}",
         missing.len(),
         missing.join(", ")
     );
@@ -112,7 +116,7 @@ fn every_spec_id_is_named_by_a_test() {
 #[test]
 fn names_respects_boundaries_and_underscores() {
     assert!(names("fn el_action_1() {}", "el-action-1"));
-    assert!(names("// off-1a:", "off-1a"));
+    assert!(names("/// off-1a: x", "off-1a"));
     assert!(!names("fn hash2_31()", "hash2-3"));
     assert!(!names("fn off_11a()", "off-1a"));
     assert!(!names("xel-action-1", "el-action-1"));
