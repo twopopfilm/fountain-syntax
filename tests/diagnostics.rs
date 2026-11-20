@@ -632,6 +632,7 @@ const QUIET_ROWS: &[QuietRow] = &[
     ("OFF-24d", "MARA\nhi\n[[n]] /* b */\nmore", &[]),
 ];
 
+/// The test for the `none` rows of `QUIET_ROWS`, including `OFF-14a`, `OFF-14c`, `OFF-14d` and `OFF-14e`.
 #[test]
 fn diag_quiet_rows() {
     let mut failures = Vec::new();
