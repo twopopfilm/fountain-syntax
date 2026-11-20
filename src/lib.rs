@@ -76,7 +76,7 @@ pub use view::{
 };
 pub use write::canonical;
 
-// Runs every code block in README.md as a doctest.
+// Runs every Rust code block in README.md as a doctest.
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
 struct ReadmeDoctests;
