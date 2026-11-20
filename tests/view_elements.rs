@@ -3,8 +3,8 @@
 mod common;
 
 use fountain_syntax::{
-    Action, Element, Lyrics, Note, NoteConvention, Run, Scene, Screenplay, Span, Text, TitlePage,
-    Transition, parse,
+    Action, Element, Lyrics, Note, NoteConvention, Run, Scene, Screenplay, Span, Text, TitleEntry,
+    TitlePage, Transition, parse,
 };
 
 fn view(src: &str) -> Screenplay {
@@ -56,6 +56,24 @@ fn note_run(text: &str, start: usize, end: usize) -> Run {
         text: text.to_owned(),
         span: Some(Span::new(start, end)),
     })
+}
+
+/// The runs of the preamble's first Action.
+fn runs(src: &str) -> Vec<Run> {
+    action(&pre(src)[0]).text.runs.clone()
+}
+
+fn plain_run(s: &str) -> Run {
+    Run::Plain(s.to_owned())
+}
+
+fn em(bold: bool, italic: bool, underline: bool, runs: Vec<Run>) -> Run {
+    Run::Emphasis {
+        bold,
+        italic,
+        underline,
+        runs,
+    }
 }
 
 #[test]
@@ -336,24 +354,6 @@ fn off_16a_view_plain_text() {
     assert!(matches!(&a.text.runs[1], Run::Boneyard(b) if b.text == " aside "));
 }
 
-/// The runs of the preamble's first Action.
-fn runs(src: &str) -> Vec<Run> {
-    action(&pre(src)[0]).text.runs.clone()
-}
-
-fn plain_run(s: &str) -> Run {
-    Run::Plain(s.to_owned())
-}
-
-fn em(bold: bool, italic: bool, underline: bool, runs: Vec<Run>) -> Run {
-    Run::Emphasis {
-        bold,
-        italic,
-        underline,
-        runs,
-    }
-}
-
 /// EL-action-4
 #[test]
 fn el_action_4_tab_expansion_is_display_only() {
@@ -388,6 +388,30 @@ fn el_emphasis_1_each_style_and_nesting() {
             vec![
                 plain_run("a "),
                 em(true, false, false, vec![plain_run("b")]),
+                plain_run(" c"),
+            ]
+        )]
+    );
+    // Underline around italic.
+    assert_eq!(
+        runs("_*x*_"),
+        [em(
+            false,
+            false,
+            true,
+            vec![em(false, true, false, vec![plain_run("x")])]
+        )]
+    );
+    // Italic inside bold.
+    assert_eq!(
+        runs("**a *b* c**"),
+        [em(
+            true,
+            false,
+            false,
+            vec![
+                plain_run("a "),
+                em(false, true, false, vec![plain_run("b")]),
                 plain_run(" c"),
             ]
         )]
@@ -522,7 +546,7 @@ fn ext_open_keys_2_typed_accessors_ignore_case() {
     let p = title_page(
         "AUTHORS: A and B\ndraft DATE: 1 May\nnotes: n\nCOPYRIGHT: c\ndate: d\n\nINT. A\n",
     );
-    let first = |e: Option<&fountain_syntax::TitleEntry>| e.map(|e| e.values[0].plain());
+    let first = |e: Option<&TitleEntry>| e.map(|e| e.values[0].plain());
     assert_eq!(first(p.author()).as_deref(), Some("A and B"));
     assert_eq!(first(p.draft_date()).as_deref(), Some("1 May"));
     assert_eq!(first(p.notes()).as_deref(), Some("n"));
