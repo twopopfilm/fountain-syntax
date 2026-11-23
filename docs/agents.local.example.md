@@ -21,4 +21,5 @@ also hold the sections their templates add.
 - `cargo-hack` (version; `AGENTS.md` pins the one CI uses):
 - `uv` (runs `scripts/screenplay-tools-diff.py`):
 - `gh` (signed in; reads the project board and opens PRs):
+- `wt` (worktrunk; creates and removes the branch worktrees `AGENTS.md` describes):
 - CLI harnesses installed (Claude Code, Codex, Gemini CLI, Kiro, opencode…):
