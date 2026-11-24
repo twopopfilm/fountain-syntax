@@ -39,22 +39,41 @@ beyond the maintainer's name.
   - this `main` worktree: `.`, kept pristine; never commit on `main` directly
   - one worktree per branch: `../fountain-syntax.<branch>`
 - **The loop, one task at a time.**
-  1. Sessions open in the `main` worktree. The board is shared with Twopop Studio, so the next task here is the first
-     Todo item **from this repository**, in board order:
+  1. Sessions open in the `main` worktree. The board is shared with the other Twopop repositories, so the next task
+     here is the first Todo item **from this repository**, in board order:
      ```sh
-     gh project item-list 2 --owner twopopfilm --format json --limit 500 \
-       --jq '[.items[] | select(.status == "Todo" and .content.repository == "twopopfilm/fountain-syntax")][0] | {title, url: .content.url}'
+     ../../twopop-studio/twopop-studio.main/scripts/board-items.sh twopopfilm 2 \
+       | jq '[.items[] | select(.content.repository == "twopopfilm/fountain-syntax")]
+             | {todo: [.[] | select(.status == "Todo") | {title, url: .content.url, labels}],
+                untriaged: [.[] | select(.status == "Backlog" and .priority == null
+                                                and ((.labels // []) | index("optional") | not))] | length}'
      ```
+     The script lives in the Twopop Studio repository (its `main` worktree, beside this repository's folder), and
+     `/workflow:next` uses it too. Don't use `gh project item-list`: it costs about 100 GraphQL points a page against
+     about 1, and sessions share one budget.
      Epics (label `epic`) are tracking issues. Work on their sub-issues.
   2. Set the issue In Progress, create the worktree with `wt switch --create <branch> --no-cd --yes`, and move the
      session into it.
   3. Work test-first, commit, push, and open the PR.
   4. After the merge: on `main`, run `git pull --ff-only` first, then `wt remove <branch>`.
-- **The project board** is org project #2, "Twopop Studio". Its field and option IDs and the `gh` commands are listed
-  in Twopop Studio's `AGENTS.md`, "The project board". Board order is the work order.
+- **The project board** is org project #2, "Twopop", which holds the issues of every Twopop
+  repository. Its field and option IDs and the `gh` commands are listed in Twopop Studio's `AGENTS.md`, "The project
+  board". Board order is the work order.
 - **Land changes through PRs:** `gh pr create` with a bare `Closes #N` as the first line of the body, squash-merged.
   Merging is the maintainer's call unless they ask you to merge. Publishing to crates.io also needs the maintainer's
   OK: that is the approval of the `crates-io` environment (see the Release rule).
+
+## Issue conventions
+
+The standard for issues, milestones and board fields is Twopop Studio's `AGENTS.md`, "Issue conventions" (milestones,
+scheduling, the Size definitions, native dependencies, tracking issues, the label table). This section copies none of
+it and states only what is local to this repository:
+
+- The milestone prefix is `F`; `docs/brief.md` lists the milestones.
+- Track is `Fountain`.
+- A Backlog issue has no milestone and no parent.
+- Every F tracking issue is closed today, so promoting an issue to Todo needs a tracking issue that the maintainer
+  opens or chooses.
 
 ## Develop
 
@@ -118,7 +137,9 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 
 - **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no non-noreply email addresses, absolute or home-directory paths, machine specs or credentials.
 - **No parser code until `SPEC.md` is merged.** F1 is a standards study that ends in `SPEC.md`.
-- **Every new issue needs a milestone** of this repository (F1–F5) and goes on org project #2. The queue pass reports an open issue that lacks a milestone.
+- **Required issue fields.** Every issue has Priority, Size and Track (`Fountain`) and goes on org project #2. A
+  numbered F milestone and a parent epic apply only from Status Todo onward, never to a Backlog issue. A `chore` has no
+  milestone, and a tracking issue needs no parent. See *Issue conventions*.
 - **Never edit another repository** (Twopop Studio, the Python `twopop`, the kit). Stop, say what and why, and let the maintainer decide. Never touch the shared ComfyUI server.
 - **Test fixtures** must be original, public-domain or redistributable. Record each one's source and licence in the corpus README.
 - **Merging, and publishing to crates.io,** are the maintainer's call.
