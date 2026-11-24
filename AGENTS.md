@@ -18,7 +18,9 @@ beyond the maintainer's name.
 - **Never commit:**
   - email addresses other than noreply ones;
   - other people's personal data (names of private individuals, photos or likenesses);
-  - absolute or home-directory paths;
+  - paths that name a user's home folder or the local checkout: the forms `PATH_PATTERN` in
+    `scripts/check-public.sh` lists. A tilde path to a tool's own folder, which is the same on every machine
+    (`~/.config/twopop/…`, `~/.claude/…`), is allowed;
   - machine specs or local install locations;
   - credentials.
 
@@ -135,7 +137,7 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 
 ## /next: project rules
 
-- **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no non-noreply email addresses, absolute or home-directory paths, machine specs or credentials.
+- **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no non-noreply email addresses, paths that name a user's home folder or the local checkout (see "Keep the repository publishable"), machine specs or credentials.
 - **No parser code until `SPEC.md` is merged.** F1 is a standards study that ends in `SPEC.md`.
 - **Required issue fields.** Every issue has Priority, Size and Track (`Fountain`) and goes on org project #2. A
   numbered F milestone and a parent epic apply only from Status Todo onward, never to a Backlog issue. A `chore` has no
