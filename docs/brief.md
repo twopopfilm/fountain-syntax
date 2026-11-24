@@ -66,7 +66,8 @@ project's test files before reusing them.
 - **F2:** lossless parser, typed view, diagnostics and hashes.
 - **F3:** writer and round-trip.
 - **F4:** conformance corpus and `screenplay-tools` diff.
-- **F5:** docs, compiled examples and a changelog (#18), then publish 0.1 to crates.io (on the maintainer's OK).
+- **F5:** docs, compiled examples and a changelog (#18), then publish 0.1 to crates.io (#19; done: 0.1.0 was published
+  by hand on 2026-11-20, and later releases follow the Release rule in `AGENTS.md`).
 
 ## Done when
 
