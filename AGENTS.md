@@ -108,7 +108,9 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
   approval in the `crates-io` environment and runs `cargo publish --locked`. crates.io trusts that workflow file and
   environment (trusted publishing), so no token is stored. Never move or delete a tag (a ruleset blocks it): fix
   forward with a new patch version. 0.1.0 was published by hand, since a crate's first version can't come from a
-  workflow. "Run workflow" on `main` rehearses everything except the publish.
+  workflow. "Run workflow" on `main` rehearses everything except the publish. Until the maintainer has created the
+  `crates-io` environment (with themself as required reviewer) and registered the trusted publisher on crates.io, no
+  tag may be pushed.
 
 ## /next: project rules
 
