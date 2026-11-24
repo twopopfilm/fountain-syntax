@@ -3,10 +3,12 @@ name: ci
 # The `rust` job formats, lints, tests and builds the docs on the three platforms the library supports; the `features`
 # job lints and tests every combination of the Cargo features; the `msrv` job checks the build on the minimum
 # supported Rust.
+# It is also called by publish.yml before a release is published.
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:
 
 permissions:
   contents: read

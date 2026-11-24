@@ -54,7 +54,7 @@ beyond the maintainer's name.
   in Twopop Studio's `AGENTS.md`, "The project board". Board order is the work order.
 - **Land changes through PRs:** `gh pr create` with a bare `Closes #N` as the first line of the body, squash-merged.
   Merging is the maintainer's call unless they ask you to merge. Publishing to crates.io also needs the maintainer's
-  OK.
+  OK: that is the approval of the `crates-io` environment (see the Release rule).
 
 ## Develop
 
@@ -101,6 +101,18 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
   planned features as planned; never describe something as working before it does. Every Rust code block in it
   is a doctest (`src/lib.rs` includes it), so `cargo test` runs it and a broken example fails the build. The `sh`
   install line is not run.
+- **Release.** A release PR bumps `version` in `Cargo.toml` (and `Cargo.lock`), moves `[Unreleased]` in
+  `CHANGELOG.md` under a `## [x.y.z] - YYYY-MM-DD` heading (the form `scripts/check-release.sh` requires), leaves an
+  empty `[Unreleased]` and updates the link references at the foot of the file, and updates the README if a statement
+  changes. After the maintainer merges it, the maintainer pushes the tag `vx.y.z` on the squash commit; an agent never
+  pushes a release tag. `.github/workflows/publish.yml` then runs `scripts/check-release.sh`, calls `ci.yml`, waits
+  for the maintainer's approval in the `crates-io` environment and runs `cargo publish --locked`. crates.io trusts
+  that workflow file and environment (trusted publishing), so no token is stored. Never move or delete a tag (a
+  ruleset blocks it): fix forward with a new patch version. 0.1.0 was published by hand, since a crate's first
+  version can't come from a workflow. "Run workflow" on `main` rehearses everything except the publish, and
+  `scripts/check-release.sh` with no arguments rehearses the guard locally. Until the maintainer has created the
+  `crates-io` environment (with themself as required reviewer) and registered the trusted publisher on crates.io, no
+  tag may be pushed.
 
 ## /next: project rules
 
