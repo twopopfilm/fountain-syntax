@@ -215,7 +215,7 @@ crate treats correctness as something to measure:
 
 ## Roadmap
 
-Work is tracked on the [Twopop Studio project board](https://github.com/orgs/twopopfilm/projects/2). Goals and the
+Work is tracked on the [Twopop project board](https://github.com/orgs/twopopfilm/projects/2). Goals and the
 "done when" checks are in [docs/brief.md](docs/brief.md).
 
 | Milestone | Scope                                                                              | State       |
