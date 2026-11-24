@@ -1,0 +1,60 @@
+name: publish
+
+# Publishes a release to crates.io when a version tag is pushed. scripts/check-release.sh checks that the tag equals
+# `v` plus the version in Cargo.toml, that CHANGELOG.md has a heading for it and that the tagged commit is on main.
+# ci.yml then runs, and the publish job waits for the maintainer's approval in the `crates-io` environment.
+# crates.io trusts this file and that environment (trusted publishing), so no token is stored anywhere.
+# "Run workflow" on main rehearses every step except the publish. The tag rule blocks deleting or moving a v* tag,
+# so a failed release is fixed with a new patch version.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the tag, the changelog and the branch
+        run: scripts/check-release.sh "$TAG"
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+
+  ci:
+    needs: verify
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [verify, ci]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Get a short-lived crates.io token
+        id: auth
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - name: Publish
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
