@@ -2,9 +2,12 @@ schema: 1
 board: {owner_type: org, owner: twopopfilm, number: 2}
 gate:
   - run: scripts/check-public.sh
-  - {run: cargo test, when: "**/*.rs"}
-  - {run: cargo clippy, when: "**/*.rs"}
-  - {run: cargo fmt --check, when: "**/*.rs"}
+  - run: cargo fmt --check
+  - run: cargo clippy --all-targets -- -D warnings
+  - run: cargo test
+  - run: cargo clippy --all-targets --all-features -- -D warnings
+  - run: cargo test --all-features
+  - run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
 risk_paths: {paths: [], escalate: []}
 hard_areas: {unit: "", areas: []}
 status_doc: [README.md, docs/brief.md]
