@@ -240,6 +240,8 @@ The most valuable contributions right now are real-world Fountain. Send edge cas
 scripts you can share under a licence that allows redistribution (original, public-domain or CC0). Open an issue
 with the script and the behaviour you expect. Guidelines for code contributions are not written yet.
 
+Report security vulnerabilities privately, as [SECURITY.md](SECURITY.md) describes, not in a public issue.
+
 ## License
 
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
