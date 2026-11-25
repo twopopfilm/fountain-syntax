@@ -186,3 +186,27 @@ fn corpus_every_off_row_has_a_script() {
         "SPEC.md §6.2 rows without a script: {missing:?}; scripts without a row: {extra:?}"
     );
 }
+
+/// OFF-11c: in the corpus script the plain forced `@Mara ^` is the right half of a dual dialogue whose left half is
+/// the block above it, `@Nell ^ (V.O.)`.
+#[test]
+fn off_11c_corpus_forced_caret_last_pairs() {
+    let play = parse(&read("tests/corpus/off/off-11c.fountain")).screenplay();
+    let found = play
+        .preamble
+        .elements
+        .iter()
+        .chain(play.scenes.iter().flat_map(|s| &s.elements))
+        .any(|e| match e {
+            Element::DualDialogue(d) => {
+                d.right.cue.forced
+                    && d.right.cue.name.plain() == "Mara"
+                    && d.left.cue.name.plain() == "Nell ^"
+            }
+            _ => false,
+        });
+    assert!(
+        found,
+        "no dual dialogue pairs `@Nell ^` with forced `@Mara`"
+    );
+}
