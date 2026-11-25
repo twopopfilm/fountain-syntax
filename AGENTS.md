@@ -3,8 +3,8 @@
 A Rust library for parsing and writing Fountain screenplays: lossless, spec-complete, and never failing on input.
 It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and is meant to be useful on its own.
 
-- **Goals, milestones (F1–F5) and the "done when" checks:** `docs/brief.md`.
-- **Status:** the status note and the milestone table in `README.md` (kept current by the docs sweep).
+- **Goals, milestones (F1–F6) and the "done when" checks:** `docs/brief.md`.
+- **Status:** the status note and the milestone table in `README.md` (kept current as a `status_doc` in `.claude/next.yml`).
 - **Machine-specific context** is kept outside the repository, in `~/.config/twopop/agents.local.md`. Read it if it
   exists. The template is `docs/agents.local.example.md`.
 
