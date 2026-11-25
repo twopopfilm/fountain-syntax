@@ -72,8 +72,8 @@ it and states only what is local to this repository:
 - The milestone prefix is `F`; `docs/brief.md` lists the milestones.
 - Track is `Fountain`.
 - A Backlog issue has no milestone and no parent.
-- Every F tracking issue is closed today, so promoting an issue to Todo needs a tracking issue that the maintainer
-  opens or chooses.
+- F6 – Hardening's tracking issue is #103, and the other F tracking issues are closed, so promoting an issue to Todo
+  outside F6 needs a tracking issue that the maintainer opens or chooses.
 
 ## Develop
 

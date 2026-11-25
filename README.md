@@ -17,11 +17,10 @@ rest.
 > values on its captured scripts. `Document::write` gives the source back byte for byte, and `canonical` writes a
 > view built in memory as Fountain that parses back to the same view (the shapes it cannot write back are listed in
 > `SPEC.md` §10.3). Targeted edits work: `with_replaced` and the named edits (`with_scene_number`, `with_synopsis`,
-> `with_note` and `with_cue_renamed`). 0.1 is the first release on crates.io. Milestone F1, the standards study, is
-> done ([`SPEC.md`](SPEC.md)). F4 is in progress: the conformance corpus and the comparison with `screenplay-tools` are
-> in place, and some rulings are still open. F2 and F3 are in progress. F5 is done, and F6 (hardening after 0.1) is in
-> progress. The usage examples are compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what each
-> release adds. The goals below describe 0.1. See the [roadmap](#roadmap).
+> `with_note` and `with_cue_renamed`). 0.1 is the first release on crates.io. Milestones F1 to F5 are done, the
+> standards study among them ([`SPEC.md`](SPEC.md)), and F6 (hardening after 0.1) is in progress. The usage examples
+> are compiled and run as tests, and [`CHANGELOG.md`](CHANGELOG.md) lists what each release adds. The goals below
+> describe 0.1. See the [roadmap](#roadmap).
 
 ## Usage
 
@@ -221,9 +220,9 @@ Work is tracked on the [Twopop project board](https://github.com/orgs/twopopfilm
 | Milestone | Scope                                                                              | State       |
 |-----------|------------------------------------------------------------------------------------|-------------|
 | F1        | Standards study: the official syntax, extensions, `SPEC.md`                        | **Done**    |
-| F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | In progress |
-| F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
-| F4        | Conformance corpus and differential testing                                        | In progress |
+| F2        | Lossless parser, typed view, diagnostics, hashes (both schemes done)               | **Done**    |
+| F3        | Writer with byte-for-byte round-trip; targeted edit API                            | **Done**    |
+| F4        | Conformance corpus and differential testing                                        | **Done**    |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | **Done**    |
 | F6        | Hardening after 0.1: review follow-ups on parser, view, writer, corpus and docs    | In progress |
 
