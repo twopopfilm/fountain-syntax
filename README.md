@@ -225,7 +225,7 @@ Work is tracked on the [Twopop project board](https://github.com/orgs/twopopfilm
 | F3        | Writer with byte-for-byte round-trip; targeted edit API                            | In progress |
 | F4        | Conformance corpus and differential testing                                        | In progress |
 | F5        | Docs, compiled examples, and the 0.1 release on crates.io                          | **Done**    |
-| F6        | Hardening after 0.1: review follow-ups on the parser, view, writer, corpus and docs | In progress |
+| F6        | Hardening after 0.1: review follow-ups on parser, view, writer, corpus and docs    | In progress |
 
 Final Draft (FDX) interchange is planned as a separate crate after 0.1.
 
