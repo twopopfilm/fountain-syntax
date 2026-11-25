@@ -238,7 +238,7 @@ useful on its own.
 
 The most valuable contributions right now are real-world Fountain. Send edge cases that apps handle differently, or
 scripts you can share under a licence that allows redistribution (original, public-domain or CC0). Open an issue
-with the script and the behaviour you expect. Guidelines for code contributions will follow when F2 is done.
+with the script and the behaviour you expect. Guidelines for code contributions are not written yet.
 
 ## License
 
