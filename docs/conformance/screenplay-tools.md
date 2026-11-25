@@ -107,7 +107,7 @@ A caret cue with no Dialogue block before it: ours is an ordinary, unpaired bloc
 
 **Class:** theirs-wrong · **Ruling:** OFF-11c, OFF-3d · **Reference parser:** OFF-11
 
-A caret that is not last: ours keeps both lines as non-dual cues whose names hold the caret; theirs makes neither a cue, not even the forced `@Nell ^ (V.O.)`, and merges both blocks into the Action.
+A caret that is not last: ours keeps both lines as non-dual cues whose names hold the caret; theirs makes neither a cue, not even the forced `@Nell ^ (V.O.)`, and merges both blocks into the Action. The plain forced pair `@Mara ^` after them is dual in ours and keeps its caret in theirs; the line form shows the caret either way, so it adds no hunk.
 
 ````diff
 -ACTION Mara waits.

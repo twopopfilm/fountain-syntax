@@ -418,6 +418,32 @@ fn wr_8_sigil_only_where_needed() {
     );
 }
 
+/// OFF-11c: a forced `@NAME ^` is the right half of a dual pair and writes back as `@NAME ^`.
+/// The name is mixed case because canonical writes `@` only where it is needed (WR-8); an
+/// all-caps `@NELL ^` would come back as `NELL ^`, which is still dual.
+#[test]
+fn off_11c_forced_dual_cue_writes_back() {
+    let src = "Mara waits.\n\nOTTO\nI can hear you.\n\n@Nell ^\nSo can I.\n";
+    assert_round_trips(src);
+
+    let view = parse_checked(src).screenplay();
+    let duals = |view: &Screenplay| -> Vec<String> {
+        view.preamble
+            .elements
+            .iter()
+            .filter_map(|e| match e {
+                Element::DualDialogue(d) => Some(d.right.cue.name.plain()),
+                _ => None,
+            })
+            .collect()
+    };
+    assert_eq!(duals(&view), ["Nell"]);
+
+    let written = canonical(&view);
+    assert!(written.contains("@Nell ^\n"), "{written:?}");
+    assert_eq!(duals(&parse_checked(&written).screenplay()), ["Nell"]);
+}
+
 /// The cue extension texts of every Dialogue block, in source order.
 fn cue_extensions(view: &Screenplay) -> Vec<Vec<String>> {
     let elements = view

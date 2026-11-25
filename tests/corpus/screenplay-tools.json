@@ -66,9 +66,11 @@
         "DIALOGUE I can hear you.",
         "CHARACTER MARA (V.O.) ^",
         "DIALOGUE I can hear you too.",
-        "ACTION Mara waits.⏎⏎NAME ^ (V.O.)⏎This caret is not last.⏎⏎Mara waits again.⏎⏎@Nell ^ (V.O.)⏎Neither is this forced one."
+        "ACTION Mara waits.⏎⏎NAME ^ (V.O.)⏎This caret is not last.⏎⏎Mara waits again.⏎⏎@Nell ^ (V.O.)⏎Neither is this forced one.",
+        "CHARACTER Mara ^",
+        "DIALOGUE This forced one is dual."
       ],
-      "sha256": "c75b11d6260d42f0b0d8bd5c28bfc9e33e3ca94d56d11cc716b3bc55f2fe9d0d"
+      "sha256": "7233d0a11596247264fb3069f217abf4cc04fb05e669a3d2af23b84f9fda3a04"
     },
     "off/off-11d.fountain": {
       "lines": [
