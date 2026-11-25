@@ -26,11 +26,18 @@ Please include:
 
 ## What counts
 
-- A panic, a hang, or unbounded or disproportionate time or memory use on any input, through any public API: `parse`,
-  the typed view, the writer, the edits and the hashes.
+- A panic, a hang, or unbounded or disproportionate time or memory use caused by the input text, through any public
+  API: `parse`, the typed view, the writer, the edits and the hashes.
 - Any `unsafe` code. The crate forbids it (`unsafe_code = "forbid"`).
 
-A wrong but bounded parse result is not a vulnerability. Report it as a bug in a public issue.
+Not a vulnerability:
+
+- A panic that a function documents under `# Panics`, such as `Document::with_replaced`, `Document::source_hash` or
+  `Scene::source_hash` given a span that is out of range, inverted or not on a character boundary. That is a caller
+  error; report it as a bug in a public issue.
+- The hashes panicking on a string over 4 GiB (a count or length over `u32::MAX`). `SPEC.md` allows it, since no real
+  screenplay is that large.
+- A wrong but bounded parse result. Report it as a bug in a public issue.
 
 ## What to expect
 
