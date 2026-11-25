@@ -3,10 +3,8 @@
 A Rust library for parsing and writing Fountain screenplays: lossless, spec-complete, and never failing on input.
 It is used by [Twopop Studio](https://github.com/twopopfilm/twopop-studio) and is meant to be useful on its own.
 
-- **Goals, milestones (F1–F5) and the "done when" checks:** `docs/brief.md`.
-- **Status:** F1 (the standards study, which ends in `SPEC.md`) is done. F4 is in progress: the corpus and the
-  `screenplay-tools` diff are in place, and what remains is the rulings listed under "Open for SPEC.md" in
-  `docs/conformance/screenplay-tools.md`. F2 (parser, view, diagnostics, hashes) and F3 (writer, edits) are in progress.
+- **Goals, milestones (F1–F6) and the "done when" checks:** `docs/brief.md`.
+- **Status:** the status note and the milestone table in `README.md` (kept current as a `status_doc` in `.claude/next.yml`).
 - **Machine-specific context** is kept outside the repository, in `~/.config/twopop/agents.local.md`. Read it if it
   exists. The template is `docs/agents.local.example.md`.
 
@@ -74,8 +72,8 @@ it and states only what is local to this repository:
 - The milestone prefix is `F`; `docs/brief.md` lists the milestones.
 - Track is `Fountain`.
 - A Backlog issue has no milestone and no parent.
-- Every F tracking issue is closed today, so promoting an issue to Todo needs a tracking issue that the maintainer
-  opens or chooses.
+- F6 – Hardening's tracking issue is #103, and the other F tracking issues are closed, so promoting an issue to Todo
+  outside F6 needs a tracking issue that the maintainer opens or chooses.
 
 ## Develop
 
@@ -138,7 +136,6 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 ## /next: project rules
 
 - **Before every commit** run `scripts/check-public.sh`. Files, issues, PRs and commit messages must hold no non-noreply email addresses, paths that name a user's home folder or the local checkout (see "Keep the repository publishable"), machine specs or credentials.
-- **No parser code until `SPEC.md` is merged.** F1 is a standards study that ends in `SPEC.md`.
 - **Required issue fields.** Every issue has Priority, Size and Track (`Fountain`) and goes on org project #2. A
   numbered F milestone and a parent epic apply only from Status Todo onward, never to a Backlog issue. A `chore` has no
   milestone, and a tracking issue needs no parent. See *Issue conventions*.
