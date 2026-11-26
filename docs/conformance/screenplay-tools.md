@@ -68,12 +68,6 @@ Each change makes our output match screenplay-tools' representation. A differenc
 
 ## Open for SPEC.md
 
-- **The caret that is not last.** The carve-out in §4.0 reads as if `NAME ^ (V.O.)` falls through to Action, while
-  row `OFF-11c` and this crate make it a cue whose name holds the caret. Ruled in #16: the row wins and the §4.0 prose
-  is to be corrected. This touches the unforced half of off-11c.
-- **A bare prefix with a trailing space.** §3.3 says trailing whitespace is not significant apart from `OFF-23a`, which
-  would read `INT ` as a bare `INT` with no separator, while row `OFF-6d` makes `INT ` a heading and this crate follows
-  the row. Ruled in #16: the row wins and the §3.3 prose is to be corrected. This touches off-6d.
 - **Indentation before a forcing `!`.** off-22a is recorded as `theirs-wrong`, because §4.3 and `OFF-18b` keep the
   indentation in Action text, but no test yet pins the spaces or the tab before a forcing `!` in the view's text. Issue
   #69 tracks the pinning test.

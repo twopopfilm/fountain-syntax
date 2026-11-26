@@ -104,8 +104,9 @@ tell the caller that an input was a judgement call.
   the last line. A title page ends at a blank line, which is also what lets the first body element follow it.
 - **Leading whitespace is read as absent for recognition** (the spec's Indenting section: tabs and spaces are ignored
   for every element except Action). The tree and Action text keep it. Details in `OFF-18`.
-- **Trailing whitespace is not significant** for recognition, with one exception that the spec states: spaces after a
-  `TO:` line (`OFF-23a`). Whitespace after a dual-dialogue caret is ignored too (`OFF-23c`).
+- **Trailing whitespace is not significant** for recognition, with two exceptions: spaces after a `TO:` line, which
+  the spec states (`OFF-23a`), and the space after a bare heading prefix, which is the prefix's separator, so `INT `
+  is a heading (`OFF-6d`). Whitespace after a dual-dialogue caret is ignored too (`OFF-23c`).
 
 ### 3.4 Hidden spans and transparent lines
 
@@ -180,8 +181,9 @@ For each visible line, the first rule that fits wins. The title page is handled 
 
 - an uppercase line that ends in `TO:` plus spaces or tabs is never a Transition and never a Character cue; it is Action
   (`OFF-23a`, `OFF-23b`);
-- a cue name needs an uppercase letter (`OFF-4c`), well-formed extension groups (`OFF-3c`) and a caret that is last
-  (`OFF-11c`); a line that fails any of these goes on to the later rules;
+- a cue name needs an uppercase letter (`OFF-4c`) and well-formed extension groups (`OFF-3c`); a line that fails either
+  goes on to the later rules. A caret that is not last does not stop the line being a cue: it is no dual marker and
+  stays in the name text (`OFF-11c`);
 - a bare prefix is a heading (`OFF-6d`), and a line that is a heading by prefix is never a title-page key (`OFF-17a`).
 
 Forced elements need no blank lines around them. A forcing sigil is only looked at as the first character after any
