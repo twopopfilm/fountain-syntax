@@ -168,8 +168,8 @@ fn off_22a_indented_or_hidden_before_sigil_still_forces() {
 fn off_22a_indent_before_sigil_kept_in_text() {
     let a = |src: &str| {
         let e = pre(src);
-        let a = action(&e[0]);
-        (a.forced, a.text.plain())
+        let act = action(&e[0]);
+        (act.forced, act.text.plain())
     };
     assert_eq!(
         a("  !indented action\n"),
