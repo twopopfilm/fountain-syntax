@@ -615,7 +615,7 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
 
 | Case / test ID | Question | Decision | Reading | Rule | Reference parser records | Diagnostic |
 |---|---|---|---|---|---|---|
-| OFF-22a | Leading whitespace before a sigil. | Skipped: `  !indented action` is forced Action. | B | P1 | Does not cover. Matches A: only the first character counts, so it is plain text (forced only on the file's first line, after root cause 1). | none |
+| OFF-22a | Leading whitespace before a sigil. | Skipped: `  !indented action` is forced Action, and the view's Action text keeps the indent and drops the `!` (OFF-18b, OFF-22d): `  indented action`. | B | P1 | Does not cover. Matches A: only the first character counts, so it is plain text (forced only on the file's first line, after root cause 1). | none |
 | OFF-22b | Stacked sigils (`!.dot`, `@!after at`, `!>x`). | Only the first sigil counts; the rest is text. | C | P2 | Matches C: the first that fits wins and the rest is plain text. | none |
 | OFF-22c | A line that merely starts with `>` (`>>> a line of arrows`). | A forced Transition, text `>> a line of arrows`. | D | P1 | Agrees (Reading D). | none |
 | OFF-22d | Which sigils leave the view's text? | All of them: `.`, `!`, `@`, `~`, the Transition `>`, and the `>` `<` pair. The tree keeps them. | E | P2 | A mix: `.` and `>` are dropped in the parser's output; `!`, `@` and `~` are kept for the renderer to remove. | none |
