@@ -161,8 +161,9 @@ impl Document {
     }
 
     /// The diagnostics (SPEC 7): notes about places the parser read one way and an author or
-    /// another tool may read differently. They are ordered by start of span, are the same for the
-    /// same input, and never change the tree or the typed view.
+    /// another tool may read differently. They are ordered by span start, then span end, then the
+    /// order of the SPEC section 7 table, are the same for the same input, and never change the
+    /// tree or the typed view.
     ///
     /// ```
     /// use fountain_syntax::{DiagnosticCode, parse};
