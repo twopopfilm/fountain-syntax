@@ -194,8 +194,10 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 - **Recognition.** The first block of the document, if it starts with a key line. A **key line** is a key, a colon and
   an optional value on the same line. A key is made of alphanumerics, spaces, hyphens, underscores, apostrophes and
   ampersands. It ends at the first colon. A line that is a Scene Heading by prefix is never a key line. A key with no
-  inline value starts a title page only when an indented line follows it. Details and edge cases: `OFF-17a` to
-  `OFF-17f`.
+  inline value starts a title page only when an indented line follows it. A hidden span is not a value, and a line that
+  holds only hidden spans is not an indented line: a first line `Title: [[n]]`, or `Title:` over an indented line
+  holding only `[[n]]`, is not a title page. A later key whose value is only a hidden span is still an entry. Details
+  and edge cases: `OFF-17a` to `OFF-17f`.
 - **Values.** On the key line, or on the lines below it indented by three or more spaces or a tab, or both. Keys are
   kept as written, may repeat, and may be any text (open keys, see 5.1).
 - **End.** At the first blank line. A line inside the block that is neither a key line nor a valid continuation is kept
@@ -285,8 +287,9 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 ### 4.11 Emphasis
 
 - **Recognition.** An inline layer over the visible text of any element, in the view only. `*` is italics, `**` bold,
-  `***` bold italics, `_` underline. Spans nest and never cross a line break (`OFF-14`). Emphasis never affects which
-  element a line is: a line that starts with `**` is not a heading, whatever follows.
+  `***` bold italics, `_` underline. Spans nest and never cross a line break (`OFF-14`). At most 32 spans are open on
+  one line; an opener that would be the 33rd stays literal. Emphasis never affects which element a line is: a line that
+  starts with `**` is not a heading, whatever follows.
 - **Escape.** A backslash before `*` or `_` makes it literal; the view drops the backslash.
 - **Tests.** `EL-emphasis-1` (each style and nesting), `EL-emphasis-2` (escapes and unmatched marks stay literal).
 
@@ -548,7 +551,7 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
 | OFF-15a | Nested Notes (`[[outer [[inner]] outer]]`). | No nesting. The first `]]` closes the Note; the rest (` outer]] world.`) is visible text with a stray `]]`. | A | P2, P3 | Does not cover. The renderer matches A: ends at the first `]]`. The parser sees only a standalone-line Note. | `nested-opener` |
 | OFF-15b | An unclosed `[[`. | Plain text. The search for `]]` never crosses a blank line (OFF-15g). **Tie-breaker adopted.** | C | P2, P3 | An unclosed `[[` stays as text (Reading C, first alternative). Legacy: the same. screenplay-tools closes it at the blank line (extensions.md). | `unclosed-note` |
 | OFF-15c | A stray `]]`. | Plain text. | n/a | P2 | Plain text for the parser. | `stray-closer` |
-| OFF-15d | A Note over two lines. | One Note. A Note may contain single line breaks, and its lines are not tested for being blank. | n/a | P1 | Contradicts: not recognised as one (only single-line standalone Notes), and the renderer's inline removal does not cross a line break either, so the text prints. Legacy: a multi-line standalone Note works. | none |
+| OFF-15d | A Note over two lines. | One Note. A Note may contain single line breaks and continuation lines (`OFF-1c`), but not a blank line (`OFF-15g`). | n/a | P1 | Contradicts: not recognised as one (only single-line standalone Notes), and the renderer's inline removal does not cross a line break either, so the text prints. Legacy: a multi-line standalone Note works. | none |
 | OFF-15e | A standalone Note inside a Dialogue block or Action paragraph. | The line is invisible (3.4): the block continues across it. Blank lines around it still end the block. | D | P2 | Matches D: blank lines around a standalone Note split a block; a Note with no blank line before it is Dialogue text. | none |
 | OFF-15f | Notes and Boneyard together, and a Note in the title page. | The opener that comes first wins and its contents are opaque. A Note in the title page is hidden like any other. | n/a | P2 | Not covered (the spec is silent). | none |
 | OFF-15g | How far is a closer searched for? | Not past a blank line, with the two-space continuation line (OFF-1c) as the only exception. | n/a | P1 | Confirmed for Boneyard; Notes and emphasis are not searched for by line shape (OFF-14, OFF-15). | none |
@@ -680,12 +683,24 @@ OFF-16's unclosed `/*` is outside the tie-breaker (the spec exempts Boneyard) an
 
 A diagnostic is a note about a place in the input that the parser read one way but that an author, or another tool, may
 read differently. **Diagnostics never change the tree or the typed view.** The same input always gives the same list,
-ordered by start of span.
+ordered by span start, then span end, then the code's place in the table below.
 
 - **Severity.** *Info* means the input is read as specified, and another tool may read it differently. *Warning* means
   the input is probably not what the author meant, or text was demoted or left unclosed.
 - **Narrow triggers.** A code fires only on the shape named in its trigger, so ordinary valid input stays quiet.
 - **Tests.** Each code has a `DIAG-<code>` test with at least one input that fires it and one near miss that does not.
+- **Spans.** A diagnostic about a line spans that logical line's text: no line break, and all of a line that a hidden
+  span fuses from several physical lines. `nested-opener`, `unclosed-note`, `unclosed-boneyard` and `stray-closer` span
+  only their two-byte marker (`[[`, `]]`, `/*` or `*/`). `mixed-line-endings` fires at most once, on the first line
+  break that differs from the document's first one.
+- **`lone-caret`** fires for exactly the caret blocks that the view leaves with `unpaired_caret` set (section 9). A
+  caret block after a right half can be the left half of the next pair, so it is not flagged: `MARA`, `OTTO ^`,
+  `NELL ^`, `IVAN ^` gives no diagnostic.
+- **`emphasis-line-break`.** A paragraph is a run of consecutive Action lines, or of consecutive Dialogue lines of one
+  block, with no other line between them. Only an opener that is still open at the end of its line counts.
+- **`scene-number-rejected`** stays quiet on `##12A#` without `locked-scene-numbers` (`OFF-8g` has no diagnostic).
+- **A "none" row** in section 6 means that the row adds no code of its own. The code of another row may still fire on
+  its input: `MARA\nhi\n# x\nyo` (`OFF-21a`) fires `adjacent-outline-line` (`OFF-21c`).
 
 The six candidates listed in issue #9 are covered as follows.
 
@@ -807,13 +822,14 @@ pub struct Token<'a> { /* kind, span, text */ }
    This is what lets the writer reproduce any input.
 2. **Node spans.** A node's span runs from the start of its first child to the end of its last child.
 3. **Character boundaries.** Every span starts and ends on a character boundary.
-4. **Never lost.** Every sigil, marker, hidden span and whitespace byte is a token. Nothing is discarded because the
-   typed view leaves it out.
+4. **Never lost.** Every sigil, marker, whitespace byte and hidden span is in the tree (a hidden span as a node of
+   tokens). Nothing is discarded because the typed view leaves it out.
 5. **Diagnostics are separate.** They carry spans but do not appear in the tree.
 
 ### 8.4 Trivia and whitespace ownership
 
-The tree is flat: a `Document` holds top-level element nodes and `Gap` nodes, and scenes exist only in the typed view.
+The tree has no Scene nodes: a `Document` holds top-level element nodes and `Gap` nodes, and scenes exist only in the
+typed view.
 
 - **BOM.** A leading byte-order mark is the first token of the `Document`.
 - **Line breaks inside an element** (between two lines of one Action paragraph, between a cue and its dialogue line) are
@@ -824,14 +840,21 @@ The tree is flat: a `Document` holds top-level element nodes and `Gap` nodes, an
   to. So an element's span starts at its first byte and ends at its last byte before a line break.
 - **Everything between two top-level nodes is a `Gap`:** the line break that ended the previous element, the blank
   lines, and at the start of the file any leading blank lines. The final line break of the file is in the last `Gap`. A
-  document with no elements is one `Gap`.
-- **Hidden spans.** A `Note` or `Boneyard` node is a child of the element node it sits in. One that fills whole lines is
-  a top-level node (or a child of a `DialogueBlock` or `Action` it interrupts).
+  document with no elements is one `Gap`; an empty source gets one empty `Gap`, and a source that is only a byte-order
+  mark has no `Gap`.
+- **Hidden spans.** A `Note` or `Boneyard` node is a child of the element node it sits in. A hidden span at the edge of
+  a single-line element is a child of that element (`MARA [[n]]` puts the Note inside the `CharacterCue`). One that
+  fills whole lines is a top-level node (or a child of a `DialogueBlock` or `Action` it interrupts). Such a node spans
+  only the hidden span. Its line's indent and line break belong to the enclosing node: the `DialogueBlock` or `Action`
+  it interrupts (`MARA\n  [[n]]\nhi` has a `Whitespace` token directly under the `DialogueBlock`, before the Note),
+  or the `Gap` at top level (`  [[n]]\n\nx`). This is the one exception to the rule for the leading whitespace of a
+  line.
 - **Inline emphasis** is a view-level layer. It is not in the tree, because it never changes which element a line is.
 
 ### 8.5 Diagnostics
 
 ```rust
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)] // and serde's traits with the `serde` feature (8.6)
 pub struct Diagnostic {
     pub code: DiagnosticCode,
     pub severity: Severity,
@@ -961,7 +984,7 @@ pub struct DialogueBlock {
 pub enum DialogueItem {
     Line(Text),
     Parenthetical(Text),
-    Interjection(Element), // a Lyrics, Section, Synopsis, Page Break, Note or Boneyard line inside the block
+    Interjection(Box<Element>), // a Lyrics, Section, Synopsis, Page Break, Note or Boneyard line inside the block
 }
 
 pub struct Cue {
@@ -1012,19 +1035,33 @@ impl Text {
 How the awkward pieces appear:
 
 - **Dual dialogue.** A pair is one `Element::DualDialogue`. A caret with no partner stays a `DialogueBlock` with
-  `unpaired_caret` set (`OFF-11a`). The caret itself is a token in the tree, never in `Cue::name`.
+  `unpaired_caret` set (`OFF-11a`). The caret itself is a token in the tree, never in `Cue::name`. The transparent and
+  invisible elements skipped between the two halves (`OFF-11e`) become `DialogueItem::Interjection`s at the end of
+  `left.items`. An unpaired caret block may be the left half of a later pair: `MARA, OTTO^, NELL^, IVAN^` (each cue
+  with its dialogue) gives Dual(MARA, OTTO) and Dual(NELL, IVAN).
 - **Notes.** A whole-line Note is an `Element::Note` in scene order. An inline Note is a `Run::Note` inside the `Text`
   it sits in. Neither enters `plain()`.
 - **Boneyard.** The same, as `Element::Boneyard` and `Run::Boneyard`. A Boneyard that hides a whole scene still leaves
   the scene's tree nodes; the view shows an `Element::Boneyard` where it sits and no scene for text inside it.
 - **Forced elements.** `forced` is true when a sigil was used. The sigil is left out of every `Text`.
+- **Text keeps its layout.** View text keeps line breaks as written, and a Parenthetical's `Text` keeps its
+  parentheses. Whitespace beside an edge Note or Boneyard is kept in the `Text`.
+- **Hidden spans beside a sub-node.** A Note or Boneyard that the tree places beside a sub-node (a cue's name, a title
+  value) joins the nearest `Text` before it in the same element, otherwise the one after it. Hidden spans inside a scene
+  number join the heading's `Text`.
+- **Hidden spans on a Page Break line.** Under a Page Break line (`=== [[n]]`, `/* x */===`) they become sibling
+  `Element::Note` and `Element::Boneyard` values right after the Page Break: at top level, in `Action.interjections`
+  and among a block's interjections.
 - **Interjections do not split an element.** A Section, Synopsis or Page Break line inside an Action paragraph is kept
   in `Action.interjections`, and one inside a Dialogue block is a `DialogueItem::Interjection`. The paragraph or the run
   of Dialogue lines continues across it, as one element. A whole-line Note or Boneyard inside an Action paragraph is a
   `Run` of its text.
+- **Boxed interjections.** `DialogueItem::Interjection` holds a `Box<Element>`, because an unboxed `Element` would make
+  that variant far larger than the others, and `clippy::large_enum_variant` fails under `-D warnings`.
 - **Section and Synopsis placement.** A run of Sections and Synopses directly before a heading belongs to that scene;
-  Synopses directly after it belong to it too (`synopses`). Any other Section or Synopsis stays in `elements`. Scheme 2
-  hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
+  Synopses directly after it belong to it too (`synopses`). Blank lines do not break the run of Sections and Synopses
+  before a heading, or the Synopses after it; any other element does. Any other Section or Synopsis stays in
+  `elements`. Scheme 2 hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
   to the earlier scene for `Scene::hash_v1` (11.7).
 - **The hash scope field is serialised.** With the `serde` feature the private scheme 1 hash scope of `Scene` is
   serialised with the scene and is omitted when empty, so that a view read back hashes as it did. When the field is
@@ -1967,8 +2004,9 @@ and 7 were resolved by the maintainer on 2026-11-05.
    hash differently, and the tests `HASH2-10` and `HASH2-43` and the NFC step of 11.3 would go.
 8. **Reference parser, legacy results.** Several legacy-parser results are "not determined by reading" (`OFF-12`,
    `OFF-21`, `OFF-24`) or low confidence. No decision depends on them.
-9. **Serde encoding of the tree** (8.6) and the exact tokenisation (`TokenKind`) are left to F2. The invariants in 8.3
-   are the contract.
+9. **Serde encoding of the tree** (8.6) is left to F2. The invariants in 8.3 are the contract. The tokenisation
+   (`TokenKind`) is settled: the kinds are fixed in the code. The `>` and `<` of Centered text are `Marker`, and the `>`
+   of a forced Transition is `Sigil`.
 10. **Oracle behaviour on multi-line Lyrics and interrupted blocks (scheme 1 parity).** *Partly settled on 2026-11-10:*
     the importer's merging of consecutive Action elements is settled by the captured scripts, where all six `text_sha`
     values match with the merge (11.7, rule 4, `HASH1-27`). Still open: how the importer treats several `~` lines and a
