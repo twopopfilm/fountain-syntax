@@ -11,6 +11,7 @@ release. 0.1.0 is the first release.
 - `SPEC.md` row `OFF-11c` now says that a plain forced cue with a last caret (`@NAME ^`) is dual.
 - `SPEC.md` §4.0 and §3.3 now agree with rows `OFF-11c` and `OFF-6d`: a caret that is not last leaves the line a cue,
   with the caret in the name, and the trailing space after a bare heading prefix (`INT `) counts as its separator.
+- `SPEC.md` row `OFF-22a` now says that the indentation before a forcing `!` stays in the view's Action text.
 
 ## [0.1.0] - 2026-11-20
 

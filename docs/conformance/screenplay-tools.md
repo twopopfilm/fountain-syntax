@@ -68,9 +68,7 @@ Each change makes our output match screenplay-tools' representation. A differenc
 
 ## Open for SPEC.md
 
-- **Indentation before a forcing `!`.** off-22a is recorded as `theirs-wrong`, because §4.3 and `OFF-18b` keep the
-  indentation in Action text, but no test yet pins the spaces or the tab before a forcing `!` in the view's text. Issue
-  #69 tracks the pinning test.
+None.
 
 An entry is a heading with the file, a line with the class, the `SPEC.md` rulings and the section of
 `docs/research/reference-parser.md` that covers the point (or "not covered"), a one-line reason, and the hunk in a
@@ -463,7 +461,7 @@ The second half of the same split: theirs makes `She opens it at last.` its own 
 
 **Class:** theirs-wrong · **Ruling:** OFF-22a, OFF-18b, OFF-22d · **Reference parser:** OFF-22
 
-`  !indented action` and a tab before `!`: both force Action and drop the `!`; ours keeps the two spaces (the tab shows as four) before it, as Action text keeps its leading whitespace (4.3), and theirs drops them. No test yet pins the view's text for either; issue #69 tracks the pinning test.
+`  !indented action` and a tab before `!`: both force Action and drop the `!`; ours keeps the two spaces (the tab shows as four) before it, as Action text keeps its leading whitespace (4.3), and theirs drops them. `off_22a_indent_before_sigil_kept_in_text` pins both.
 
 ````diff
 -ACTION The kettle clicks off and nobody moves.⏎⏎  indented action⏎⏎    tabbed action

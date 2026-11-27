@@ -163,6 +163,24 @@ fn off_22a_indented_or_hidden_before_sigil_still_forces() {
     assert!(!forced("a\n  !b\n"));
 }
 
+/// OFF-22a: the indentation before a forcing `!` stays in the Action text; only the `!` leaves it.
+#[test]
+fn off_22a_indent_before_sigil_kept_in_text() {
+    let a = |src: &str| {
+        let e = pre(src);
+        let act = action(&e[0]);
+        (act.forced, act.text.plain())
+    };
+    assert_eq!(
+        a("  !indented action\n"),
+        (true, "  indented action".to_owned())
+    );
+    assert_eq!(
+        a("\t!tabbed action\n"),
+        (true, "\ttabbed action".to_owned())
+    );
+}
+
 #[test]
 fn action_lines_of_only_hidden_spans_add_no_text() {
     // A forced one-line Action holding only a Note: its whitespace goes, the Note stays.
