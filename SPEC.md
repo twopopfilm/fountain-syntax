@@ -1993,7 +1993,7 @@ and 7 were resolved by the maintainer on 2026-11-05.
    `CUT TO: ` with a trailing space is Action (`OFF-23b`); `#1 priority item` is a Section (`OFF-20a`); a first block
    such as `Note: ...` is a title page (`OFF-17a`).
 4. **Where the tree stops and the view starts for scenes.** *Resolved by the maintainer on 2026-11-05:* the tree is
-   flat and scenes exist only in the typed view (8.4).
+   flat and scenes exist only in the typed view (8.4; 8.4 now words this as: the tree has no Scene nodes).
 5. **Colour names and tag length for notes conventions.** The research gives neither Beat's list of colour names nor the
    exact limit of Slugline's "short prefix" (extensions.md: not determined). `NoteConvention` returns the words as typed
    and the tag as one word; the meaning is the caller's.
