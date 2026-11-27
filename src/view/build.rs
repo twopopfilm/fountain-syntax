@@ -2,8 +2,8 @@
 //!
 //! Three passes: [`items`] turns the root's nodes into a flat list of elements with their spans,
 //! [`pair`] joins the dual-dialogue blocks, then [`group`] sorts the list into the preamble and the
-//! scenes. The tree is flat (SPEC 8.4), so every walk below has a fixed depth, and all three
-//! passes are linear in the size of the tree.
+//! scenes. The tree has no Scene nodes (SPEC 8.4) and a fixed depth, so every walk below is
+//! bounded, and all three passes are linear in the size of the tree.
 
 use super::inline::{self, Piece, Trim};
 use super::{

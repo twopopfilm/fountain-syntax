@@ -196,7 +196,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
   ampersands. It ends at the first colon. A line that is a Scene Heading by prefix is never a key line. A key with no
   inline value starts a title page only when an indented line follows it. A hidden span is not a value, and a line that
   holds only hidden spans is not an indented line: a first line `Title: [[n]]`, or `Title:` over an indented line
-  holding only `[[n]]`, is not a title page. A later key whose value is only a hidden span is still an entry. Details
+  holding only `[[n]]`, is not a title page unless a visible indented line follows (`Title:\n[[n]]\n\tx` and
+  `Title: [[n]]\n\tx` are title pages). A later key whose value is only a hidden span is still an entry. Details
   and edge cases: `OFF-17a` to `OFF-17f`.
 - **Values.** On the key line, or on the lines below it indented by three or more spaces or a tab, or both. Keys are
   kept as written, may repeat, and may be any text (open keys, see 5.1).
@@ -258,8 +259,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 
 ### 4.7 Dual Dialogue
 
-- **Recognition.** A cue whose last non-whitespace character is `^`, directly after a Dialogue block, pairs the two
-  blocks (`OFF-11`).
+- **Recognition.** A cue whose last non-whitespace character is `^`, directly after a Dialogue block (invisible and
+  transparent lines between them are skipped, `OFF-11e`), pairs the two blocks (`OFF-11`).
 - **View.** `DualDialogue { left, right }`. The tree keeps the caret as a token of the second cue.
 - **Tests.** `EL-dual-1` (a pair), `EL-dual-2` (the caret is kept in the tree and left out of the view's name).
 
@@ -287,8 +288,8 @@ leading whitespace, and only that one character is a sigil (`OFF-22`).
 ### 4.11 Emphasis
 
 - **Recognition.** An inline layer over the visible text of any element, in the view only. `*` is italics, `**` bold,
-  `***` bold italics, `_` underline. Spans nest and never cross a line break (`OFF-14`). At most 32 spans are open on
-  one line; an opener that would be the 33rd stays literal. Emphasis never affects which element a line is: a line that
+  `***` bold italics, `_` underline. Spans nest and never cross a line break (`OFF-14`). At most 32 openers can wait
+  for a closer on one line; a further opener stays literal. Emphasis never affects which element a line is: a line that
   starts with `**` is not a heading, whatever follows.
 - **Escape.** A backslash before `*` or `_` makes it literal; the view drops the backslash.
 - **Tests.** `EL-emphasis-1` (each style and nesting), `EL-emphasis-2` (escapes and unmatched marks stay literal).
@@ -683,16 +684,16 @@ OFF-16's unclosed `/*` is outside the tie-breaker (the spec exempts Boneyard) an
 
 A diagnostic is a note about a place in the input that the parser read one way but that an author, or another tool, may
 read differently. **Diagnostics never change the tree or the typed view.** The same input always gives the same list,
-ordered by span start, then span end, then the code's place in the table below.
+ordered by span start, then span end, then the code's place in the code table at the end of this section.
 
 - **Severity.** *Info* means the input is read as specified, and another tool may read it differently. *Warning* means
   the input is probably not what the author meant, or text was demoted or left unclosed.
 - **Narrow triggers.** A code fires only on the shape named in its trigger, so ordinary valid input stays quiet.
 - **Tests.** Each code has a `DIAG-<code>` test with at least one input that fires it and one near miss that does not.
-- **Spans.** A diagnostic about a line spans that logical line's text: no line break, and all of a line that a hidden
-  span fuses from several physical lines. `nested-opener`, `unclosed-note`, `unclosed-boneyard` and `stray-closer` span
-  only their two-byte marker (`[[`, `]]`, `/*` or `*/`). `mixed-line-endings` fires at most once, on the first line
-  break that differs from the document's first one.
+- **Spans.** A diagnostic about a line spans that logical line's text without its final line break. A line that a hidden
+  span fuses from several physical lines is spanned whole, with the line breaks inside it. `nested-opener`,
+  `unclosed-note`, `unclosed-boneyard` and `stray-closer` span only their two-byte marker (`[[`, `]]`, `/*` or `*/`).
+  `mixed-line-endings` fires at most once, and spans the one line break that differs from the document's first.
 - **`lone-caret`** fires for exactly the caret blocks that the view leaves with `unpaired_caret` set (section 9). A
   caret block after a right half can be the left half of the next pair, so it is not flagged: `MARA`, `OTTO ^`,
   `NELL ^`, `IVAN ^` gives no diagnostic.
@@ -725,7 +726,7 @@ The six candidates listed in issue #9 are covered as follows.
 | `transition-lookalike` | Info | A framed, uppercase, one-line paragraph that is `FADE IN:`, `FADE OUT.`, `FADE TO BLACK.` or `CUT TO BLACK.`. `FADE IN:` opens most scripts and fires on purpose, because another tool reads it as a scene heading. | OFF-9a | `DIAG-transition-lookalike` |
 | `unframed-transition` | Warning | An uppercase line ending in exactly `TO:` that is not a Transition because a blank line is missing before or after it. | OFF-9b, OFF-9c | `DIAG-unframed-transition` |
 | `to-trailing-space` | Warning | An uppercase line ending in `TO:` followed by spaces or tabs, with a blank line before it. | OFF-23a, OFF-23b | `DIAG-to-trailing-space` |
-| `lone-caret` | Warning | A Character cue with a caret that has no partner: no directly preceding Dialogue block, or one that is already a right half. | OFF-11a, OFF-11d | `DIAG-lone-caret` |
+| `lone-caret` | Warning | A Character cue with a caret that has no partner: no directly preceding Dialogue block, or one that is already a right half. A caret block that follows a right half but is the left half of the next pair has a partner. | OFF-11a, OFF-11d | `DIAG-lone-caret` |
 | `caret-not-last` | Info | A cue line that has a `^` followed by more text, such as `NAME ^ (V.O.)`. | OFF-11c | `DIAG-caret-not-last` |
 | `partial-parenthetical` | Info | A line inside a Dialogue block that starts with `(` and does not end with `)`, or that ends with `)`, contains no `(`, and closes such a line earlier in the same block (no line ending in `)` between them). | OFF-12b | `DIAG-partial-parenthetical` |
 | `emphasis-line-break` | Info | An emphasis opener with no closer on its line, and a matching closer on a later line of the same paragraph. | OFF-14b | `DIAG-emphasis-line-break` |
@@ -844,11 +845,12 @@ typed view.
   mark has no `Gap`.
 - **Hidden spans.** A `Note` or `Boneyard` node is a child of the element node it sits in. A hidden span at the edge of
   a single-line element is a child of that element (`MARA [[n]]` puts the Note inside the `CharacterCue`). One that
-  fills whole lines is a top-level node (or a child of a `DialogueBlock` or `Action` it interrupts). Such a node spans
-  only the hidden span. Its line's indent and line break belong to the enclosing node: the `DialogueBlock` or `Action`
-  it interrupts (`MARA\n  [[n]]\nhi` has a `Whitespace` token directly under the `DialogueBlock`, before the Note),
-  or the `Gap` at top level (`  [[n]]\n\nx`). This is the one exception to the rule for the leading whitespace of a
-  line.
+  fills whole lines is a top-level node (or a child of a `DialogueBlock`, `Action`, `TitlePage` or `TitleEntry` it
+  interrupts). Such a node spans only the hidden span. Its line's indent and line break belong to the enclosing node:
+  the `DialogueBlock`, `Action`, `TitlePage` or `TitleEntry` it interrupts (`MARA\n  [[n]]\nhi` has a `Whitespace`
+  token directly under the `DialogueBlock`, before the Note), or at top level the indent is in the `Gap` before the
+  Note and the line break in the one after it (`  [[n]]\n\nx`). This is the one exception to the rule for the
+  leading whitespace of a line.
 - **Inline emphasis** is a view-level layer. It is not in the tree, because it never changes which element a line is.
 
 ### 8.5 Diagnostics
@@ -920,8 +922,8 @@ impl TitlePage {
 pub struct Scene {
     pub heading: Heading,
     pub number: Option<SceneNumber>,
-    pub sections: Vec<Section>,   // the run of Sections right before the heading
-    pub synopses: Vec<Synopsis>,  // Synopses right before or right after the heading
+    pub sections: Vec<Section>,   // the run of Sections right before the heading (blank lines allowed)
+    pub synopses: Vec<Synopsis>,  // Synopses right before or right after the heading (blank lines allowed)
     pub elements: Vec<Element>,   // everything else, in source order
     pub span: Option<Span>,       // from the first byte of the first attached Section or Synopsis, or of the heading,
                                   // to the last byte of the last element; no line break or blank line after it
@@ -944,7 +946,7 @@ pub struct SceneNumber {
 }
 
 /// The elements before the first scene heading, apart from the title page and apart from the Sections and Synopses
-/// directly before that heading, which belong to the first scene.
+/// directly before that heading (blank lines do not break the run, section 9), which belong to the first scene.
 pub struct Preamble { pub elements: Vec<Element> }
 
 #[non_exhaustive]
@@ -970,7 +972,8 @@ pub struct Action {
     pub text: Text,
     pub centered: bool,
     pub forced: bool,
-    pub interjections: Vec<Element>, // a Section, Synopsis or Page Break line inside the paragraph (OFF-21b)
+    pub interjections: Vec<Element>, // a Section, Synopsis or Page Break line inside the paragraph (OFF-21b), and the
+                                     // Notes and Boneyards of a Page Break line
 }
 pub struct Transition { pub text: Text, pub forced: bool }
 pub struct Lyrics { pub lines: Vec<Text> }
@@ -978,7 +981,7 @@ pub struct Lyrics { pub lines: Vec<Text> }
 pub struct DialogueBlock {
     pub cue: Cue,
     pub items: Vec<DialogueItem>,
-    pub unpaired_caret: bool, // OFF-11a
+    pub unpaired_caret: bool, // OFF-11a, OFF-11d
 }
 
 pub enum DialogueItem {
@@ -1037,8 +1040,8 @@ How the awkward pieces appear:
 - **Dual dialogue.** A pair is one `Element::DualDialogue`. A caret with no partner stays a `DialogueBlock` with
   `unpaired_caret` set (`OFF-11a`). The caret itself is a token in the tree, never in `Cue::name`. The transparent and
   invisible elements skipped between the two halves (`OFF-11e`) become `DialogueItem::Interjection`s at the end of
-  `left.items`. An unpaired caret block may be the left half of a later pair: `MARA, OTTO^, NELL^, IVAN^` (each cue
-  with its dialogue) gives Dual(MARA, OTTO) and Dual(NELL, IVAN).
+  `left.items`. A caret block that follows a right half (and so cannot join that pair) may be the left half of the next
+  pair: `MARA, OTTO^, NELL^, IVAN^` (each cue with its dialogue) gives Dual(MARA, OTTO) and Dual(NELL, IVAN).
 - **Notes.** A whole-line Note is an `Element::Note` in scene order. An inline Note is a `Run::Note` inside the `Text`
   it sits in. Neither enters `plain()`.
 - **Boneyard.** The same, as `Element::Boneyard` and `Run::Boneyard`. A Boneyard that hides a whole scene still leaves
@@ -1061,8 +1064,8 @@ How the awkward pieces appear:
 - **Section and Synopsis placement.** A run of Sections and Synopses directly before a heading belongs to that scene;
   Synopses directly after it belong to it too (`synopses`). Blank lines do not break the run of Sections and Synopses
   before a heading, or the Synopses after it; any other element does. Any other Section or Synopsis stays in
-  `elements`. Scheme 2 hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly before a heading belongs
-  to the earlier scene for `Scene::hash_v1` (11.7).
+  `elements`. Scheme 2 hashes follow this placement. **Only scheme 1 follows a different rule:** a Synopsis directly
+  before a heading belongs to the earlier scene for `Scene::hash_v1` (11.7).
 - **The hash scope field is serialised.** With the `serde` feature the private scheme 1 hash scope of `Scene` is
   serialised with the scene and is omitted when empty, so that a view read back hashes as it did. When the field is
   absent from the input it reads as empty, which gives the scope of a scene built in memory (11.7). The derived
@@ -1386,9 +1389,9 @@ Unicode.
 
 **What a scene holds, in what order.** A scheme 2 scene is the view's `Scene` (section 9) and nothing else: its heading,
 and its elements in the order `synopses`, then `elements`, which is source order. So a Synopsis or Section directly
-before a heading belongs to the scene that follows, and a Synopsis directly after a heading belongs to that scene.
-Scheme 2 has no separate hash scope. The **preamble** is `Preamble::elements`: the elements before the first heading
-that the view does not attach to the first scene.
+before a heading (blank lines do not break the run, section 9) belongs to the scene that follows, and a Synopsis
+directly after a heading belongs to that scene. Scheme 2 has no separate hash scope. The **preamble** is
+`Preamble::elements`: the elements before the first heading that the view does not attach to the first scene.
 
 **The element records.** Every scene and the preamble is a list of records. A view element can give none, one or
 several, as the last column says. A record is **dropped** if its text is empty after normalisation: a Character with an

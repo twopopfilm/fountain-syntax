@@ -291,7 +291,8 @@ pub struct Action {
     pub centered: bool,
     /// True when the paragraph was forced with a leading `!`.
     pub forced: bool,
-    /// A Section, Synopsis or Page Break line inside the paragraph (OFF-21b).
+    /// A Section, Synopsis or Page Break line inside the paragraph (OFF-21b), and the Notes and
+    /// Boneyards of a Page Break line.
     pub interjections: Vec<Element>,
 }
 
@@ -478,8 +479,8 @@ pub struct Text {
 pub enum Run {
     /// Plain text.
     Plain(String),
-    /// Emphasised text, which may nest. Nesting is capped at 32 open spans per line; a deeper
-    /// opener stays literal.
+    /// Emphasised text, which may nest. At most 32 openers can wait for a closer on one line; a
+    /// further opener stays literal.
     Emphasis {
         /// True for bold.
         bold: bool,
