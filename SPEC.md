@@ -406,7 +406,9 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
   disagreement).
 - **Reference parser** restates what [reference-parser.md](docs/research/reference-parser.md) records for the case: its
   verdict against the literal text, the reading it matches, and where the legacy parser differs (lower confidence, as
-  that file says). "Default" means the default line-by-line parser.
+  that file says). "Default" means the default line-by-line parser. The cell may also note what screenplay-tools does
+  when it reads the case differently, citing [extensions.md](docs/research/extensions.md) or
+  [the screenplay-tools record](docs/conformance/screenplay-tools.md).
 - **Diagnostic** is a code from [section 7](#7-diagnostics), or "none".
 - The tree always keeps every byte. A decision is about what the typed view and the hashes see.
 
