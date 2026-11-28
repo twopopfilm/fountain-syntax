@@ -760,7 +760,7 @@ pub fn parse(source: &str) -> Document;
 
 | Feature | Adds | Dependency |
 |---|---|---|
-| `serde` | `Serialize` and `Deserialize` on the tree, the view and `Diagnostic` | `serde` |
+| `serde` | `Serialize` and `Deserialize` on `Document` (as its source), `Span`, `NodeKind`, `TokenKind`, the view and the diagnostic types (8.6) | `serde` |
 | `locked-scene-numbers` | Slugline's `##n#` (5.2) and `with_locked_scene_number` (10.2) | none |
 | `shot` | Beat's `!!` Shot (5.2) | none |
 | `hash` | The hash methods and digests of section 11 (scheme 2 and scheme 1) | `sha2` 0.10 and `unicode-normalization` |
@@ -885,9 +885,19 @@ pub enum Severity { Info, Warning }
 
 ### 8.6 Serde
 
-With the `serde` feature, `Document`, `Span`, `NodeKind`, `TokenKind`, `Diagnostic` and every type in section 9 derive
-`Serialize` and `Deserialize`. Deserialising a `Document` checks invariants 1 to 3 and returns a serde error rather than
-a broken tree. The exact encoding of the arena is left to F2.
+With the `serde` feature, `Span`, `NodeKind`, `TokenKind`, `Diagnostic`, `DiagnosticCode`, `Severity` and every type in
+section 9 derive `Serialize` and `Deserialize`, with serde's default encoding of their fields and variants. `Node`,
+`Child` and `Token` are borrowed handles and have no serde support.
+
+`Document` implements both traits by hand. It serialises as its source alone (in JSON, `{"source": "<text>"}`) and
+deserialises by parsing that text again. The tree and the diagnostics are not written: the build that reads the value
+rebuilds them. A deserialised `Document` therefore always meets the invariants of 8.3. The only error is input that is
+not of that shape, never a broken tree. A reader built with different `shot` or `locked-scene-numbers` features gets its
+own tree for the same source.
+
+Two fields of the section 9 types have a rule of their own. The private scheme 1 hash scope of `Scene` is written with
+the scene (omitted when empty) and read as empty when absent (section 9 and 11.7). `SceneNumber::locked` exists only
+with the `locked-scene-numbers` feature and reads as `false` when absent.
 
 ## 9. Typed view API sketch
 
@@ -2009,9 +2019,10 @@ and 7 were resolved by the maintainer on 2026-11-05.
    hash differently, and the tests `HASH2-10` and `HASH2-43` and the NFC step of 11.3 would go.
 8. **Reference parser, legacy results.** Several legacy-parser results are "not determined by reading" (`OFF-12`,
    `OFF-21`, `OFF-24`) or low confidence. No decision depends on them.
-9. **Serde encoding of the tree** (8.6) is left to F2. The invariants in 8.3 are the contract. The tokenisation
-   (`TokenKind`) is settled: the kinds are fixed in the code. The `>` and `<` of Centered text are `Marker`, and the `>`
-   of a forced Transition is `Sigil`.
+9. **Serde encoding of the tree** (8.6). *Settled by the code (#42), recorded on 2026-11-27:* a `Document` serialises
+   as its source and is parsed again on read (8.6). The tokenisation (`TokenKind`) is settled too, and nothing about it
+   remains open: the kinds are fixed in the code. The `>` and `<` of Centered text are `Marker`, and the `>` of a forced
+   Transition is `Sigil`.
 10. **Oracle behaviour on multi-line Lyrics and interrupted blocks (scheme 1 parity).** *Partly settled on 2026-11-10:*
     the importer's merging of consecutive Action elements is settled by the captured scripts, where all six `text_sha`
     values match with the merge (11.7, rule 4, `HASH1-27`). Still open: how the importer treats several `~` lines and a

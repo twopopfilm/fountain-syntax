@@ -14,6 +14,8 @@ release. 0.1.0 is the first release.
 - `SPEC.md` row `OFF-22a` now says that the indentation before a forcing `!` stays in the view's Action text.
 - `SPEC.md` prose now matches the code in §4.1, §4.7, §4.11, §7, §8.3 to §8.5, §9 and §13 item 9, and row `OFF-15d` is
   reworded; no ruling changes.
+- `SPEC.md` 8.1 (the `serde` row), 8.6 and 13 item 9 now state the serde encoding that exists (a `Document` serialises
+  as its source and is parsed again on read); no behaviour changes.
 
 ## [0.1.0] - 2026-11-20
 
