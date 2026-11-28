@@ -52,6 +52,32 @@ fn hash2_38_text_form() {
 }
 
 #[test]
+fn hash2_38_parse_error_messages() {
+    let message = |text: &str| text.parse::<Digest>().unwrap_err().to_string();
+
+    for prefix in ["fs1:", "fs3:", "FS2:"] {
+        assert_eq!(
+            message(&format!("{prefix}{HEX}")),
+            format!("not a digest: unknown scheme prefix {prefix:?}"),
+        );
+    }
+
+    let length = "not a digest: expected 64 hexadecimal digits";
+    for text in [
+        HEX[..63].to_string(),
+        format!("{HEX}0"),
+        format!("fs2:{}", &HEX[..63]),
+    ] {
+        assert_eq!(message(&text), length, "{text}");
+    }
+
+    let digit = "not a digest: expected lowercase hexadecimal digits";
+    for text in [HEX.to_uppercase(), "g".repeat(64)] {
+        assert_eq!(message(&text), digit, "{text}");
+    }
+}
+
+#[test]
 fn hash2_39_scheme_numbers() {
     assert_eq!(HASH_SCHEME_CURRENT, 2);
     assert_eq!(HashScheme::V2.number(), HASH_SCHEME_CURRENT);
