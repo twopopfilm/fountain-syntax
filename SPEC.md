@@ -406,7 +406,9 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
   disagreement).
 - **Reference parser** restates what [reference-parser.md](docs/research/reference-parser.md) records for the case: its
   verdict against the literal text, the reading it matches, and where the legacy parser differs (lower confidence, as
-  that file says). "Default" means the default line-by-line parser.
+  that file says). "Default" means the default line-by-line parser. The cell may also note what screenplay-tools does
+  when it reads the case differently, citing [extensions.md](docs/research/extensions.md) or
+  [the screenplay-tools record](docs/conformance/screenplay-tools.md).
 - **Diagnostic** is a code from [section 7](#7-diagnostics), or "none".
 - The tree always keeps every byte. A decision is about what the typed view and the hashes see.
 
@@ -491,7 +493,7 @@ or heading text. Braces, endnotes and similar markup are kept as opaque text.
 
 | Case / test ID | Question | Decision | Reading | Rule | Reference parser records | Diagnostic |
 |---|---|---|---|---|---|---|
-| OFF-9a | Framed lines that do not end in `TO:` (`FADE OUT.`, `FADE IN:`). | Action. Only `TO:` (or a forced `>`) makes a Transition. | A | P1, P3 | Contradicts: `FADE OUT.`, `FADE TO BLACK.` and `CUT TO BLACK.` are Transitions through a built-in list; `FADE IN:` is Action. | `transition-lookalike` |
+| OFF-9a | Framed lines that do not end in `TO:` (`FADE OUT.`, `FADE IN:`). | Action. Only `TO:` (or a forced `>`) makes a Transition. | A | P1, P3 | Contradicts: `FADE OUT.`, `FADE TO BLACK.` and `CUT TO BLACK.` are Transitions through a built-in list; `FADE IN:` is Action. screenplay-tools makes `FADE IN:` a scene heading, which adds a scene (`docs/conformance/screenplay-tools.md`, `off/off-9a.fountain`); `transition-lookalike` fires on it for that reason. | `transition-lookalike` |
 | OFF-9b | A `TO:` line between text lines (`BACK TO:`). | Not a Transition. It is part of the Action paragraph. | A | P1, P3 | Contradicts: a Transition without any blank line, and the next line is joined to its text. | `unframed-transition` |
 | OFF-9c | `CUT TO:` with a blank line before and a text line after (the heading line directly under it). | Not a Transition (no blank line after). The Character rule then fits (uppercase, blank before, text after): a Character cue whose dialogue is the heading line. This is the literal result and it is odd, hence the warning. | C | P1, P3 | Contradicts, and not Reading C: it is a Transition and the heading line is joined into its text. | `unframed-transition` |
 | OFF-9d | Must the line be uppercase, and must `TO:` be exact? | Yes: uppercase text ending in exactly `TO:`. `Cut to:` is not automatic. | n/a | P1 | Contradicts: the test finds `TO:` in capitals at the end and does not check what comes before, so a mixed-case line qualifies. | none |
