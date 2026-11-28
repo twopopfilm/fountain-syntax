@@ -16,6 +16,7 @@ release. 0.1.0 is the first release.
   reworded; no ruling changes.
 - `SPEC.md` 8.1 (the `serde` row), 8.6 and 13 item 9 now state the serde encoding that exists (a `Document` serialises
   as its source and is parsed again on read); no behaviour changes.
+- The `Digest` parse error now names an unknown scheme prefix such as `fs3:` instead of reporting a wrong length.
 
 ## [0.1.0] - 2026-11-20
 

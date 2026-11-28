@@ -63,7 +63,7 @@ impl fmt::Display for Digest {
 /// Why a string is not a [`Digest`] text form.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParseDigestError {
-    reason: &'static str,
+    reason: String,
 }
 
 impl fmt::Display for ParseDigestError {
@@ -83,17 +83,23 @@ impl FromStr for Digest {
             Some(hex) => (HashScheme::V2, hex),
             None => (HashScheme::V1, text),
         };
+        // A hex digit is never `:`, so a colon here is a scheme prefix other than `fs2:`.
+        if let (HashScheme::V1, Some(colon)) = (scheme, hex.find(':')) {
+            return Err(ParseDigestError {
+                reason: format!("unknown scheme prefix {:?}", &hex[..=colon]),
+            });
+        }
         let hex = hex.as_bytes();
         if hex.len() != 64 {
             return Err(ParseDigestError {
-                reason: "expected 64 hexadecimal digits",
+                reason: "expected 64 hexadecimal digits".into(),
             });
         }
         let nibble = |c: u8| match c {
             b'0'..=b'9' => Ok(c - b'0'),
             b'a'..=b'f' => Ok(c - b'a' + 10),
             _ => Err(ParseDigestError {
-                reason: "expected lowercase hexadecimal digits",
+                reason: "expected lowercase hexadecimal digits".into(),
             }),
         };
         let mut bytes = [0u8; 32];
