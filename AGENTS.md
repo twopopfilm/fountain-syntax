@@ -93,8 +93,7 @@ because `default = []` is declared explicitly, so cargo-hack would otherwise cou
 build twice. The Linux `msrv` job runs
 `cargo check --locked --all-targets`, with and without `--all-features`, on the minimum supported Rust (1.85, the
 `rust-version` in `Cargo.toml`). The `msrv` job needs a 1.85 toolchain (for example
-`rustup run 1.85 cargo check --locked --all-targets`). CI has not been able to run it yet, so run it locally when you
-have a 1.85 toolchain, before relying on the declared minimum. Run the same commands locally. Rules:
+`rustup run 1.85 cargo check --locked --all-targets`). Run the same commands locally. Rules:
 
 - **Rust stable, minimum supported version 1.85;** no `unsafe`; no required dependencies. `SPEC.md` section 8.1 lists
   the optional Cargo features: `serde` (adds `serde`), `hash` (adds `sha2` and `unicode-normalization`),
@@ -114,7 +113,9 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
   `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test --all-features`,
   `cargo hack clippy --feature-powerset --exclude-features default --all-targets -- -D warnings`,
   `cargo hack test --feature-powerset --exclude-features default`,
-  `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features` and `scripts/check-public.sh`.
+  `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`,
+  `rustup run 1.85 cargo check --locked --all-targets`,
+  `rustup run 1.85 cargo check --locked --all-targets --all-features` and `scripts/check-public.sh`.
 - **Keep `README.md` current.** It is the project's public face. A PR that changes what a user sees (install
   steps, commands, flags, examples, supported features, milestone state) updates the README in the same PR. Label
   planned features as planned; never describe something as working before it does. Every Rust code block in it
@@ -140,6 +141,6 @@ have a 1.85 toolchain, before relying on the declared minimum. Run the same comm
 - **Required issue fields.** Every issue has Priority, Size and Track (`Fountain`) and goes on org project #2. A
   numbered F milestone and a parent epic apply only from Status Todo onward, never to a Backlog issue. A `chore` has no
   milestone, and a tracking issue needs no parent. See *Issue conventions*.
-- **Never edit another repository** (Twopop Studio, the Python `twopop`, the kit). Stop, say what and why, and let the maintainer decide. Never touch the shared ComfyUI server.
+- **Never edit another repository** (Twopop Studio, the Python `twopop`, the kit). Stop, say what and why, and let the maintainer decide.
 - **Test fixtures** must be original, public-domain or redistributable. Record each one's source and licence in the corpus README.
 - **Merging, and publishing to crates.io,** are the maintainer's call.
